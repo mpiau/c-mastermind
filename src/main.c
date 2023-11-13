@@ -9,6 +9,7 @@
 #define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )
 
 
+// TODO: Rename the function, we can do better.
 static char const *get_color_from_peg( u8 const peg )
 {
 	switch ( peg )
@@ -19,14 +20,28 @@ static char const *get_color_from_peg( u8 const peg )
 		case 3: return "\x1b[1;35m";
 		case 4: return "\x1b[1;36m";
 		case 5: return "\x1b[1;37m";
-		default: exit( 1 );
+		default: exit( 1 ); // TODO: Do something better than an exit.
 	}
-	// static_assert( COLOR_COUNT == 6, "Update the switch case if the number of colors is updated" );
 }
 
-static inline char const *get_color_end( void )
+
+// TODO: Rename the function, color_end doesn't mean anything
+static char const *get_color_end()
 {
 	return "\033[0m";
+}
+
+
+// TODO: begin with key_pegs ? Or pegs_key ?
+static char const *get_key_pegs_color( enum KeyPegs const keyPegs )
+{
+	switch ( keyPegs )
+	{
+		case KEY_PEGS_NOTHING: return "\033[0m ";
+		case KEY_PEGS_PARTIAL: return "\x1b[1;47m \033[0m";
+		case KEY_PEGS_CORRECT: return "\x1b[1;41m \033[0m";
+		default: exit( 2 ); // TODO: Do something better than an exit.
+	}
 }
 
 
@@ -35,9 +50,20 @@ void board_display( u8 *const board, usize const boardSize )
 	printf( "[" );
 	for ( usize i = 0; i < boardSize; ++i )
 	{
-		printf( " %s%u", get_color_from_peg( board[i] ), board[i] );
+		printf( " %s%u", get_color_from_peg( board[i] ), board[i] ); // Redondancy of the value board[i] here.
 	}
 	printf( "%s ]", get_color_end() );
+}
+
+
+void feedback_display( enum KeyPegs *const keyPegs, usize const boardSize )
+{
+	printf( "{" );
+	for ( usize i = 0; i < boardSize; ++i )
+	{
+		printf( " %s", get_key_pegs_color( keyPegs[i] ) );
+	}
+	printf( " }" );
 }
 
 
@@ -48,7 +74,7 @@ void board_generate( struct Mastermind *const game )
 	bool const allowDuplicates = game->settings.allowDuplicatePegs;
 	u8 *const code = game->codemaker;
 
-	bool used[PEGS_CODE_LENGTH_MAX] = {};
+	bool used[CODE_PEGS_LENGTH_MAX] = {};
 	for ( usize i = 0; i < codeLength; ++i )
 	{
 		do
@@ -89,9 +115,10 @@ void get_user_input( struct MastermindSettings const *const settings, u8 *const 
 {
 	while ( true )
 	{
-		size_t userboard[PEGS_CODE_LENGTH_MAX] = {};
+		size_t userboard[CODE_PEGS_LENGTH_MAX] = {};
 		for ( size_t i = 0; i < boardSize; ++i )
 		{
+			// TODO: Remove that scanf, it shouldn't exist.
 			printf( "Peg %u > ", i + 1 );
 			scanf( "%u", &userboard[i] );
 		}
@@ -111,8 +138,41 @@ void get_user_input( struct MastermindSettings const *const settings, u8 *const 
 }
 
 
+void generate_feedback( struct Mastermind *const game )
+{
+	// Note: Investigate the behaviour when duplicates are authorized. 
+	// This code assume that we don't have any duplicates, and I believe that we'll need to handle that differently.
+	usize correct = 0;
+	usize partial = 0;
+	for ( size_t i = 0; i < game->settings.pegsCodeLength; ++i )
+	{
+		if ( game->codebreaker[i] == game->codemaker[i] )
+		{
+			correct += 1;
+			continue;
+		}
+
+		// TODO: That second for-loop seems... too much ? Need a better algo, this one is easy-not-pretty
+		for ( size_t j = 0; j < game->settings.pegsCodeLength; ++j )
+		{
+			if ( i == j ) continue;
+			if ( game->codebreaker[i] == game->codemaker[j] )
+			{
+				partial += 1;
+				break;
+			}
+		}
+	}
+
+	usize curPos = 0;
+	while( correct-- > 0 ) { game->keyPegs[curPos++] = KEY_PEGS_CORRECT; }
+	while( partial-- > 0 ) { game->keyPegs[curPos++] = KEY_PEGS_PARTIAL; }
+}
+
+
 static void mastermind_display_rules( struct MastermindSettings const *const settings )
 {
+	// TODO: We need to explain the key pegs as well ( red / white / nothing )
 	printf( "- You have %u turns to guess the code.\n", settings->turnsNumber );
 	if ( settings->allowDuplicatePegs )
 	{
@@ -149,13 +209,13 @@ static void mastermind_main_loop( struct Mastermind *const mastermind )
 	{
 		printf( " ----- Turn %*u / %*u ----- \n", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
 		get_user_input( settings, mastermind->codebreaker, settings->pegsCodeLength );
+		generate_feedback( mastermind );
 
 		printf( "Result: " );
 		board_display( mastermind->codebreaker, settings->pegsCodeLength );
+		printf( " - " );
+		feedback_display( mastermind->keyPegs, settings->pegsCodeLength );
 		printf( "\n" );
-
-		// TODO: Check the differences between the codebreaker and the codemaker
-		// TODO: Store & Display the difference result
 
 		if ( memcmp( mastermind->codemaker, mastermind->codebreaker, settings->pegsCodeLength ) == 0 ) 
 		{
@@ -191,10 +251,12 @@ static void mastermind_init_settings( struct MastermindSettings *const settings 
 
 	// TODO: Ask the player instead
 
-	settings->pegsCodeLength = PEGS_CODE_LENGTH_MIN;
-	settings->colorsNumber = PEGS_COLORS_NUMBER_MIN;
-	settings->turnsNumber = TURNS_NUMBER_MIN;
+	settings->pegsCodeLength = 4;
+	settings->colorsNumber = 6;
+	settings->turnsNumber = 12;
 	settings->allowDuplicatePegs = false;
+
+	// TODO: Settings validation
 }
 
 
@@ -208,6 +270,7 @@ static void mastermind_init( struct Mastermind *const game, bool const resetSett
 	}
 	memset( game->codemaker, 0, sizeof( game->codemaker ) );
 	memset( game->codebreaker, 0, sizeof( game->codebreaker ) );
+	memset( game->keyPegs, 0, sizeof( game->keyPegs ) );
 	game->currentTurn = 1;
 	game->status = GAME_STATUS_NOT_STARTED;
 }
@@ -227,8 +290,9 @@ int main( void )
 	srand( time( NULL ) );
 
 	struct Mastermind game;
-	mastermind_init( &game, true );
 
+	// TODO: Create a main loop here to allow the user to restart a new game, with/without the same settings.
+	mastermind_init( &game, true );
 	mastermind_main_loop( &game );
 
 	mastermind_destroy( &game );
