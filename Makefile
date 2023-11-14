@@ -1,4 +1,5 @@
 SRC := src/main.c
+SRC += src/mastermind.c
 
 CFLAGS += -Iinclude
 
