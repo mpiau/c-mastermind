@@ -1,5 +1,7 @@
 #include "mastermind.h"
 
+#include "terminal.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
@@ -13,12 +15,12 @@ static char const *get_color_from_peg( u8 const peg )
 {
 	switch ( peg )
 	{
-		case 0: return "\x1b[1;31m";
-		case 1: return "\x1b[1;32m";
-		case 2: return "\x1b[1;33m";
-		case 3: return "\x1b[1;35m";
-		case 4: return "\x1b[1;36m";
-		case 5: return "\x1b[1;37m";
+		case 0: return "\x1b[1;31m0";
+		case 1: return "\x1b[1;32m1";
+		case 2: return "\x1b[1;33m2";
+		case 3: return "\x1b[1;35m3";
+		case 4: return "\x1b[1;36m4";
+		case 5: return "\x1b[1;37m5";
 		default: exit( 1 ); // TODO: Do something better than an exit.
 	}
 }
@@ -46,12 +48,12 @@ static char const *get_key_pegs_color( enum KeyPegs const keyPegs )
 
 void board_display( u8 *const board, usize const boardSize )
 {
-	printf( "[" );
+	printf( "|" );
 	for ( usize i = 0; i < boardSize; ++i )
 	{
-		printf( " %s%u", get_color_from_peg( board[i] ), board[i] ); // Redondancy of the value board[i] here.
+		printf( " %s", get_color_from_peg( board[i] ) ); // Redondancy of the value board[i] here.
 	}
-	printf( "%s ]", get_color_end() );
+	printf( "%s |", get_color_end() );
 }
 
 
@@ -118,7 +120,7 @@ void get_user_input( struct MastermindSettings const *const settings, u8 *const 
 		for ( size_t i = 0; i < boardSize; ++i )
 		{
 			// TODO: Remove that scanf, it shouldn't exist.
-			printf( "Peg %u > ", i + 1 );
+			printf( "> ", i + 1 );
 			scanf( "%u", &userboard[i] );
 		}
 
@@ -171,7 +173,6 @@ void generate_feedback( struct Mastermind *const game )
 
 static void mastermind_display_rules( struct MastermindSettings const *const settings )
 {
-	// TODO: We need to explain the key pegs as well ( red / white / nothing )
 	printf( "- You have %u turns to guess the code.\n", settings->turnsNumber );
 	if ( settings->allowDuplicatePegs )
 	{
@@ -185,9 +186,11 @@ static void mastermind_display_rules( struct MastermindSettings const *const set
 	printf( "- Available pegs:" );
 	for ( usize i = 0; i < settings->colorsNumber; ++i )
 	{
-		printf( " %s%u", get_color_from_peg( i ), i );
+		printf( " %s", get_color_from_peg( i ) );
 	}
 	printf( "%s\n", get_color_end() );
+	printf( "- For each %s received, one peg has the right color and a correct position.\n", get_key_pegs_color( KEY_PEGS_CORRECT ) );
+	printf( "- For each %s received, one peg has the right color.\n", get_key_pegs_color( KEY_PEGS_PARTIAL ) );
 }
 
 
@@ -247,11 +250,14 @@ void mastermind_game_start( struct Mastermind *const mastermind )
 	size_t const nbTurnDigits = settings->turnsNumber < 10 ? 1 : 2;
 	while ( mastermind->status == GAME_STATUS_ONGOING )
 	{
-		printf( " ----- Turn %*u / %*u ----- \n", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
+		int const prefixSize = printf( "(Turn %*u / %*u) ", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
 		get_user_input( settings, mastermind->codebreaker, settings->pegsCodeLength );
 		generate_feedback( mastermind );
 
-		printf( "Result: " );
+		term_clear_last_line();
+
+		printf( "%*c", prefixSize, ' ' );
+		// printf( "(Turn %*u / %*u) ", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
 		board_display( mastermind->codebreaker, settings->pegsCodeLength );
 		printf( " - " );
 		feedback_display( mastermind->keyPegs, settings->pegsCodeLength );
@@ -265,6 +271,7 @@ void mastermind_game_start( struct Mastermind *const mastermind )
 		else if ( mastermind->currentTurn == settings->turnsNumber )
 		{
 			mastermind->status = GAME_STATUS_DEFEAT;
+			continue;
 		}
 
 		mastermind->currentTurn++;
@@ -274,7 +281,7 @@ void mastermind_game_start( struct Mastermind *const mastermind )
 
 	if ( mastermind->status == GAME_STATUS_VICTORY )
 	{
-		printf( "Congratulation, you won !!\n" );
+		printf( "Congratulation, you won in %i turn(s) !!\n", mastermind->currentTurn );
 	}
 	else
 	{

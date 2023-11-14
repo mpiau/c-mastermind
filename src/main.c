@@ -4,12 +4,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
+
+
+static void signalHandler( int const signal )
+{
+	if ( signal == SIGINT )
+	{
+		printf( "\nCtrl+C detected, stopping the game...\n" );
+		exit( 0 );
+	}
+}
 
 
 int main( void )
 {
 	// Initialize random. Not great but enough.
 	srand( time( NULL ) );
+
+	signal( SIGINT, signalHandler );
 
 	struct Mastermind game;
 	bool resetSettings = true;
