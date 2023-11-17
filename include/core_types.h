@@ -43,7 +43,7 @@ typedef uint_least64_t u64least;
 typedef size_t usize;
 
 // Bits/bytes
-typedef char byte;
+typedef unsigned char byte;
 
 // Floats
 typedef float  f32;
