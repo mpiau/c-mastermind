@@ -110,3 +110,6 @@ VALIDATE_BYTES_SIZE( utf32, ==, 4 /* bytes */ );
 // End of the file. Making sure that there is a \n after my #undef in this gist.
 
 #pragma endregion TESTS SECTION
+
+// Temp
+#define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )

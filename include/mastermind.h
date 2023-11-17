@@ -2,8 +2,6 @@
 
 #include "core_types.h"
 
-#define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )
-
 enum // Constants
 {
 	CODE_PEGS_LENGTH_MIN = 3,

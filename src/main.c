@@ -1,4 +1,5 @@
 // Mastermind game in C
+#include "game_menus.h"
 #include "mastermind.h"
 #include "terminal.h"
 
@@ -17,63 +18,6 @@ static void signalHandler( int const signal )
 	{
 		printf( "\nCtrl+C detected, stopping the game...\n" );
 		exit( 0 );
-	}
-}
-
-
-enum
-{
-	MAIN_MENU_MAX_CHOICES  = 3,
-};
-
-struct GameMainMenu
-{
-	u8 currentChoice;
-	u8 oldChoice; // Could be a choice[2] instead but later.
-	char const *menuLines[MAIN_MENU_MAX_CHOICES];
-	char selectedPrefixChar;
-	char defaultPrefixChar;
-	enum TermColor selectedLineColor;
-	enum TermColor defaultLineColor;
-};
-
-
-void setup_main_menu( struct GameMainMenu *const mainMenu )
-{
-	mainMenu->currentChoice = 0;
-	mainMenu->oldChoice = 0;
-	mainMenu->menuLines[0] = "Single-player";
-	mainMenu->menuLines[1] = "Local multiplayer (turn-based)";
-	mainMenu->menuLines[2] = "Quit";
-
-	mainMenu->selectedPrefixChar = '>';
-	mainMenu->defaultPrefixChar = ' ';
-
-	mainMenu->selectedLineColor = TERM_BOLD_GREEN;
-	mainMenu->defaultLineColor = TERM_DEFAULT;
-}
-
-
-void print_main_menu( struct GameMainMenu const *const mainMenu )
-{
-	for ( u8 i = 0; i < ARR_COUNT( mainMenu->menuLines ); ++i )
-	{
-		bool const isSelected = ( i == mainMenu->currentChoice );
-		printf( "%s%c %s\n%s",
-			isSelected ? S_COLOR_STR[mainMenu->selectedLineColor] : S_COLOR_STR[mainMenu->defaultLineColor],
-			isSelected ? mainMenu->selectedPrefixChar : mainMenu->defaultPrefixChar,
-			mainMenu->menuLines[i],
-			S_COLOR_STR_RESET
-		);
-	}
-}
-
-
-void clear_main_menu( struct GameMainMenu const *const mainMenu )
-{
-	for ( u8 i = 0; i < ARR_COUNT( mainMenu->menuLines ); ++i )
-	{
-		printf( "\033[1A\r\033[J" );
 	}
 }
 
@@ -117,45 +61,6 @@ static void mastermind_singleplayer()
 	}
 }
 
-static void enter_main_menu( struct GameMainMenu *const mainMenu )
-{
-	print_main_menu( mainMenu );
-
-	DWORD cNumRead;
-	INPUT_RECORD irInBuf;
-	HANDLE hStdin = GetStdHandle( STD_INPUT_HANDLE );
-	bool stayInMenu = true;
-	while ( stayInMenu && ReadConsoleInput( hStdin, &irInBuf, 1, &cNumRead ) )
-	{
-		if ( mainMenu->currentChoice != mainMenu->oldChoice )
-		{
-			print_main_menu( mainMenu );
-			mainMenu->oldChoice = mainMenu->currentChoice;
-		}
-
-		if ( irInBuf.EventType != KEY_EVENT ) continue;
-		if ( !irInBuf.Event.KeyEvent.bKeyDown ) continue;
-
-		if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_UP && mainMenu->currentChoice > 0 )
-		{
-			mainMenu->currentChoice -= 1;
-			clear_main_menu( mainMenu );
-		}
-		else if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_DOWN && mainMenu->currentChoice < MAIN_MENU_MAX_CHOICES - 1 )
-		{
-			mainMenu->currentChoice += 1;
-			clear_main_menu( mainMenu );
-		}
-		else if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_RETURN )
-		{
-			stayInMenu = false;
-//			clear_main_menu( mainMenu ); // Do we keep that ?
-		}
-	}
-
-	if ( mainMenu->currentChoice == 0 ) mastermind_singleplayer();
-}
-
 
 int main( void )
 {
@@ -168,9 +73,11 @@ int main( void )
 
 	print_game_name();
 
-	struct GameMainMenu mainMenu = {};
-	setup_main_menu( &mainMenu );
-	enter_main_menu( &mainMenu );
+	struct GameMenuList menus = {};
+	game_menu_init( &menus );
 
+	game_menu_loop( &menus );
+
+	game_menu_shutdown( &menus );
 	return 0;
 }
