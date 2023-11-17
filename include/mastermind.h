@@ -2,6 +2,7 @@
 
 #include "core_types.h"
 
+#define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )
 
 enum // Constants
 {

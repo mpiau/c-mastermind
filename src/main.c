@@ -1,5 +1,6 @@
 // Mastermind game in C
 #include "mastermind.h"
+#include "terminal.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -20,60 +21,81 @@ static void signalHandler( int const signal )
 }
 
 
-static DWORD s_oldConsoleMode = 0;
-
-void ResetConsoleModeOnExit( void )
+enum
 {
-	HANDLE hStdin = GetStdHandle( STD_INPUT_HANDLE );
-	SetConsoleMode( hStdin,  s_oldConsoleMode );
+	MAIN_MENU_MAX_CHOICES  = 3,
+};
+
+struct GameMainMenu
+{
+	u8 currentChoice;
+	u8 oldChoice; // Could be a choice[2] instead but later.
+	char const *menuLines[MAIN_MENU_MAX_CHOICES];
+	char selectedPrefixChar;
+	char defaultPrefixChar;
+	enum TermColor selectedLineColor;
+	enum TermColor defaultLineColor;
+};
+
+
+void setup_main_menu( struct GameMainMenu *const mainMenu )
+{
+	mainMenu->currentChoice = 0;
+	mainMenu->oldChoice = 0;
+	mainMenu->menuLines[0] = "Single-player";
+	mainMenu->menuLines[1] = "Local multiplayer (turn-based)";
+	mainMenu->menuLines[2] = "Quit";
+
+	mainMenu->selectedPrefixChar = '>';
+	mainMenu->defaultPrefixChar = ' ';
+
+	mainMenu->selectedLineColor = TERM_BOLD_GREEN;
+	mainMenu->defaultLineColor = TERM_DEFAULT;
 }
 
 
-int main( void )
+void print_main_menu( struct GameMainMenu const *const mainMenu )
 {
-	// Initialize random. Not great but enough.
-	srand( time( NULL ) );
-
-	signal( SIGINT, signalHandler );
-
-	// https://stackoverflow.com/questions/51726140/console-with-enable-line-input-doesnt-pass-r
-	_setmode( _fileno( stdin ), _O_BINARY );
-
-	HANDLE hStdin = GetStdHandle( STD_INPUT_HANDLE );
-	if ( !hStdin ) { return 1; }
-
-	GetConsoleMode( hStdin, &s_oldConsoleMode );
-
-	DWORD consoleModeIn  = s_oldConsoleMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT );
-	if ( SetConsoleMode( hStdin,  consoleModeIn ) )
+	for ( u8 i = 0; i < ARR_COUNT( mainMenu->menuLines ); ++i )
 	{
-		atexit( ResetConsoleModeOnExit );
+		bool const isSelected = ( i == mainMenu->currentChoice );
+		printf( "%s%c %s\n%s",
+			isSelected ? S_COLOR_STR[mainMenu->selectedLineColor] : S_COLOR_STR[mainMenu->defaultLineColor],
+			isSelected ? mainMenu->selectedPrefixChar : mainMenu->defaultPrefixChar,
+			mainMenu->menuLines[i],
+			S_COLOR_STR_RESET
+		);
 	}
+}
 
-	DWORD cNumRead, fdwMode, i;
-	INPUT_RECORD irInBuf;
 
-	while ( ReadConsoleInput( hStdin, &irInBuf, 1, &cNumRead ) )
+void clear_main_menu( struct GameMainMenu const *const mainMenu )
+{
+	for ( u8 i = 0; i < ARR_COUNT( mainMenu->menuLines ); ++i )
 	{
-		switch( irInBuf.EventType )
-			{
-			case KEY_EVENT: // keyboard input
-				if ( !irInBuf.Event.KeyEvent.bKeyDown ) break;
-				switch ( irInBuf.Event.KeyEvent.wVirtualKeyCode )
-				{
-					case VK_LEFT: printf( "\b" /*back one char in the line */ ); break;
-					case VK_RIGHT: printf( " " ); break;
-					default: break;
-				};
-				break;
-			default:
-				break;
-		}
+		printf( "\033[1A\r\033[J" );
 	}
+}
 
 
+void print_game_name( void )
+{
+	 // I used https://edukits.co/text-art/ for the ASCII generation.
+	 // I needed to add some backslashes afterwards to not break the output with printf.
+
+	term_print( TERM_BOLD_YELLOW,
+		"      __  __           _                      _           _ \n"
+		"     |  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ (_)_ __   __| |\n"
+		"     | |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |\n"
+		"     | |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |\n"
+		"     |_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|\n"
+		"\n"
+	);
+}
 
 
+static void mastermind_singleplayer()
+{
 	struct Mastermind game;
 	bool resetSettings = true;
 
@@ -82,7 +104,7 @@ int main( void )
 		if ( !mastermind_init( &game, resetSettings ) )
 		{
 			printf( "Failed to initialize the game. Stopping.." );
-			return 1;	
+			exit( 1 );
 		}
 
 		mastermind_game_start( &game );
@@ -93,6 +115,62 @@ int main( void )
 		// N -> break loop
 		break;
 	}
+}
+
+static void enter_main_menu( struct GameMainMenu *const mainMenu )
+{
+	print_main_menu( mainMenu );
+
+	DWORD cNumRead;
+	INPUT_RECORD irInBuf;
+	HANDLE hStdin = GetStdHandle( STD_INPUT_HANDLE );
+	bool stayInMenu = true;
+	while ( stayInMenu && ReadConsoleInput( hStdin, &irInBuf, 1, &cNumRead ) )
+	{
+		if ( mainMenu->currentChoice != mainMenu->oldChoice )
+		{
+			print_main_menu( mainMenu );
+			mainMenu->oldChoice = mainMenu->currentChoice;
+		}
+
+		if ( irInBuf.EventType != KEY_EVENT ) continue;
+		if ( !irInBuf.Event.KeyEvent.bKeyDown ) continue;
+
+		if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_UP && mainMenu->currentChoice > 0 )
+		{
+			mainMenu->currentChoice -= 1;
+			clear_main_menu( mainMenu );
+		}
+		else if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_DOWN && mainMenu->currentChoice < MAIN_MENU_MAX_CHOICES - 1 )
+		{
+			mainMenu->currentChoice += 1;
+			clear_main_menu( mainMenu );
+		}
+		else if ( irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_RETURN )
+		{
+			stayInMenu = false;
+//			clear_main_menu( mainMenu ); // Do we keep that ?
+		}
+	}
+
+	if ( mainMenu->currentChoice == 0 ) mastermind_singleplayer();
+}
+
+
+int main( void )
+{
+	// Initialize random. Not great but enough.
+	srand( time( NULL ) );
+
+	signal( SIGINT, signalHandler );
+
+	term_init();
+
+	print_game_name();
+
+	struct GameMainMenu mainMenu = {};
+	setup_main_menu( &mainMenu );
+	enter_main_menu( &mainMenu );
 
 	return 0;
 }

@@ -7,9 +7,6 @@
 #include <memory.h>
 
 
-#define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )
-
-
 // TODO: Rename the function, we can do better.
 static char const *get_color_from_peg( u8 const peg )
 {
