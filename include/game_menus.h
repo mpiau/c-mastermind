@@ -7,10 +7,12 @@
 
 enum GameMenuId
 {
-	GameMenuId_Main,
-	GameMenuId_SettingsSP,
-	GameMenuId_SettingsMP,
+	GameMenuId_MAIN,
+	GameMenuId_SetupMP,
+	GameMenuId_Settings,
+	GameMenuId_HowToPlay,
 	GameMenuId_Pause,
+	GameMenuId_Game,
 
 	GameMenuId_COUNT,
 
@@ -32,21 +34,29 @@ enum // Constants
 	GameMenu_MAX_ROWS = 5,
 	GameMenu_MAX_ROW_SIZE = 64,
 	GameMenu_MAX_PREFIX_SIZE = 8,
+	GameMenu_MAX_SUFFIX_SIZE = GameMenu_MAX_PREFIX_SIZE,
+	GameMenu_MAX_TITLE_SIZE = 64
 };
 
 enum GameMenuRowStatus
 {
-	GameMenuRowStatus_DEFAULT,
-	GameMenuRowStatus_SELECTED,
+	GameMenuStatus_DEFAULT,
+	GameMenuStatus_FOCUS,
 
 	GameMenuRowStatus_COUNT
 };
+
+
+// TODO add id for each element.
 
 
 struct GameMenu
 {
 	enum GameMenuId   id;
 	enum GameMenuType type;
+
+	char title[GameMenu_MAX_TITLE_SIZE];
+	enum TermColor titleColor;
 
 	char rows[GameMenu_MAX_ROWS][GameMenu_MAX_ROW_SIZE];
 	char rowSeparator[GameMenu_MAX_ROW_SIZE];
@@ -57,6 +67,8 @@ struct GameMenu
 
 	bool hasPrefix;
 	char prefixes[GameMenuRowStatus_COUNT][GameMenu_MAX_PREFIX_SIZE];
+	bool hasSuffix;
+	char suffixes[GameMenuRowStatus_COUNT][GameMenu_MAX_SUFFIX_SIZE];
 };
 
 
