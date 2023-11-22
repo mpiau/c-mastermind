@@ -158,20 +158,23 @@ void game_menu_print( struct GameMenu *const menu, struct TermBuffer *const term
 // Need to merge together in one function, with more wrapper 
 static bool main_menu_loop( struct GameMenu *const menu, INPUT_RECORD *input, enum GameMenuId *returnMenu )
 {
+	enum KeyInput keyInput;
+
 	if ( input->EventType != KEY_EVENT ) return true;
 	if ( !input->Event.KeyEvent.bKeyDown ) return true;
+	if ( !key_input_from_u32( input->Event.KeyEvent.wVirtualKeyCode, &keyInput ) ) return true;
 
-	if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ARROW_UP && menu->currSelectedRow > 0 )
+	if ( keyInput == KeyInput_ARROW_UP && menu->currSelectedRow > 0 )
 	{
 		menu->currSelectedRow -= 1;
 		//game_menu_clear( menu );
 	}
-	else if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ARROW_DOWN && menu->currSelectedRow < menu->nbRows - 1 )
+	else if ( keyInput == KeyInput_ARROW_DOWN && menu->currSelectedRow < menu->nbRows - 1 )
 	{
 		menu->currSelectedRow += 1;
 		//game_menu_clear( menu );
 	}
-	else if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ENTER )
+	else if ( keyInput == KeyInput_ENTER )
 	{
 		switch ( menu->currSelectedRow )
 		{
@@ -191,22 +194,25 @@ static bool main_menu_loop( struct GameMenu *const menu, INPUT_RECORD *input, en
 
 static bool game_settings_loop( struct GameMenu *const menu, INPUT_RECORD *input, enum GameMenuId *returnMenu )
 {
+	enum KeyInput keyInput;
+
 	if ( input->EventType != KEY_EVENT ) return true;
 	if ( !input->Event.KeyEvent.bKeyDown ) return true;
+	if ( !key_input_from_u32( input->Event.KeyEvent.wVirtualKeyCode, &keyInput ) ) return true;
 
-	if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ARROW_UP && menu->currSelectedRow > 0 )
+	if ( keyInput == KeyInput_ARROW_UP && menu->currSelectedRow > 0 )
 	{
 		// Just for the empty row. To Clean !
 		menu->currSelectedRow -= menu->currSelectedRow == 4 ? 2 : 1;
 		//game_menu_clear( menu );
 	}
-	else if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ARROW_DOWN && menu->currSelectedRow < menu->nbRows - 1 )
+	else if ( keyInput == KeyInput_ARROW_DOWN && menu->currSelectedRow < menu->nbRows - 1 )
 	{
 		// Just for the empty row. to clean !
 		menu->currSelectedRow += menu->currSelectedRow == 2 ? 2 : 1;
 		//game_menu_clear( menu );
 	}
-	else if ( input->Event.KeyEvent.wVirtualKeyCode == KeyInput_ENTER )
+	else if ( keyInput == KeyInput_ENTER )
 	{
 		if ( menu->currSelectedRow == 4 )
 		{
@@ -218,6 +224,25 @@ static bool game_settings_loop( struct GameMenu *const menu, INPUT_RECORD *input
 	}
 
 	return true;
+}
+
+
+enum KeyInput term_next_user_input()
+{
+	DWORD cNumRead;
+	INPUT_RECORD irInBuf;
+	HANDLE const hStdin = GetStdHandle( STD_INPUT_HANDLE );
+	while ( true )
+	{
+		bool const success = ReadConsoleInput( hStdin, &irInBuf, 1, &cNumRead );
+		if ( !success )
+		{
+			fprintf( stderr, "[ERROR]: ReadConsoleInput failure : Code %u\n", GetLastError() );
+			continue;
+		}
+
+
+	}
 }
 
 
