@@ -68,8 +68,44 @@ static void init_menu_settings( struct GameMenu *const menu )
 }
 
 
+void termbuf_new_frame( )
+{
+
+}
+
+
+void termbuf_display( struct TermBuffer *const termBuf )
+{
+	printf( "%s", termBuf->buf );
+
+	termBuf->curpos = snprintf( termBuf->buf, ARR_COUNT( termBuf->buf ), "\033[%uA\r\033[J", termBuf->nbLinesToClean );
+	termBuf->nbLinesToClean = 0;
+}
+
+
+void termbuf_appendline( struct TermBuffer *const termBuf, char *const format, ... )
+{
+	va_list args;
+	va_start ( args, format );
+	termBuf->curpos += vsnprintf( termBuf->buf + termBuf->curpos, ARR_COUNT( termBuf->buf ) - termBuf->curpos, format, args );
+	termBuf->curpos += snprintf( termBuf->buf + termBuf->curpos, ARR_COUNT( termBuf->buf ) - termBuf->curpos, "\n" );
+	va_end ( args );
+
+	termBuf->nbLinesToClean += 1;
+}
+
+
+void termbuf_init( struct TermBuffer *const termBuf )
+{
+	termBuf->curpos = 0;
+	termBuf->nbLinesToClean = 0;
+	termBuf->buf[0] = '\0';
+}
+
+
 bool game_menu_init( struct GameMenuList *const menus )
 {
+	termbuf_init( &menus->termBuf );
 	init_main_menu( &menus->menus[GameMenuId_MAIN] );
 	init_menu_settings( &menus->menus[GameMenuId_Settings] );
 }
@@ -89,11 +125,11 @@ void game_menu_clear( struct GameMenu *const menu )
 }
 
 
-void game_menu_print( struct GameMenu *const menu )
+void game_menu_print( struct GameMenu *const menu, struct TermBuffer *const termBuf )
 {
 	if ( menu->title[0] != '\0' )
 	{
-		term_print( menu->titleColor, "%s\n", menu->title );
+		termbuf_appendline( termBuf, "%s%s", S_COLOR_STR[TERM_YELLOW], menu->title );
 	}
 
 	for ( usize i = 0; i < menu->nbRows; ++i )
@@ -107,13 +143,13 @@ void game_menu_print( struct GameMenu *const menu )
 
 		// TODO Allow specifics colors for the prefix / separator ?
 		// TODO We may also want a suffix ?
-		printf( "%s%s%s%s%s%s",
+		termbuf_appendline( termBuf, "%s%s%s%s%s",//%s",
 			S_COLOR_STR[menu->lineColors[status]],
 			prefix,
 			menu->rows[i],
 			suffix,
-			S_COLOR_STR_RESET,
-			menu->rowSeparator
+			S_COLOR_STR_RESET/*,
+			menu->rowSeparator*/
 		);
 	}
 }
@@ -141,7 +177,7 @@ static bool main_menu_loop( struct GameMenu *const menu, INPUT_RECORD *input, en
 		{
 			case 0: break;
 			case 1: break;
-			case 2: *returnMenu = GameMenuId_Settings; break;//game_menu_clear( menu ); break;
+			case 2: *returnMenu = GameMenuId_Settings; break;
 			case 3: *returnMenu = GameMenuId_Quit; break;
 			default: break;
 		}
@@ -185,9 +221,10 @@ static bool game_settings_loop( struct GameMenu *const menu, INPUT_RECORD *input
 }
 
 
-enum GameMenuId game_menu_enter( struct GameMenu *const menu )
+enum GameMenuId game_menu_enter( struct GameMenu *const menu, struct TermBuffer *const termBuf )
 {
-	game_menu_print( menu );
+	game_menu_print( menu, termBuf );
+	termbuf_display( termBuf );
 
 	u8 oldSelect = menu->currSelectedRow;
 	DWORD cNumRead;
@@ -199,8 +236,9 @@ enum GameMenuId game_menu_enter( struct GameMenu *const menu )
 	{
 		if ( menu->currSelectedRow != oldSelect )
 		{
-			game_menu_clear( menu );
-			game_menu_print( menu );
+			// game_menu_clear( menu );
+			game_menu_print( menu, termBuf );
+			termbuf_display( termBuf );
 			oldSelect = menu->currSelectedRow;
 		}
 
@@ -208,10 +246,6 @@ enum GameMenuId game_menu_enter( struct GameMenu *const menu )
 		if ( menu->id == GameMenuId_Settings ) stayInMenu = game_settings_loop( menu, &irInBuf, &returnMenu );
 	}
 
-	if ( returnMenu != GameMenuId_Quit )
-	{
-		game_menu_clear( menu );
-	}
 	return returnMenu;
 }
 
@@ -220,6 +254,6 @@ void game_menu_loop( struct GameMenuList *const menus )
 {
 	while ( menus->current != GameMenuId_Quit )
 	{
-		menus->current = game_menu_enter( &menus->menus[menus->current] );
+		menus->current = game_menu_enter( &menus->menus[menus->current], &menus->termBuf );
 	}
 }

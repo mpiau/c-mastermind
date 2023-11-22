@@ -72,10 +72,20 @@ struct GameMenu
 };
 
 
+struct TermBuffer
+{
+	char  buf[1024];
+	usize curpos;
+	usize nbLinesToClean;
+};
+
+
 struct GameMenuList
 {
 	struct GameMenu menus[GameMenuId_COUNT];
 	enum GameMenuId current;
+
+	struct TermBuffer termBuf;
 };
 
 
