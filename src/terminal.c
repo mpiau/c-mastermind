@@ -59,7 +59,7 @@ static bool term_update_console_mode()
 
 	GetConsoleMode( hStdin, &s_oldConsoleMode );
 
-	DWORD consoleModeIn  = s_oldConsoleMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT );
+	DWORD const consoleModeIn  = s_oldConsoleMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT );
 	if ( SetConsoleMode( hStdin,  consoleModeIn ) )
 	{
 		atexit( reset_console_mode_on_exit );
