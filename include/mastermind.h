@@ -53,4 +53,7 @@ struct Mastermind
 
 bool mastermind_init( struct Mastermind *const mastermind, bool resetSettings );
 void mastermind_destroy( struct Mastermind *const mastermind );
-void mastermind_game_start( struct Mastermind *const mastermind );
+
+struct GameMenu;
+struct TermBuffer;
+void mastermind_game_start( struct Mastermind *const mastermind, struct GameMenu *const menu, struct TermBuffer *const termBuf );

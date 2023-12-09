@@ -1,4 +1,5 @@
 #include "mastermind.h"
+#include "game_menus.h"
 
 #include "terminal.h"
 
@@ -168,26 +169,26 @@ void generate_feedback( struct Mastermind *const game )
 }
 
 
-static void mastermind_display_rules( struct MastermindSettings const *const settings )
+static void mastermind_display_rules( struct MastermindSettings const *const settings, struct TermBuffer *const termBuf )
 {
-	printf( "- You have %u turns to guess the code.\n", settings->turnsNumber );
+	termbuf_appendline( termBuf, "- You have %u turns to guess the code.", settings->turnsNumber );
 	if ( settings->allowDuplicatePegs )
 	{
-		printf( "- The code composed of %u pegs can have duplicates.\n", settings->pegsCodeLength );
+		termbuf_appendline( termBuf, "- The code composed of %u pegs can have duplicates.", settings->pegsCodeLength );
 	}
 	else
 	{
-		printf( "- The code will always have %u differents pegs.\n", settings->pegsCodeLength );
+		termbuf_appendline( termBuf, "- The code will always have %u differents pegs.", settings->pegsCodeLength );
 	}
 
-	printf( "- Available pegs:" );
+	termbuf_appendline( termBuf, "%s", "- Available pegs:" );
 	for ( usize i = 0; i < settings->colorsNumber; ++i )
 	{
-		printf( " %s", get_color_from_peg( i ) );
+		termbuf_appendline( termBuf, "%s", get_color_from_peg( i ) );
 	}
-	printf( "%s\n", get_color_end() );
-	printf( "- For each %s received, one peg has the right color and a correct position.\n", get_key_pegs_color( KEY_PEGS_CORRECT ) );
-	printf( "- For each %s received, one peg has the right color.\n", get_key_pegs_color( KEY_PEGS_PARTIAL ) );
+	termbuf_appendline( termBuf, "%s", get_color_end() );
+	termbuf_appendline( termBuf, "- For each %s received, one peg has the right color and a correct position.", get_key_pegs_color( KEY_PEGS_CORRECT ) );
+	termbuf_appendline( termBuf, "- For each %s received, one peg has the right color.", get_key_pegs_color( KEY_PEGS_PARTIAL ) );
 }
 
 
@@ -232,15 +233,16 @@ void mastermind_destroy( struct Mastermind *const mastermind )
 }
 
 
-void mastermind_game_start( struct Mastermind *const mastermind )
+void mastermind_game_start( struct Mastermind *const mastermind, struct GameMenu *const menu, struct TermBuffer *const termBuf )
 {
 	mastermind->status = GAME_STATUS_ONGOING;
 
 	struct MastermindSettings const *const settings = &mastermind->settings;
 
-	printf( "=== MASTERMIND GAME ===\n" );
-	mastermind_display_rules( settings );
-	printf( "=== Good luck ! ===\n" );
+	termbuf_appendline( termBuf, "%s", "=== Rules ===" );
+	mastermind_display_rules( settings, termBuf );
+
+	termbuf_display( termBuf );
 
 	board_generate( mastermind );
 

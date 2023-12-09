@@ -2,6 +2,7 @@
 #include "game_menus.h"
 #include "mastermind.h"
 #include "terminal.h"
+#include "console.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -100,37 +101,8 @@ void content_chunk_destroy( struct ContentChunk *const chunk )
 }
 
 
-BOOL ctrl_handler( DWORD const ctrlType )
-{
-    /*switch ( ctrlType )
-    {
-	case CTRL_C_EVENT:
-    case CTRL_CLOSE_EVENT:
-    case CTRL_BREAK_EVENT:
-    case CTRL_LOGOFF_EVENT:
-    case CTRL_SHUTDOWN_EVENT:
-	default: 	assert( false ); // Shouldn't happen
-    }*/
-
-	// Call cleanup code.
-
-	exit( 0 );
-}
-
-
 // https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences Useful
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797 
-
-void console_system_init( void )
-{
-	// Detach from the console that has launched the program to have our own console
-	FreeConsole();
-	AllocConsole();
-
-	term_init();
-	SetConsoleTitleA( "Mastermind Game" );
-	SetConsoleCtrlHandler( ctrl_handler, TRUE );
-}
 
 
 typedef union vec2u32
@@ -201,6 +173,10 @@ void console_screen_update_state( struct ConsoleScreen *const cscreen )
 	{
 		cscreen->rewriteNeeded = true;
 	}
+
+	printf( "cursor pos %i and %i\n", csinfo.dwCursorPosition.X, csinfo.dwCursorPosition.Y );
+	GetConsoleScreenBufferInfo( cscreen->handle, &csinfo );	// todo handle return code
+	printf( "cursor pos %i and %i\n", csinfo.dwCursorPosition.X, csinfo.dwCursorPosition.Y );
 }
 
 
@@ -307,9 +283,27 @@ bool read_next_input( HANDLE const handle, enum KeyInput *input )
 
 int main( void )
 {
+	if ( !console_global_init( "Mastermind Game" ) )
+	{
+		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
+		return 1;
+	}
+
 	rng_system_init();
-	console_system_init();
 	signal( SIGINT, signalHandler );
+
+	char buffer[1024];
+	sprintf( buffer, "%s%s", get_game_name(), "Hello world !\nThis is a second line" );
+
+	for ( ;; )
+	{
+		console_print( get_game_name() );
+		Sleep( 500 );
+		console_print( buffer );
+		Sleep( 500 );
+	}
+
+	return 0;
 
 	struct ConsoleScreen cscreen;
 	if (! console_screen_init( &cscreen ) ) return 1; // better handling needed
@@ -350,6 +344,7 @@ int main( void )
 		Sleep( 32 );		
 	}
 
+	console_global_uninit();
 	return 0;
 
 	struct GameMenuList menus = {};

@@ -3,6 +3,9 @@ SRC += src/mastermind.c
 SRC += src/terminal.c
 SRC += src/game_menus.c
 SRC += src/keyboard_inputs.c
+SRC += src/menu_stack.c
+SRC += src/widgets/widget.c
+SRC += src/console.c
 
 CFLAGS += -Iinclude
 

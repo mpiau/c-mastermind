@@ -24,7 +24,11 @@ enum TermColor
 	TERM_BOLD_CYAN,
 	TERM_BOLD_WHITE,
 
-	TERM_DEFAULT
+	TERM_DEFAULT,
+
+	TERM_COUNT,
+
+	TERM_COLOR_NONE,
 };
 
 // Temp, but easier to work with for now.
@@ -51,9 +55,7 @@ static char const *const S_COLOR_STR[] =
 
     [TERM_DEFAULT] = ""
 };
-static usize const S_COLOR_COUNT = TERM_DEFAULT;
+static_assert( ARR_COUNT( S_COLOR_STR ) == TERM_COUNT );
 static char const *const S_COLOR_STR_RESET = "\x1b[0;0m";
 
-
-bool term_init( void );
 int term_print( enum TermColor color, char const *format, ... );

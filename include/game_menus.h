@@ -2,7 +2,7 @@
 
 #include "core_types.h"
 #include "terminal.h"
-
+#include "keyboard_inputs.h"
 // TODO Not the same enum convention, but I like that. Needs to set some consistency though.
 
 enum GameMenuId
@@ -71,7 +71,6 @@ struct GameMenu
 	char suffixes[GameMenuRowStatus_COUNT][GameMenu_MAX_SUFFIX_SIZE];
 };
 
-
 struct TermBuffer
 {
 	char  buf[1024];
@@ -93,3 +92,7 @@ bool game_menu_init( struct GameMenuList *const menus );
 void game_menu_shutdown( struct GameMenuList *const menus );
 void game_menu_set_curr( struct GameMenuList *const menus, enum GameMenuId id );
 void game_menu_loop( struct GameMenuList *const menus );
+
+void termbuf_display( struct TermBuffer *const termBuf );
+void termbuf_appendline( struct TermBuffer *const termBuf, char *const format, ... );
+enum KeyInput term_next_user_input( void );
