@@ -6,22 +6,12 @@
 
 #include <fcntl.h>
 #include <io.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 
 #include <windows.h>
-
-
-static void signalHandler( int const signal )
-{
-	if ( signal == SIGINT )
-	{
-		exit( 0 );
-	}
-}
 
 
 char const *get_game_name( void )
@@ -118,11 +108,6 @@ bool vec2u32_equals( vec2u32 const lhs, vec2u32 const rhs )
 }
 
 
-static void rng_system_init()
-{
-	srand( time( NULL ) );
-}
-
 enum ConsoleScreenState
 {
 	ConsoleScreenState_CURRENT,
@@ -189,10 +174,10 @@ bool console_screen_is_too_small( struct ConsoleScreen *const cscreen )
 }
 
 
-vec2u32 console_screen_get_size( struct ConsoleScreen *const cscreen )
+/*vec2u32 console_screen_get_size( struct ConsoleScreen *const cscreen )
 {
 	return cscreen->size[ConsoleScreenState_CURRENT];
-}
+}*/
 
 
 void write_too_small_screen_warning( struct ConsoleScreen *const cscreen )
@@ -281,29 +266,205 @@ bool read_next_input( HANDLE const handle, enum KeyInput *input )
 }
 
 
+// System headers
+#include <windows.h>
+
+// Standard library C-style
+#include <wchar.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#define ESC "\x1b"
+#define CSI "\x1b["
+
+void PrintVerticalBorder()
+{
+	console_line_drawing_mode_enter();
+	console_color( ConsoleColorFG_BRIGHT_YELLOW, ConsoleColorBG_BRIGHT_BLUE );
+    printf( "%c", ConsoleLineDrawing_VERT_LINE );
+	console_color_reset();
+	console_line_drawing_mode_exit();
+}
+
+
+void PrintHorizontalBorder(COORD const Size, bool fIsTop)
+{
+    console_line_drawing_mode_enter();
+    printf(CSI "104;93m"); // Make the border bright yellow on bright blue
+    printf(fIsTop ? "l" : "m"); // print left corner 
+
+    for (int i = 1; i < Size.X - 1; i++)
+        printf("q"); // in line drawing mode, \x71 -> \u2500 "HORIZONTAL SCAN LINE-5"
+
+    printf(fIsTop ? "k" : "j"); // print right corner
+	console_color_reset();
+	console_line_drawing_mode_exit();
+}
+
+void PrintStatusLine(const char* const pszMessage, COORD const Size)
+{
+    printf(CSI "%d;1H", Size.Y);
+    printf(CSI "K"); // clear the line
+    printf(pszMessage);
+}
+
+int wmain2()
+{
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE)
+    {
+        printf("Couldn't get the console handle. Quitting.\n");
+        return -1;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO ScreenBufferInfo;
+    GetConsoleScreenBufferInfo(hOut, &ScreenBufferInfo);
+    COORD Size;
+    Size.X = ScreenBufferInfo.srWindow.Right - ScreenBufferInfo.srWindow.Left + 1;
+    Size.Y = ScreenBufferInfo.srWindow.Bottom - ScreenBufferInfo.srWindow.Top + 1;
+
+	for ( int i = 0; i < 50; i++ ) {
+		// Clear screen, tab stops, set, stop at columns 16, 32
+		printf(CSI "1;1H");
+		printf(CSI "2J"); // Clear screen
+
+		int iNumTabStops = 4; // (0, 20, 40, width)
+		printf(CSI "3g"); // clear all tab stops
+		printf(CSI "1;20H"); // Move to column 20
+		printf(ESC "H"); // set a tab stop
+
+		printf(CSI "1;40H"); // Move to column 40
+		printf(ESC "H"); // set a tab stop
+
+		// Set scrolling margins to 3, h-2
+		printf(CSI "3;%dr", Size.Y - 2);
+		int iNumLines = Size.Y - 4;
+
+		printf(CSI "1;1H");
+		printf(CSI "102;30m");
+		printf("Windows 10 Anniversary Update - VT Example");
+		printf(CSI "0m");
+
+		// Print a top border - Yellow
+		printf(CSI "2;1H");
+		PrintHorizontalBorder(Size, true);
+
+		// // Print a bottom border
+		printf(CSI "%d;1H", Size.Y - 1);
+		PrintHorizontalBorder(Size, false);
+
+		wchar_t wch;
+
+		// draw columns
+		printf(CSI "3;1H");
+		int line = 0;
+		for (line = 0; line < iNumLines * iNumTabStops; line++)
+		{
+			PrintVerticalBorder();
+			if (line + 1 != iNumLines * iNumTabStops) // don't advance to next line if this is the last line
+				printf("\t"); // advance to next tab stop
+
+		}
+
+		PrintStatusLine("Press any key to see text printed between tab stops.", Size);
+		Sleep( 1000 );
+	//    wch = _getwch();
+
+		// Fill columns with output
+		printf(CSI "3;1H");
+		for (line = 0; line < iNumLines; line++)
+		{
+			int tab = 0;
+			for (tab = 0; tab < iNumTabStops - 1; tab++)
+			{
+				PrintVerticalBorder();
+				printf("line=%d", line);
+				printf("\t"); // advance to next tab stop
+			}
+			PrintVerticalBorder();// print border at right side
+			if (line + 1 != iNumLines)
+				printf("\t"); // advance to next tab stop, (on the next line)
+		}
+
+		PrintStatusLine("Press any key to demonstrate scroll margins", Size);
+		Sleep( 1000 );
+	//    wch = _getwch();
+
+		printf(CSI "3;1H");
+		for (line = 0; line < iNumLines * 2; line++)
+		{
+			printf(CSI "K"); // clear the line
+			int tab = 0;
+			for (tab = 0; tab < iNumTabStops - 1; tab++)
+			{
+				PrintVerticalBorder();
+				printf("line=%d", line);
+				printf("\t"); // advance to next tab stop
+			}
+			PrintVerticalBorder(); // print border at right side
+			if (line + 1 != iNumLines * 2)
+			{
+				printf("\n"); //Advance to next line. If we're at the bottom of the margins, the text will scroll.
+				printf("\r"); //return to first col in buffer
+			}
+		}
+
+		PrintStatusLine("Press any key to exit", Size);
+		Sleep( 1000 );
+	//    wch = _getwch();
+	}
+}
+
+
+// Get cursor position
+// ESC [ 6 n 	DECXCPR 	Report Cursor Position 	Emit the cursor position as: ESC [ <r> ; <c> R Where <r> = cursor row and <c> = cursor column
+
 int main( void )
 {
-	if ( !console_global_init( "Mastermind Game" ) )
+	if ( !console_global_init( "Mastermind Game", false ) )
 	{
 		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
 		return 1;
 	}
 
-	rng_system_init();
-	signal( SIGINT, signalHandler );
+	srand( time( NULL ) );
 
-	char buffer[1024];
-	sprintf( buffer, "%s%s", get_game_name(), "Hello world !\nThis is a second line" );
+	COORD const size = console_screen_get_size( console_output_handle() );
+	console_line_drawing_mode_enter();
 
-	for ( ;; )
+	console_cursor_set_position( 1, 1 );
+	printf( "%c", ConsoleLineDrawing_UPPER_LEFT );
+	for ( int i = 1; i < size.X - 1; i++ )
 	{
-		console_print( get_game_name() );
-		Sleep( 500 );
-		console_print( buffer );
-		Sleep( 500 );
+		printf( "%c", ConsoleLineDrawing_HORIZ_LINE );
+	}
+	printf( "%c", ConsoleLineDrawing_UPPER_RIGHT );
+
+	for ( int i = 2; i < size.Y; i++ )
+	{
+		console_cursor_set_position( i, 1 );
+		printf( "%c", ConsoleLineDrawing_VERT_LINE );
+		console_cursor_set_position( i, size.X );
+		printf( "%c", ConsoleLineDrawing_VERT_LINE );
 	}
 
+	console_cursor_set_position(size.Y, 1 );
+	printf( "%c", ConsoleLineDrawing_LOWER_LEFT );
+	for ( int i = 1; i < size.X - 1; i++ )
+	{
+		printf( "%c", ConsoleLineDrawing_HORIZ_LINE );
+	}
+	printf( "%c", ConsoleLineDrawing_LOWER_RIGHT );
+
+	console_line_drawing_mode_exit();	
+	wint_t x = _getwch();
+
+	console_global_uninit();
 	return 0;
+
+
+
+
 
 	struct ConsoleScreen cscreen;
 	if (! console_screen_init( &cscreen ) ) return 1; // better handling needed
