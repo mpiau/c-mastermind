@@ -116,6 +116,7 @@ void console_color_bg( enum ConsoleColorBG bgColor );
 
 
 COORD console_screen_get_size( HANDLE handle );
+void console_screen_clear( void );
 
 
 

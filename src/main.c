@@ -419,9 +419,53 @@ int wmain2()
 // Get cursor position
 // ESC [ 6 n 	DECXCPR 	Report Cursor Position 	Emit the cursor position as: ESC [ <r> ; <c> R Where <r> = cursor row and <c> = cursor column
 
+void draw_title( COORD const screenSize )
+{
+	console_cursor_set_position( 1, 1 );
+		wchar_t *bbb =
+		L"            Player 1\n"
+		 "╔═══╤═══╤═══╤═══╤═══╤═══╤═══════╗\n"
+		 "║ \x1b[1;92m⬤\x1b[0;0m │ ⬤ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;91m⬤\x1b[0;0m │ ○ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;94m⬤\x1b[0;0m │ ⬤ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;95m⬤\x1b[0;0m │ ○ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "╚═══╧═══╧═══╧═══╧═══╧═══╧═══╧═══╝\n"
+		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n"
+		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n";
+
+	wprintf( bbb );
+	return;
+
+	char title[5][128] = {};
+	short titleSize = 0;
+
+	if ( title[0][0] == '\0' )
+	{
+		snprintf( title[0], ARR_COUNT( title[0] ), "%s __  __           _                      %s_%s           _ ",
+			S_COLOR_STR[TERM_BOLD_RED], S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED] );
+		snprintf( title[1], ARR_COUNT( title[1] ), "|  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ %s(_)%s_ __   __| |",
+			S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED] );
+		snprintf( title[2], ARR_COUNT( title[2] ), "| |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |" );
+		snprintf( title[3], ARR_COUNT( title[4] ), "| |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |" );
+		snprintf( title[4], ARR_COUNT( title[5] ), "|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
+		titleSize = strlen( title[4] );
+	}
+
+	short const totalEmptySpaces = screenSize.X - titleSize;
+	short const spacesEachSide = totalEmptySpaces / 2;
+
+	for ( int i = 0; i < ARR_COUNT( title ); ++i )
+	{
+		console_cursor_set_position( i + 1, spacesEachSide + 1 );
+		printf( "%s", title[i] );
+	}
+}
+
+#include <locale.h>
+
 int main( void )
 {
-	if ( !console_global_init( "Mastermind Game", false ) )
+	if ( !console_global_init( "Mastermind Game", true ) )
 	{
 		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
 		return 1;
@@ -429,7 +473,38 @@ int main( void )
 
 	srand( time( NULL ) );
 
-	COORD const size = console_screen_get_size( console_output_handle() );
+	HANDLE hOut = console_output_handle();
+	COORD newSize = console_screen_get_size( hOut );
+	COORD oldSize = (COORD) {};
+	CONSOLE_SCREEN_BUFFER_INFO csinfo;
+	while ( true )
+	{
+		DWORD nbEvents = 0;
+		GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents );
+		while ( nbEvents > 0 )
+		{
+			DWORD cNumRead;
+			INPUT_RECORD irInBuf;
+			ReadConsoleInput( console_input_handle(), &irInBuf, 1, &cNumRead );
+
+			if ( irInBuf.EventType == WINDOW_BUFFER_SIZE_EVENT )
+			{
+				newSize = irInBuf.Event.WindowBufferSizeEvent.dwSize;
+				if ( newSize.X != oldSize.X || newSize.Y != oldSize.Y )
+				{
+					console_screen_clear();
+					draw_title( newSize );
+					oldSize = newSize;
+				}
+			}
+		}
+/*		GetConsoleScreenBufferInfo( hOut, &csinfo );
+		newSize = (COORD) { .X = csinfo.dwSize.X, .Y = csinfo.dwSize.Y };*/
+		Sleep( 32 );
+	}
+
+
+/*	COORD const size = console_screen_get_size( console_output_handle() );
 	console_line_drawing_mode_enter();
 
 	console_cursor_set_position( 1, 1 );
@@ -456,7 +531,7 @@ int main( void )
 	}
 	printf( "%c", ConsoleLineDrawing_LOWER_RIGHT );
 
-	console_line_drawing_mode_exit();	
+	console_line_drawing_mode_exit();	*/
 	wint_t x = _getwch();
 
 	console_global_uninit();

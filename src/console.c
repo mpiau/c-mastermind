@@ -41,7 +41,7 @@ static void update_console_mode( void )
 	HANDLE handle = console_input_handle();
 	GetConsoleMode( handle, (LPDWORD)&s_oldInputMode );
 
-	DWORD newMode = s_oldInputMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT );
+	DWORD newMode = s_oldInputMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ) | ENABLE_WINDOW_INPUT;
 	SetConsoleMode( handle,  newMode );
 
 	handle = console_output_handle();
@@ -90,7 +90,7 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
 
     update_console_mode();
    	SetConsoleCtrlHandler( console_ctrl_handler, TRUE );
-
+    _setmode( _fileno( stdout ), _O_U16TEXT ); // To correctly print wchar_t
 	console_alternate_buffer_enter();
     console_cursor_hide();
 
@@ -135,7 +135,7 @@ bool console_set_title( char const *const title )
 		return false;
 	}
 
-	printf( "\x1B]0;%s\007", title );
+	wprintf( L"\x1B]0;%s\007", title );
 	return true;
 }
 
@@ -154,47 +154,47 @@ HANDLE console_output_handle( void )
 
 void console_cursor_hide( void )
 {
-	printf( "\x1B[?25l" );
+	wprintf( L"\x1B[?25l" );
 }
 
 void console_cursor_show( void )
 {
-	printf( "\x1B[?25h" );
+	wprintf( L"\x1B[?25h" );
 }
 
 void console_cursor_start_blinking( void )
 {
-	printf( "\x1B[?12h" );
+	wprintf( L"\x1B[?12h" );
 }
 
 void console_cursor_stop_blinking( void )
 {
-	printf( "\x1B[?12l" );
+	wprintf( L"\x1B[?12l" );
 }
 
 void console_cursor_set_position( short const y, short const x )
 {
-    printf( "\x1B[%u;%uH", y, x );
+    wprintf( L"\x1B[%u;%uH", y, x );
 }
 
 void console_cursor_move_up_by( short const n )
 {
-    printf( "\x1B[%uA", n );
+    wprintf( L"\x1B[%uA", n );
 }
 
 void console_cursor_move_down_by( short const n )
 {
-    printf( "\x1B[%uB", n );
+    wprintf( L"\x1B[%uB", n );
 }
 
 void console_cursor_move_left_by( short const n )
 {
-    printf( "\x1B[%uD", n );
+    wprintf( L"\x1B[%uD", n );
 }
 
 void console_cursor_move_right_by( short const n )
 {
-    printf( "\x1B[%uC", n );
+    wprintf( L"\x1B[%uC", n );
 }
 
 /*
@@ -207,74 +207,74 @@ ESC [ <n> M 	DL 	Delete Line 	Deletes <n> lines from the buffer, starting with t
 
 void console_line_drawing_mode_enter( void )
 {
-	printf( "\x1B(0" );
+	wprintf( L"\x1B(0" );
 }
 
 void console_line_drawing_mode_exit( void )
 {
-	printf( "\x1B(B" );
+	wprintf( L"\x1B(B" );
 }
 
 
 void console_alternate_buffer_enter( void )
 {
-	printf( "\x1b[?1049h" );
+	wprintf( L"\x1b[?1049h" );
 }
 
 void console_alternate_buffer_exit( void )
 {
-	printf( "\x1b[?1049l" );
+	wprintf( L"\x1b[?1049l" );
 }
 
 
 void console_color_reset( void )
 {
-    printf( "\x1b[0;0m" );
+    wprintf( L"\x1b[0;0m" );
 }
 
 void console_color_bold( void )
 {
-    printf( "\x1b[1m" );
+    wprintf( L"\x1b[1m" );
 }
 
 void console_color_no_bold( void )
 {
-    printf( "\x1b[22m" );
+    wprintf( L"\x1b[22m" );
 }
 
 void console_color_underline( void )
 {
-    printf( "\x1b[4m" );
+    wprintf( L"\x1b[4m" );
 }
 
 void console_color_no_underline( void )
 {
-    printf( "\x1b[24m" );
+    wprintf( L"\x1b[24m" );
 }
 
 void console_color_negative( void )
 {
-    printf( "\x1b[7m" );
+    wprintf( L"\x1b[7m" );
 }
 
 void console_color_positive( void )
 {
-    printf( "\x1b[27m" );
+    wprintf( L"\x1b[27m" );
 }
 
 void console_color( enum ConsoleColorFG const fgColor, enum ConsoleColorBG const bgColor )
 {
-    printf( "\x1b[%u;%um", fgColor, bgColor );
+    wprintf( L"\x1b[%u;%um", fgColor, bgColor );
 }
 
 void console_color_fg( enum ConsoleColorFG const fgColor )
 {
-    printf( "\x1b[%um", fgColor );
+    wprintf( L"\x1b[%um", fgColor );
 }
 
 void console_color_bg( enum ConsoleColorBG const bgColor )
 {
-    printf( "\x1b[%um", bgColor );
+    wprintf( L"\x1b[%um", bgColor );
 }
 
 
@@ -287,4 +287,10 @@ COORD console_screen_get_size( HANDLE const handle )
     SHORT const newscreenHeight = info.srWindow.Bottom - info.srWindow.Top + 1;
 
     return (COORD) { .X = newScreenWidth, .Y = newscreenHeight };    
+}
+
+
+void console_screen_clear( void )
+{
+	wprintf( L"\x1b[2J" );
 }
