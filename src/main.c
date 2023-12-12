@@ -421,14 +421,131 @@ int wmain2()
 
 void draw_title( COORD const screenSize )
 {
+	wchar_t upLeft = L'╔';
+	wchar_t upRight = L'╗';
+	wchar_t downLeft = L'╚';
+	wchar_t downRight = L'╝';
+	wchar_t vertline = L'║';
+	wchar_t horizline = L'═';
+	wchar_t horizLineDown = L'╤';
+	wchar_t horizLineUp = L'╧';
+	wchar_t peg = L'⬤';
+	wchar_t nopeg = L'◌';
+	wchar_t noresult = L'◌';
+	wchar_t result = L'●'; // ○
+	wchar_t vertlinesmall = L'│';
+
+#define NB_TURNS 12
+
+	short currTurn = 5;
+
+	wchar_t pegs[NB_TURNS][4];
+	wchar_t turnRes[NB_TURNS][4];
+	for (int i = 0; i < ARR_COUNT( pegs ); ++i )
+	{
+		wchar_t l = i < currTurn ? peg : L'◌';
+		wchar_t e = i % 2 == 0 ? L'◌' : result;
+		pegs[i][0] = l;
+		pegs[i][1] = l;
+		pegs[i][2] = l;
+		pegs[i][3] = l;
+		turnRes[i][0] = e;
+		turnRes[i][1] = e;
+		turnRes[i][2] = e;
+		turnRes[i][3] = e;
+	}
+
+	// Step 1 : Draw gameboard
+	// First line
 	console_cursor_set_position( 1, 1 );
+	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
+	wprintf( L"%lc", upLeft );
+	for ( int x = 1; x < 48; ++x )
+	{
+		if ( x % 4 == 0 ) wprintf( L"%lc", horizLineDown );
+		else wprintf( L"%lc", horizline );
+	}
+	wprintf( L"%lc", upRight );
+
+	// Content
+	for ( int y = 2; y < 6; ++y )
+	{
+		console_cursor_set_position( y, 1 );
+		wprintf( L"%lc", vertline );
+		for ( int x = 1; x < 48; ++x )
+		{
+			if ( x % 4 == 0 )
+			{
+				wprintf( L"%lc", vertlinesmall );
+			}
+			else if ( x >= 2 && (x - 2) % 4 == 0)
+			{
+				int curr = ( x - 2 ) / 4;
+				wchar_t currPeg = pegs[curr][y - 2];
+				if ( currTurn == curr )
+				{
+					if ( currPeg == peg )
+					{
+						console_color_fg( ConsoleColorFG_BRIGHT_GREEN );
+					}
+					else
+					{
+						console_color_fg( ConsoleColorFG_BRIGHT_WHITE );
+					}
+				}
+				else
+				{
+					console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+				}
+
+				wprintf( L"%lc", currPeg );
+				console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
+			}
+			else wprintf( L"%lc", L' ' );
+		}
+		wprintf( L"%lc", vertline );
+	}
+
+	// Last gameboard line 
+	console_cursor_set_position( 6, 1 );
+	wprintf( L"%lc", downLeft );
+	for ( int x = 1; x < 48; ++x )
+	{
+		if ( x % 4 == 0 ) wprintf( L"%lc", horizLineUp );
+		else wprintf( L"%lc", horizline );
+	}
+	wprintf( L"%lc", downRight );
+
+	// Result lines
+	for ( int y = 7; y < 9; ++y )
+	{
+		for ( int turn = 0; turn < NB_TURNS && turn < currTurn; ++turn )
+		{
+			console_cursor_set_position( y, turn * 4 + 2 );
+			short idx = ( y - 7 ) * 2;
+			wchar_t first = turnRes[turn][idx];
+			wchar_t second = turnRes[turn][idx + 1];
+
+			enum ConsoleColorFG color1 = first == result ? ConsoleColorFG_RED : ConsoleColorFG_WHITE;
+			enum ConsoleColorFG color2 = second == result ? ConsoleColorFG_RED : ConsoleColorFG_WHITE;
+
+			console_color_fg( color1 );
+			wprintf( L"%lc", first );
+			console_color_fg( color2 );
+			wprintf( L"%lc", second );
+		}		
+	}
+
+	console_color_reset();
+	return;
+
 		wchar_t *bbb =
 		L"            Player 1\n"
 		 "╔═══╤═══╤═══╤═══╤═══╤═══╤═══════╗\n"
-		 "║ \x1b[1;92m⬤\x1b[0;0m │ ⬤ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;91m⬤\x1b[0;0m │ ○ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;94m⬤\x1b[0;0m │ ⬤ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;95m⬤\x1b[0;0m │ ○ ╎ ○ ╎ ○ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;92m⬤\x1b[0;0m │ ⬤ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;91m⬤\x1b[0;0m │ ◌ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;94m⬤\x1b[0;0m │ ⬤ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
+		 "║ \x1b[1;95m⬤\x1b[0;0m │ ◌ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
 		 "╚═══╧═══╧═══╧═══╧═══╧═══╧═══╧═══╝\n"
 		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n"
 		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n";
@@ -477,6 +594,7 @@ int main( void )
 	COORD newSize = console_screen_get_size( hOut );
 	COORD oldSize = (COORD) {};
 	CONSOLE_SCREEN_BUFFER_INFO csinfo;
+
 	while ( true )
 	{
 		DWORD nbEvents = 0;
