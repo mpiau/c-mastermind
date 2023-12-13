@@ -95,8 +95,8 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
 	console_alternate_buffer_enter();
     console_cursor_hide();
 
-    COORD const screenSize = console_screen_get_size( console_output_handle() );
-    SetConsoleScreenBufferSize( console_output_handle(), screenSize );
+    vec2u16 const screenSize = console_screen_get_size( console_output_handle() );
+    SetConsoleScreenBufferSize( console_output_handle(), *(COORD *)&screenSize );
 
     return true;
 }
@@ -279,15 +279,15 @@ void console_color_bg( enum ConsoleColorBG const bgColor )
 }
 
 
-COORD console_screen_get_size( HANDLE const handle )
+vec2u16 console_screen_get_size( HANDLE const handle )
 {
     CONSOLE_SCREEN_BUFFER_INFO info;
     GetConsoleScreenBufferInfo( handle, &info );
 
-    SHORT const newScreenWidth = info.srWindow.Right - info.srWindow.Left + 1;
-    SHORT const newscreenHeight = info.srWindow.Bottom - info.srWindow.Top + 1;
+    u16 const newScreenWidth = info.srWindow.Right - info.srWindow.Left + 1;
+    u16 const newscreenHeight = info.srWindow.Bottom - info.srWindow.Top + 1;
 
-    return (COORD) { .X = newScreenWidth, .Y = newscreenHeight };    
+    return (vec2u16) { .x = newScreenWidth, .y = newscreenHeight };    
 }
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "core_unions.h"
 
 #include <windows.h> // Temp only, will remove later but convenient for the moment
 
@@ -115,7 +116,7 @@ void console_color_fg( enum ConsoleColorFG fgColor );
 void console_color_bg( enum ConsoleColorBG bgColor );
 
 
-COORD console_screen_get_size( HANDLE handle );
+vec2u16 console_screen_get_size( HANDLE handle );
 void console_screen_clear( void );
 
 

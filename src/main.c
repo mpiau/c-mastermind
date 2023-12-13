@@ -4,6 +4,7 @@
 #include "terminal.h"
 #include "console.h"
 #include "characters_list.h"
+#include "core_unions.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -428,7 +429,7 @@ int wmain2()
 #define SC_ALL_TURNS_WIDTH	( SC_TURN_WIDTH * NB_TURNS )
 
 
-void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u16 const nbTurns )
+void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
 {
 	u16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
 	u16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
@@ -441,7 +442,7 @@ void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u1
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
 	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
 
-	console_cursor_set_position( beginCoords.Y, beginCoords.X );
+	console_cursor_set_position( beginCoords.y, beginCoords.x );
 
 	wprintf( L"%lc", leftCorner );
 	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
@@ -457,7 +458,7 @@ void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u1
 }
 
 
-void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const nbTurns )
+void draw_center_board( vec2u16 const screenPos, u16 const pegsPerRow, u16 const nbTurns )
 {
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
@@ -467,7 +468,7 @@ void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const 
 	{
 		for ( int x = 0; x <= TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
 		{
-			console_cursor_set_position( screenPos.Y + y, screenPos.X + x );
+			console_cursor_set_position( screenPos.y + y, screenPos.x + x );
 			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
 			{
 				wprintf( L"%lc", UTF16C_DoubleVert );
@@ -479,25 +480,25 @@ void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const 
 }
 
 
-void draw_gameboard( COORD upLeftPos, u16 const pegsPerRow, u16 const nbTurns )
+void draw_gameboard( vec2u16 upLeftPos, u16 const pegsPerRow, u16 const nbTurns )
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
 	draw_horizontal_border( upLeftPos, true, nbTurns );
 
-	upLeftPos.Y += 1;
+	upLeftPos.y += 1;
 	draw_center_board( upLeftPos, pegsPerRow, nbTurns );
 
-	upLeftPos.Y += pegsPerRow;
+	upLeftPos.y += pegsPerRow;
 	draw_horizontal_border( upLeftPos, false, nbTurns );
 }
 
 
-void draw_gameboard_content( COORD screenPos, u16 const pegsPerRow, u16 const nbTurns )
+void draw_gameboard_content( vec2u16 screenPos, u16 const pegsPerRow, u16 const nbTurns )
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
-	wchar_t nopeg = L'◌';
+	u16 const nopeg = UTF16C_SmallDottedCircle;
 
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
@@ -507,26 +508,26 @@ void draw_gameboard_content( COORD screenPos, u16 const pegsPerRow, u16 const nb
 	{
 		for ( int x = 0; x < TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
 		{
-			console_cursor_set_position( screenPos.Y + y, screenPos.X + x );
+			console_cursor_set_position( screenPos.y + y, screenPos.x + x );
 			wprintf( L"%lc", x == TOTAL_WIDTH ? L'?' : nopeg );
 		}
 	}
 }
 
 
-void draw_title( COORD const screenSize )
+void draw_title( vec2u16 const screenSize )
 {
-	COORD const upLeft = (COORD) { .X = 10, .Y = 4 };
+	vec2u16 const upLeft = (vec2u16) { .x = 10, .y = 4 };
 	u16 const nbTurns = 12;
 	u16 const pegsPerRow = 4;
 
-	draw_gameboard( (COORD) { .X = 10, .Y = 4 }, pegsPerRow, nbTurns );
+	draw_gameboard( upLeft, pegsPerRow, nbTurns );
 
 	// Need to take actual data to set : 
 	// The colored pegs / placeholder
 	// ? at the end or solution if finished
 	// The feedback row up to current turn (excluded)
-	draw_gameboard_content( (COORD) { .X = upLeft.X + 2, .Y = upLeft.Y + 1 }, pegsPerRow, nbTurns );
+	draw_gameboard_content( (vec2u16) { .x = upLeft.x + 2, .y = upLeft.y + 1 }, pegsPerRow, nbTurns );
 	return;
 
 	u16 peg = UTF16C_BigFilledCircle;
@@ -604,7 +605,7 @@ void draw_title( COORD const screenSize )
 		titleSize = strlen( title[4] );
 	}
 
-	short const totalEmptySpaces = screenSize.X - titleSize;
+	short const totalEmptySpaces = screenSize.x - titleSize;
 	short const spacesEachSide = totalEmptySpaces / 2;
 
 	for ( int i = 0; i < ARR_COUNT( title ); ++i )
@@ -626,8 +627,8 @@ int main( void )
 	srand( time( NULL ) );
 
 	HANDLE hOut = console_output_handle();
-	COORD newSize = console_screen_get_size( hOut );
-	COORD oldSize = (COORD) {};
+	vec2u16 newSize = console_screen_get_size( hOut );
+	vec2u16 oldSize = (vec2u16) {};
 	CONSOLE_SCREEN_BUFFER_INFO csinfo;
 
 	while ( true )
@@ -642,11 +643,12 @@ int main( void )
 
 			if ( irInBuf.EventType == WINDOW_BUFFER_SIZE_EVENT )
 			{
-				newSize = irInBuf.Event.WindowBufferSizeEvent.dwSize;
+				COORD const size = irInBuf.Event.WindowBufferSizeEvent.dwSize;
+				newSize = *(vec2u16 *)&size;
 			}
 		}
 
-		if ( newSize.X != oldSize.X || newSize.Y != oldSize.Y )
+		if ( newSize.x != oldSize.x || newSize.y != oldSize.y )
 		{
 			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
 			// Check if the screen is too small than required.
@@ -659,10 +661,6 @@ int main( void )
 
 	console_global_uninit();
 	return 0;
-
-
-
-
 
 	struct ConsoleScreen cscreen;
 	if (! console_screen_init( &cscreen ) ) return 1; // better handling needed
