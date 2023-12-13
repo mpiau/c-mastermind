@@ -3,6 +3,7 @@
 #include "mastermind.h"
 #include "terminal.h"
 #include "console.h"
+#include "characters_list.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -429,12 +430,12 @@ int wmain2()
 
 void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u16 const nbTurns )
 {
-	wchar_t const leftCorner  = isTopBorder ? L'╔' : L'╚';
-	wchar_t const rightCorner = isTopBorder ? L'╗' : L'╝';
+	u16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
+	u16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
 
-	wchar_t const horizLineDelim     = isTopBorder ? L'╤' : L'╧';
-	wchar_t const horizLineDelimWide = isTopBorder ? L'╦' : L'╩';
-	wchar_t const horizLine = L'═';
+	u16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
+	u16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
+	u16 const horizLine = UTF16C_DoubleHoriz;
 
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
@@ -458,9 +459,6 @@ void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u1
 
 void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const nbTurns )
 {
-	wchar_t exteriorLine = L'║';
-	wchar_t interiorLine = L'│';
-
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
 	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
@@ -472,10 +470,10 @@ void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const 
 			console_cursor_set_position( screenPos.Y + y, screenPos.X + x );
 			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
 			{
-				wprintf( L"%lc", exteriorLine );
+				wprintf( L"%lc", UTF16C_DoubleVert );
 				continue;
 			}
-			wprintf( L"%lc", interiorLine );
+			wprintf( L"%lc", UTF16C_LightVert );
 		}
 	}
 }
@@ -531,12 +529,10 @@ void draw_title( COORD const screenSize )
 	draw_gameboard_content( (COORD) { .X = upLeft.X + 2, .Y = upLeft.Y + 1 }, pegsPerRow, nbTurns );
 	return;
 
-	wchar_t peg = L'⬤';
-	wchar_t nopeg = L'◌';
-	wchar_t noresult = L'◌';
-	wchar_t result = L'●'; // ○
-
-
+	u16 peg = UTF16C_BigFilledCircle;
+	u16 nopeg = UTF16C_SmallDottedCircle;
+	u16 noresult = UTF16C_SmallDottedCircle;
+	u16 result = UTF16C_SmallFilledCircle; // ○
 
 	short currTurn = 5;
 
@@ -652,14 +648,14 @@ int main( void )
 
 		if ( newSize.X != oldSize.X || newSize.Y != oldSize.Y )
 		{
+			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
+			// Check if the screen is too small than required.
 			console_screen_clear();
 			draw_title( newSize );
 			oldSize = newSize;
 		}
 		Sleep( 32 );
 	}
-
-	wint_t x = _getwch();
 
 	console_global_uninit();
 	return 0;

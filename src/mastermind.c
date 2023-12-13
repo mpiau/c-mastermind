@@ -253,7 +253,7 @@ void mastermind_game_start( struct Mastermind *const mastermind, struct GameMenu
 		get_user_input( settings, mastermind->codebreaker, settings->pegsCodeLength );
 		generate_feedback( mastermind );
 
-		term_clear_last_line();
+		// term_clear_last_line();
 
 		printf( "%*c", prefixSize, ' ' );
 		// printf( "(Turn %*u / %*u) ", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );

@@ -2,7 +2,6 @@
 
 #include "core_types.h"
 
-void term_clear_last_line( void );
 
 enum TermColor
 {
@@ -57,5 +56,3 @@ static char const *const S_COLOR_STR[] =
 };
 static_assert( ARR_COUNT( S_COLOR_STR ) == TERM_COUNT );
 static char const *const S_COLOR_STR_RESET = "\x1b[0;0m";
-
-int term_print( enum TermColor color, char const *format, ... );

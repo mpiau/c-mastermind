@@ -1,6 +1,5 @@
 SRC := src/main.c
 SRC += src/mastermind.c
-SRC += src/terminal.c
 SRC += src/game_menus.c
 SRC += src/keyboard_inputs.c
 SRC += src/menu_stack.c
