@@ -419,23 +419,124 @@ int wmain2()
 // Get cursor position
 // ESC [ 6 n 	DECXCPR 	Report Cursor Position 	Emit the cursor position as: ESC [ <r> ; <c> R Where <r> = cursor row and <c> = cursor column
 
+// https://www.w3schools.com/charsets/ref_utf_box.asp 
+// https://www.compart.com/en/unicode/U+25CF
+
+#define NB_TURNS 12
+#define SC_TURN_WIDTH 4
+#define SC_ALL_TURNS_WIDTH	( SC_TURN_WIDTH * NB_TURNS )
+
+
+void draw_horizontal_border( COORD const beginCoords, bool const isTopBorder, u16 const nbTurns )
+{
+	wchar_t const leftCorner  = isTopBorder ? L'╔' : L'╚';
+	wchar_t const rightCorner = isTopBorder ? L'╗' : L'╝';
+
+	wchar_t const horizLineDelim     = isTopBorder ? L'╤' : L'╧';
+	wchar_t const horizLineDelimWide = isTopBorder ? L'╦' : L'╩';
+	wchar_t const horizLine = L'═';
+
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	console_cursor_set_position( beginCoords.Y, beginCoords.X );
+
+	wprintf( L"%lc", leftCorner );
+	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
+	{
+		if ( x % WIDTH_PER_TURN == 0 )
+		{
+			wprintf( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
+			continue;
+		}
+		wprintf( L"%lc", horizLine );
+	}
+	wprintf( L"%lc", rightCorner );	
+}
+
+
+void draw_center_board(  COORD const screenPos, u16 const pegsPerRow, u16 const nbTurns )
+{
+	wchar_t exteriorLine = L'║';
+	wchar_t interiorLine = L'│';
+
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	for ( int y = 0; y < pegsPerRow; ++y )
+	{
+		for ( int x = 0; x <= TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
+		{
+			console_cursor_set_position( screenPos.Y + y, screenPos.X + x );
+			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
+			{
+				wprintf( L"%lc", exteriorLine );
+				continue;
+			}
+			wprintf( L"%lc", interiorLine );
+		}
+	}
+}
+
+
+void draw_gameboard( COORD upLeftPos, u16 const pegsPerRow, u16 const nbTurns )
+{
+	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+
+	draw_horizontal_border( upLeftPos, true, nbTurns );
+
+	upLeftPos.Y += 1;
+	draw_center_board( upLeftPos, pegsPerRow, nbTurns );
+
+	upLeftPos.Y += pegsPerRow;
+	draw_horizontal_border( upLeftPos, false, nbTurns );
+}
+
+
+void draw_gameboard_content( COORD screenPos, u16 const pegsPerRow, u16 const nbTurns )
+{
+	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+
+	wchar_t nopeg = L'◌';
+
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	for ( int y = 0; y < pegsPerRow; ++y )
+	{
+		for ( int x = 0; x < TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
+		{
+			console_cursor_set_position( screenPos.Y + y, screenPos.X + x );
+			wprintf( L"%lc", x == TOTAL_WIDTH ? L'?' : nopeg );
+		}
+	}
+}
+
+
 void draw_title( COORD const screenSize )
 {
-	wchar_t upLeft = L'╔';
-	wchar_t upRight = L'╗';
-	wchar_t downLeft = L'╚';
-	wchar_t downRight = L'╝';
-	wchar_t vertline = L'║';
-	wchar_t horizline = L'═';
-	wchar_t horizLineDown = L'╤';
-	wchar_t horizLineUp = L'╧';
+	COORD const upLeft = (COORD) { .X = 10, .Y = 4 };
+	u16 const nbTurns = 12;
+	u16 const pegsPerRow = 4;
+
+	draw_gameboard( (COORD) { .X = 10, .Y = 4 }, pegsPerRow, nbTurns );
+
+	// Need to take actual data to set : 
+	// The colored pegs / placeholder
+	// ? at the end or solution if finished
+	// The feedback row up to current turn (excluded)
+	draw_gameboard_content( (COORD) { .X = upLeft.X + 2, .Y = upLeft.Y + 1 }, pegsPerRow, nbTurns );
+	return;
+
 	wchar_t peg = L'⬤';
 	wchar_t nopeg = L'◌';
 	wchar_t noresult = L'◌';
 	wchar_t result = L'●'; // ○
-	wchar_t vertlinesmall = L'│';
 
-#define NB_TURNS 12
+
 
 	short currTurn = 5;
 
@@ -454,67 +555,6 @@ void draw_title( COORD const screenSize )
 		turnRes[i][2] = e;
 		turnRes[i][3] = e;
 	}
-
-	// Step 1 : Draw gameboard
-	// First line
-	console_cursor_set_position( 1, 1 );
-	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
-	wprintf( L"%lc", upLeft );
-	for ( int x = 1; x < 48; ++x )
-	{
-		if ( x % 4 == 0 ) wprintf( L"%lc", horizLineDown );
-		else wprintf( L"%lc", horizline );
-	}
-	wprintf( L"%lc", upRight );
-
-	// Content
-	for ( int y = 2; y < 6; ++y )
-	{
-		console_cursor_set_position( y, 1 );
-		wprintf( L"%lc", vertline );
-		for ( int x = 1; x < 48; ++x )
-		{
-			if ( x % 4 == 0 )
-			{
-				wprintf( L"%lc", vertlinesmall );
-			}
-			else if ( x >= 2 && (x - 2) % 4 == 0)
-			{
-				int curr = ( x - 2 ) / 4;
-				wchar_t currPeg = pegs[curr][y - 2];
-				if ( currTurn == curr )
-				{
-					if ( currPeg == peg )
-					{
-						console_color_fg( ConsoleColorFG_BRIGHT_GREEN );
-					}
-					else
-					{
-						console_color_fg( ConsoleColorFG_BRIGHT_WHITE );
-					}
-				}
-				else
-				{
-					console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-				}
-
-				wprintf( L"%lc", currPeg );
-				console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
-			}
-			else wprintf( L"%lc", L' ' );
-		}
-		wprintf( L"%lc", vertline );
-	}
-
-	// Last gameboard line 
-	console_cursor_set_position( 6, 1 );
-	wprintf( L"%lc", downLeft );
-	for ( int x = 1; x < 48; ++x )
-	{
-		if ( x % 4 == 0 ) wprintf( L"%lc", horizLineUp );
-		else wprintf( L"%lc", horizline );
-	}
-	wprintf( L"%lc", downRight );
 
 	// Result lines
 	for ( int y = 7; y < 9; ++y )
@@ -578,7 +618,6 @@ void draw_title( COORD const screenSize )
 	}
 }
 
-#include <locale.h>
 
 int main( void )
 {
@@ -599,7 +638,7 @@ int main( void )
 	{
 		DWORD nbEvents = 0;
 		GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents );
-		while ( nbEvents > 0 )
+		while ( nbEvents-- > 0 )
 		{
 			DWORD cNumRead;
 			INPUT_RECORD irInBuf;
@@ -608,48 +647,18 @@ int main( void )
 			if ( irInBuf.EventType == WINDOW_BUFFER_SIZE_EVENT )
 			{
 				newSize = irInBuf.Event.WindowBufferSizeEvent.dwSize;
-				if ( newSize.X != oldSize.X || newSize.Y != oldSize.Y )
-				{
-					console_screen_clear();
-					draw_title( newSize );
-					oldSize = newSize;
-				}
 			}
 		}
-/*		GetConsoleScreenBufferInfo( hOut, &csinfo );
-		newSize = (COORD) { .X = csinfo.dwSize.X, .Y = csinfo.dwSize.Y };*/
+
+		if ( newSize.X != oldSize.X || newSize.Y != oldSize.Y )
+		{
+			console_screen_clear();
+			draw_title( newSize );
+			oldSize = newSize;
+		}
 		Sleep( 32 );
 	}
 
-
-/*	COORD const size = console_screen_get_size( console_output_handle() );
-	console_line_drawing_mode_enter();
-
-	console_cursor_set_position( 1, 1 );
-	printf( "%c", ConsoleLineDrawing_UPPER_LEFT );
-	for ( int i = 1; i < size.X - 1; i++ )
-	{
-		printf( "%c", ConsoleLineDrawing_HORIZ_LINE );
-	}
-	printf( "%c", ConsoleLineDrawing_UPPER_RIGHT );
-
-	for ( int i = 2; i < size.Y; i++ )
-	{
-		console_cursor_set_position( i, 1 );
-		printf( "%c", ConsoleLineDrawing_VERT_LINE );
-		console_cursor_set_position( i, size.X );
-		printf( "%c", ConsoleLineDrawing_VERT_LINE );
-	}
-
-	console_cursor_set_position(size.Y, 1 );
-	printf( "%c", ConsoleLineDrawing_LOWER_LEFT );
-	for ( int i = 1; i < size.X - 1; i++ )
-	{
-		printf( "%c", ConsoleLineDrawing_HORIZ_LINE );
-	}
-	printf( "%c", ConsoleLineDrawing_LOWER_RIGHT );
-
-	console_line_drawing_mode_exit();	*/
 	wint_t x = _getwch();
 
 	console_global_uninit();

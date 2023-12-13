@@ -91,6 +91,7 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
     update_console_mode();
    	SetConsoleCtrlHandler( console_ctrl_handler, TRUE );
     _setmode( _fileno( stdout ), _O_U16TEXT ); // To correctly print wchar_t
+
 	console_alternate_buffer_enter();
     console_cursor_hide();
 
