@@ -42,57 +42,6 @@ char const *get_game_name( void )
 }
 
 
-struct ContentChunk
-{
-	char *allocContent;
-	usize capacity;
-	usize currPos;
-	usize nbLines; // Not necessary anymore with the new clean screen method, we can simplify the code !
-};
-
-
-bool content_chunk_create( struct ContentChunk *const chunk, usize const capacity )
-{
-	assert( capacity > 0 );
-
-	usize const typeSize = sizeof( *chunk->allocContent );
-
-	*chunk = (struct ContentChunk ) {
-		.allocContent = malloc( capacity * typeSize ),
-		.capacity = capacity,
-	};
-
-	return chunk->allocContent != NULL;
-}
-
-
-void content_chunk_append( struct ContentChunk *const chunk, char const *format, ... )
-{
-	usize oldPos = chunk->currPos;
-
-	va_list args;
-	va_start ( args, format );
-	chunk->currPos += vsnprintf( chunk->allocContent + chunk->currPos, chunk->capacity - chunk->currPos, format, args );
-	va_end ( args );
-
-	while ( oldPos < chunk->currPos )
-	{
-		if ( chunk->allocContent[oldPos++] == '\n' ) chunk->nbLines++;
-	}
-}
-
-
-void content_chunk_destroy( struct ContentChunk *const chunk )
-{
-	if ( chunk->allocContent )
-	{
-		free( chunk->allocContent );
-	}
-
-	*chunk = (struct ContentChunk) {};
-}
-
-
 // https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences Useful
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797 
 
@@ -431,12 +380,12 @@ int wmain2()
 
 void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
 {
-	u16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
-	u16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
+	utf16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
+	utf16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
 
-	u16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
-	u16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
-	u16 const horizLine = UTF16C_DoubleHoriz;
+	utf16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
+	utf16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
+	utf16 const horizLine = UTF16C_DoubleHoriz;
 
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
@@ -498,7 +447,7 @@ void draw_gameboard_content( vec2u16 screenPos, u16 const pegsPerRow, u16 const 
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
-	u16 const nopeg = UTF16C_SmallDottedCircle;
+	utf16 const nopeg = UTF16C_SmallDottedCircle;
 
 	u16 const WIDTH_PER_TURN          = 4;
 	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
@@ -515,9 +464,9 @@ void draw_gameboard_content( vec2u16 screenPos, u16 const pegsPerRow, u16 const 
 }
 
 
-void draw_title( vec2u16 const screenSize )
+void draw_game( vec2u16 const screenSize )
 {
-	vec2u16 const upLeft = (vec2u16) { .x = 10, .y = 4 };
+	vec2u16 const upLeft = (vec2u16) { .x = 10, .y = 7 };
 	u16 const nbTurns = 12;
 	u16 const pegsPerRow = 4;
 
@@ -528,91 +477,46 @@ void draw_title( vec2u16 const screenSize )
 	// ? at the end or solution if finished
 	// The feedback row up to current turn (excluded)
 	draw_gameboard_content( (vec2u16) { .x = upLeft.x + 2, .y = upLeft.y + 1 }, pegsPerRow, nbTurns );
-	return;
+}
 
-	u16 peg = UTF16C_BigFilledCircle;
-	u16 nopeg = UTF16C_SmallDottedCircle;
-	u16 noresult = UTF16C_SmallDottedCircle;
-	u16 result = UTF16C_SmallFilledCircle; // ○
 
-	short currTurn = 5;
+void draw_title( vec2u16 const screenSize )
+{
+	short const totalEmptySpaces = screenSize.x - 56;
+	short const spacesEachSide = (short)( ((float)totalEmptySpaces / 2.0f ) + 0.5f);
 
-	wchar_t pegs[NB_TURNS][4];
-	wchar_t turnRes[NB_TURNS][4];
-	for (int i = 0; i < ARR_COUNT( pegs ); ++i )
-	{
-		wchar_t l = i < currTurn ? peg : L'◌';
-		wchar_t e = i % 2 == 0 ? L'◌' : result;
-		pegs[i][0] = l;
-		pegs[i][1] = l;
-		pegs[i][2] = l;
-		pegs[i][3] = l;
-		turnRes[i][0] = e;
-		turnRes[i][1] = e;
-		turnRes[i][2] = e;
-		turnRes[i][3] = e;
-	}
+	console_color_fg( ConsoleColorFG_RED );
 
-	// Result lines
-	for ( int y = 7; y < 9; ++y )
-	{
-		for ( int turn = 0; turn < NB_TURNS && turn < currTurn; ++turn )
-		{
-			console_cursor_set_position( y, turn * 4 + 2 );
-			short idx = ( y - 7 ) * 2;
-			wchar_t first = turnRes[turn][idx];
-			wchar_t second = turnRes[turn][idx + 1];
+	console_cursor_set_position( 1, spacesEachSide + 1 );
+	wprintf( L" __  __           _                      " );
+	console_color_fg( ConsoleColorFG_GREEN );
+	wprintf( L"_" );
+	console_color_fg( ConsoleColorFG_RED );
+	wprintf( L"           _ " );
 
-			enum ConsoleColorFG color1 = first == result ? ConsoleColorFG_RED : ConsoleColorFG_WHITE;
-			enum ConsoleColorFG color2 = second == result ? ConsoleColorFG_RED : ConsoleColorFG_WHITE;
+	console_cursor_set_position( 2, spacesEachSide + 1 );
+	wprintf( L"|  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ " );
+	console_color_fg( ConsoleColorFG_GREEN );
+	wprintf( L"(_)" );
+	console_color_fg( ConsoleColorFG_RED );
+	wprintf( L"_ __   __| |" );
 
-			console_color_fg( color1 );
-			wprintf( L"%lc", first );
-			console_color_fg( color2 );
-			wprintf( L"%lc", second );
-		}		
-	}
+	console_cursor_set_position( 3, spacesEachSide + 1 );
+	wprintf( L"| |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |" );
 
-	console_color_reset();
-	return;
+	console_cursor_set_position( 4, spacesEachSide + 1 );
+	wprintf( L"| |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |" );
 
-		wchar_t *bbb =
-		L"            Player 1\n"
-		 "╔═══╤═══╤═══╤═══╤═══╤═══╤═══════╗\n"
-		 "║ \x1b[1;92m⬤\x1b[0;0m │ ⬤ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;91m⬤\x1b[0;0m │ ◌ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;94m⬤\x1b[0;0m │ ⬤ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "║ \x1b[1;95m⬤\x1b[0;0m │ ◌ ╎ ◌ ╎ ◌ ║ ○ ║ ○ ║ ○ ║ ? ║\n"
-		 "╚═══╧═══╧═══╧═══╧═══╧═══╧═══╧═══╝\n"
-		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n"
-		 " ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌  ◌◌      \n";
+	console_cursor_set_position( 5, spacesEachSide + 1 );
+	wprintf( L"|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
+}
 
-	wprintf( bbb );
-	return;
 
-	char title[5][128] = {};
-	short titleSize = 0;
-
-	if ( title[0][0] == '\0' )
-	{
-		snprintf( title[0], ARR_COUNT( title[0] ), "%s __  __           _                      %s_%s           _ ",
-			S_COLOR_STR[TERM_BOLD_RED], S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED] );
-		snprintf( title[1], ARR_COUNT( title[1] ), "|  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ %s(_)%s_ __   __| |",
-			S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED] );
-		snprintf( title[2], ARR_COUNT( title[2] ), "| |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |" );
-		snprintf( title[3], ARR_COUNT( title[4] ), "| |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |" );
-		snprintf( title[4], ARR_COUNT( title[5] ), "|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
-		titleSize = strlen( title[4] );
-	}
-
-	short const totalEmptySpaces = screenSize.x - titleSize;
-	short const spacesEachSide = totalEmptySpaces / 2;
-
-	for ( int i = 0; i < ARR_COUNT( title ); ++i )
-	{
-		console_cursor_set_position( i + 1, spacesEachSide + 1 );
-		printf( "%s", title[i] );
-	}
+u64 get_timestamp_nanoseconds()
+{
+    struct timespec time;
+    clock_gettime( CLOCK_MONOTONIC, &time );
+    return time.tv_nsec; // time.tv_sec * 1000000 + time.tv_nsec / 1000;
 }
 
 
@@ -628,11 +532,20 @@ int main( void )
 
 	HANDLE hOut = console_output_handle();
 	vec2u16 newSize = console_screen_get_size( hOut );
-	vec2u16 oldSize = (vec2u16) {};
+	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
 	CONSOLE_SCREEN_BUFFER_INFO csinfo;
+
+	float const MS_TO_NANO = 1000000.0f;
+	float const NANO_TO_MS = 0.000001f;
+	u64 const FPS_30_NANO = (u64)roundf( ( 1000.0f * MS_TO_NANO ) / 30.0f );
+	u64 nanoDeltaSamples[8] = {};
+	u64 nanoDeltaSamplesTotal = 0;
+	u8 nanoDeltaSampleIdx = 0;
 
 	while ( true )
 	{
+		u64 const timestampStartNano = get_timestamp_nanoseconds();
+
 		DWORD nbEvents = 0;
 		GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents );
 		while ( nbEvents-- > 0 )
@@ -648,15 +561,59 @@ int main( void )
 			}
 		}
 
+		// Handle resize
 		if ( newSize.x != oldSize.x || newSize.y != oldSize.y )
 		{
 			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
 			// Check if the screen is too small than required.
 			console_screen_clear();
 			draw_title( newSize );
+			draw_game( newSize );
 			oldSize = newSize;
 		}
-		Sleep( 32 );
+
+		u64 timestampEndNano = get_timestamp_nanoseconds();
+		u64 deltaNanoNoSleep = timestampEndNano - timestampStartNano;
+
+		if ( deltaNanoNoSleep < FPS_30_NANO )
+		{
+			u64 const spinLockTime = 5 * MS_TO_NANO;
+			u64 const sleepMsTime = ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) * NANO_TO_MS;
+			console_cursor_set_position( 20, 1 );
+			wprintf( L"\x1b[K Sleeping for %u ms... ( %llu )", sleepMsTime, ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) ); 
+			Sleep( sleepMsTime );
+//			Sleep( ( FPS_30_NANO - fabs( deltaNanoNoSleep - 5000.0f ) * 1000.0f ) );
+		}
+
+		do
+		{
+			timestampEndNano = get_timestamp_nanoseconds();
+		}
+		while( timestampEndNano - timestampStartNano < FPS_30_NANO );
+
+		u64 deltaNano = timestampEndNano - timestampStartNano;
+		u64 framerate = deltaNano;
+		nanoDeltaSamplesTotal -= nanoDeltaSamples[nanoDeltaSampleIdx];
+		nanoDeltaSamplesTotal += framerate;
+		nanoDeltaSamples[nanoDeltaSampleIdx] = framerate;
+		nanoDeltaSampleIdx = ( nanoDeltaSampleIdx + 1 ) % ARR_COUNT( nanoDeltaSamples );
+
+		u64 averageNanoDelta = nanoDeltaSamplesTotal / ARR_COUNT( nanoDeltaSamples );
+
+		u32 currentFramerate = (u32)( roundf( 1.0f / ( averageNanoDelta / ( 1000 * MS_TO_NANO ) ) ) );
+
+		console_cursor_set_position( 21, 1 );
+		wprintf( L"\x1b[K" );
+		wprintf( L" %u fps (%llu ms) (before capped %llu ms)", currentFramerate, deltaNano * NANO_TO_MS, deltaNanoNoSleep * NANO_TO_MS );
+		for ( int i = 0; i < 8; ++i )
+		{
+			console_cursor_set_position( 22 + i, 1 );
+			wprintf( L"\x1b[K" );
+			wprintf( L"nano time : %llu", nanoDeltaSamples[i] );
+		}
+
+		// ////////
+
 	}
 
 	console_global_uninit();

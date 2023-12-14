@@ -54,8 +54,8 @@ typedef double f64;
 // Note: I like using these to make it clearer for me which encoding I should expect when manipulating strings/bytes.
 typedef char ascii;
 typedef byte utf8;
-typedef i16  utf16;
-typedef i32  utf32;
+typedef u16  utf16;
+typedef u32  utf32;
 
 
 #pragma region TESTS SECTION
