@@ -516,9 +516,20 @@ u64 get_timestamp_nanoseconds()
 {
     struct timespec time;
     clock_gettime( CLOCK_MONOTONIC, &time );
-    return time.tv_nsec; // time.tv_sec * 1000000 + time.tv_nsec / 1000;
+    return time.tv_sec * 1000000000  + time.tv_nsec; // time.tv_sec * 1000000 + time.tv_nsec / 1000;
 }
 
+#include <wchar.h>
+
+#include <realtimeapiset.h>
+#pragma comment(lib, "mincore.lib")
+
+#include <synchapi.h>
+
+// Sleep(0) or more - no
+// SleepEx - no
+// nanosleep - no
+// Another one has a Mincore.lib dependency
 
 int main( void )
 {
@@ -541,9 +552,18 @@ int main( void )
 	u64 nanoDeltaSamples[8] = {};
 	u64 nanoDeltaSamplesTotal = 0;
 	u8 nanoDeltaSampleIdx = 0;
+	HANDLE waitableTimer = CreateWaitableTimerExW( NULL, NULL, 0x00000002 /*not supported gcc toolchain ? CREATE_WAITABLE_TIMER_HIGH_RESOLUTION*/, TIMER_ALL_ACCESS );
+	if ( waitableTimer == INVALID_HANDLE_VALUE || waitableTimer == NULL )
+	{
+		console_cursor_set_position( 17, 1 );
+		wprintf( L"Failure - Error code %u", GetLastError() );
+	}
 
 	while ( true )
 	{
+		LARGE_INTEGER li;
+		li.QuadPart = (i64)( (u64)( FPS_30_NANO ) / (u64)100 ) * -1;
+		bool const success = SetWaitableTimerEx( waitableTimer, &li, 0, NULL, NULL, NULL, 0 );
 		u64 const timestampStartNano = get_timestamp_nanoseconds();
 
 		DWORD nbEvents = 0;
@@ -572,24 +592,85 @@ int main( void )
 			oldSize = newSize;
 		}
 
-		u64 timestampEndNano = get_timestamp_nanoseconds();
-		u64 deltaNanoNoSleep = timestampEndNano - timestampStartNano;
-
-		if ( deltaNanoNoSleep < FPS_30_NANO )
+/*		u64 timestampEndNano = get_timestamp_nanoseconds();
+		if ( timestampEndNano - timestampStartNano < FPS_30_NANO )
 		{
-			u64 const spinLockTime = 5 * MS_TO_NANO;
-			u64 const sleepMsTime = ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) * NANO_TO_MS;
-			console_cursor_set_position( 20, 1 );
-			wprintf( L"\x1b[K Sleeping for %u ms... ( %llu )", sleepMsTime, ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) ); 
-			Sleep( sleepMsTime );
-//			Sleep( ( FPS_30_NANO - fabs( deltaNanoNoSleep - 5000.0f ) * 1000.0f ) );
-		}
+			u64 delta100ns = ( FPS_30_NANO - ( timestampEndNano - timestampStartNano ) ) / 100;
+			i64 deltaNanoNoSleep = (i64)( delta100ns ) * (i64)-1;
+			console_cursor_set_position( 17, 1 );
+			wprintf( L"\x1b[K" );
+			wprintf( L"30 fps : %llu (delta100ns = %lli) %lc", FPS_30_NANO, delta100ns, timestampEndNano < timestampStartNano ? L'F' : L'S'  );
+			console_cursor_set_position( 18, 1 );
+			wprintf( L"\x1b[K" );
+			wprintf( L"Wait time : %lli (start %llu - end %llu)", deltaNanoNoSleep, timestampStartNano, timestampEndNano );
+			LARGE_INTEGER li;
+			li.QuadPart = deltaNanoNoSleep;
+			bool const success = SetWaitableTimerEx( waitableTimer, &li, 0, NULL, NULL, NULL, 0 );
+			wprintf( L" - %lc", success ? L'S' : L'F' );
+			if ( !success )
+			{
+				wprintf( L" Error code %u", GetLastError() );
+			}
+			WaitForSingleObject( waitableTimer, INFINITE );
+			timestampEndNano = get_timestamp_nanoseconds();
+			wprintf( L" - End wait (%llu)", timestampEndNano );
+//			_getwch();
+		}*/
+/*		if ( deltaNanoNoSleep < FPS_30_NANO )
+		{
+			u64 remainingTime = ( FPS_30_NANO - deltaNanoNoSleep ) / 100 ;
 
-		do
+			struct timespec sleepTime = (struct timespec) {
+				.tv_sec = remainingTime / (u64)1000000000,
+				.tv_nsec = remainingTime % (u64)1000000000
+			};*/
+
+			//console_cursor_set_position( 17, 1 );
+			//wprintf( L"\x1b[K Remaining %llu ( %llu us and %llu s)", remainingTime, sleepTime.tv_nsec, sleepTime.tv_sec );
+
+			// struct timespec rem;
+//			nanosleep( &sleepTime, NULL );
+			// console_cursor_set_position( 18, 1 );
+			// wprintf( L"\x1b[K remaining ( %llu us and %llu s)", rem.tv_nsec, rem.tv_sec );
+			//QueryInterruptTimePrecise( &remainingTime ); // 100ns of precision
+//			SleepEx( remainingTime / MS_TO_NANO, TRUE );
+			//NtDelayExecution( )
+//	}
+
+/*		u64 const spinLockTime = 15 * MS_TO_NANO;
+		if ( deltaNanoNoSleep + spinLockTime < FPS_30_NANO )
+		{
+			u64 const sleepMsTime = ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) * NANO_TO_MS;
+			Sleep( sleepMsTime );
+		}
+		else
+		{
+			console_cursor_set_position( 19, 1 );
+			wprintf( L"\x1b[K Took %llu ms", deltaNanoNoSleep );
+
+			console_cursor_set_position( 20, 1 );
+			wprintf( L"\x1b[K Sleeping for 0 ms" );
+		}*/
+
+		// timestampEndNano = get_timestamp_nanoseconds();
+
+/*		do
 		{
 			timestampEndNano = get_timestamp_nanoseconds();
-		}
-		while( timestampEndNano - timestampStartNano < FPS_30_NANO );
+		} while ( timestampEndNano - timestampStartNano < FPS_30_NANO );*/
+		
+/*		while( timestampEndNano - timestampStartNano < FPS_30_NANO )
+		{
+			Sleep( 1 );
+			timestampEndNano = get_timestamp_nanoseconds();
+		}*/
+//		while( timestampEndNano - timestampStartNano < FPS_30_NANO );
+
+		u64 timestampEndBefSleep = get_timestamp_nanoseconds();
+		WaitForSingleObject( waitableTimer, INFINITE );
+		u64 timestampEndNano = get_timestamp_nanoseconds();
+		console_cursor_set_position( 16, 1 );
+		wprintf( L"Before Wait %llu / After Wait %llu", timestampEndBefSleep, timestampEndNano );
 
 		u64 deltaNano = timestampEndNano - timestampStartNano;
 		u64 framerate = deltaNano;
@@ -598,13 +679,13 @@ int main( void )
 		nanoDeltaSamples[nanoDeltaSampleIdx] = framerate;
 		nanoDeltaSampleIdx = ( nanoDeltaSampleIdx + 1 ) % ARR_COUNT( nanoDeltaSamples );
 
-		u64 averageNanoDelta = nanoDeltaSamplesTotal / ARR_COUNT( nanoDeltaSamples );
+		u64 averageNanoDelta = nanoDeltaSamplesTotal / (u64)ARR_COUNT( nanoDeltaSamples );
 
-		u32 currentFramerate = (u32)( roundf( 1.0f / ( averageNanoDelta / ( 1000 * MS_TO_NANO ) ) ) );
+		u64 currentFramerate = (u64)( roundf( 1.0f / ( averageNanoDelta / ( 1000 * MS_TO_NANO ) ) ) );
 
 		console_cursor_set_position( 21, 1 );
 		wprintf( L"\x1b[K" );
-		wprintf( L" %u fps (%llu ms) (before capped %llu ms)", currentFramerate, deltaNano * NANO_TO_MS, deltaNanoNoSleep * NANO_TO_MS );
+		wprintf( L" %u fps (%llu ms)", currentFramerate, (u64)((double)deltaNano * NANO_TO_MS) );
 		for ( int i = 0; i < 8; ++i )
 		{
 			console_cursor_set_position( 22 + i, 1 );
@@ -616,6 +697,7 @@ int main( void )
 
 	}
 
+	CloseHandle( waitableTimer );
 	console_global_uninit();
 	return 0;
 
