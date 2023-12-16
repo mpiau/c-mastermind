@@ -5,6 +5,7 @@ SRC += src/keyboard_inputs.c
 SRC += src/menu_stack.c
 SRC += src/widgets/widget.c
 SRC += src/console.c
+SRC += src/fps_counter.c
 
 CFLAGS += -Iinclude
 

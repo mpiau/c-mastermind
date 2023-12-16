@@ -5,6 +5,7 @@
 #include "console.h"
 #include "characters_list.h"
 #include "core_unions.h"
+#include "fps_counter.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -512,25 +513,46 @@ void draw_title( vec2u16 const screenSize )
 }
 
 
-u64 get_timestamp_nanoseconds()
-{
-    struct timespec time;
-    clock_gettime( CLOCK_MONOTONIC, &time );
-    return time.tv_sec * 1000000000  + time.tv_nsec; // time.tv_sec * 1000000 + time.tv_nsec / 1000;
-}
-
 #include <wchar.h>
 
-#include <realtimeapiset.h>
-#pragma comment(lib, "mincore.lib")
+void move_current_selection( vec2u16 const oldPos, vec2u16 const newPos )
+{
+	console_cursor_set_position( oldPos.y, oldPos.x );
+	wprintf( L" " );
+	console_cursor_set_position( oldPos.y, oldPos.x + 2 );
+	wprintf( L" " );
 
-#include <synchapi.h>
+	console_color_fg( ConsoleColorFG_WHITE );
+	console_cursor_set_position( newPos.y, newPos.x );
+	wprintf( L"◃" );
+	console_cursor_set_position( newPos.y, newPos.x + 2 );
+	wprintf( L"▹" );
+}
 
-// Sleep(0) or more - no
-// SleepEx - no
-// nanosleep - no
-// Another one has a Mincore.lib dependency
-// timeBeginPeriod / timeEndPeriod -> No, don't want to modify the whole system
+enum PegType
+{
+	Peg_None = 0,
+	Peg_Red,
+	Peg_Green,
+	Peg_Magenta,
+	Peg_Blue,
+	Peg_Yellow,
+	Peg_Cyan,
+	Peg_White
+};
+
+static enum ConsoleColorFG s_pegsColor[] = 
+{
+	[Peg_None] = ConsoleColorFG_WHITE,
+	[Peg_Red] = ConsoleColorFG_RED,
+	[Peg_Green] = ConsoleColorFG_GREEN,
+	[Peg_Magenta] = ConsoleColorFG_MAGENTA,
+	[Peg_Blue] = ConsoleColorFG_BLUE,
+	[Peg_Yellow] = ConsoleColorFG_YELLOW,
+	[Peg_Cyan] = ConsoleColorFG_CYAN,
+	[Peg_White] = ConsoleColorFG_WHITE,
+};
+
 
 int main( void )
 {
@@ -540,6 +562,13 @@ int main( void )
 		return 1;
 	}
 
+	struct FPSCounter *const fpsCounter = fpscounter_init();
+	if ( fpsCounter == NULL )
+	{
+		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
+		return 2;
+	}
+
 	srand( time( NULL ) );
 
 	HANDLE hOut = console_output_handle();
@@ -547,25 +576,14 @@ int main( void )
 	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
 	CONSOLE_SCREEN_BUFFER_INFO csinfo;
 
-	float const MS_TO_NANO = 1000000.0f;
-	float const NANO_TO_MS = 0.000001f;
-	u64 const FPS_60_NANO = (u64)roundf( ( 1000.0f * MS_TO_NANO ) / 60.0f );
-	u64 nanoDeltaSamples[8] = {};
-	u64 nanoDeltaSamplesTotal = 0;
-	u8 nanoDeltaSampleIdx = 0;
-	HANDLE waitableTimer = CreateWaitableTimerExW( NULL, NULL, 0x00000002 /*not supported gcc toolchain ? CREATE_WAITABLE_TIMER_HIGH_RESOLUTION*/, TIMER_ALL_ACCESS );
-	if ( waitableTimer == INVALID_HANDLE_VALUE || waitableTimer == NULL )
-	{
-		console_cursor_set_position( 17, 1 );
-		wprintf( L"Failure - Error code %u", GetLastError() );
-	}
+	vec2u16 turnInputPos = (vec2u16) { .x = 11, .y = 8 };
+	enum PegType rowPegs[4] = {};
+	u16 selectedPeg = 0;
 
-	while ( true )
+	bool mainLoop = true;
+	while ( mainLoop )
 	{
-		LARGE_INTEGER li;
-		li.QuadPart = (i64)( (u64)( FPS_60_NANO - 1000000 ) / (u64)100 ) * -1; // - 1 ms for accuracy, otherwise we will be at 59fps instead of 60fps
-		bool const success = SetWaitableTimerEx( waitableTimer, &li, 0, NULL, NULL, NULL, 0 );
-		u64 const timestampStartNano = get_timestamp_nanoseconds();
+		fpscounter_frame_begin( fpsCounter );
 
 		DWORD nbEvents = 0;
 		GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents );
@@ -580,6 +598,54 @@ int main( void )
 				COORD const size = irInBuf.Event.WindowBufferSizeEvent.dwSize;
 				newSize = *(vec2u16 *)&size;
 			}
+
+			if ( irInBuf.EventType == KEY_EVENT && irInBuf.Event.KeyEvent.bKeyDown )
+			{
+				enum KeyInput input;
+				if ( !key_input_from_u32( irInBuf.Event.KeyEvent.wVirtualKeyCode, &input ) )
+				{
+					continue;
+				}
+
+				console_cursor_set_position( 20, 1 );
+				wprintf( L"Key input: %2u", input ); 
+
+				if ( input == KeyInput_ARROW_DOWN && turnInputPos.y < 11 )
+				{
+					vec2u16 oldPos = turnInputPos;
+					turnInputPos.y += 1;
+					selectedPeg += 1;
+					move_current_selection( oldPos, turnInputPos );			
+				}
+				else if ( input == KeyInput_ARROW_UP && turnInputPos.y > 8  )
+				{
+					vec2u16 oldPos = turnInputPos;
+					turnInputPos.y -= 1;
+					selectedPeg -= 1;
+					move_current_selection( oldPos, turnInputPos );			
+				}
+				else if ( input == KeyInput_ARROW_LEFT )
+				{
+					rowPegs[selectedPeg] = rowPegs[selectedPeg] == 0 ? 7 : rowPegs[selectedPeg] - 1;
+				}
+				else if ( input == KeyInput_ARROW_RIGHT )
+				{
+					rowPegs[selectedPeg] = rowPegs[selectedPeg] == 7 ? 0 : rowPegs[selectedPeg] + 1;
+				}
+				else if ( input == KeyInput_ENTER )
+				{
+					vec2u16 oldPos = turnInputPos;
+					turnInputPos.x += 4;
+					turnInputPos.y = 8;
+					selectedPeg = 0;
+					memset( rowPegs, 0, sizeof( rowPegs ) );
+					move_current_selection( oldPos, turnInputPos );
+				}
+				else if ( input == KeyInput_ESCAPE )
+				{
+					mainLoop = false;
+				}
+			}
 		}
 
 		// Handle resize
@@ -591,37 +657,35 @@ int main( void )
 			wprintf( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 			draw_title( newSize );
 			draw_game( newSize );
+
+			// Arrows
+			move_current_selection( turnInputPos, turnInputPos ); // not perfect but good neough
+
 			oldSize = newSize;
 		}
 
-		WaitForSingleObject( waitableTimer, INFINITE );
-		u64 timestampEndNano;
-		do
-		{
-			timestampEndNano = get_timestamp_nanoseconds();
-		} while ( timestampEndNano - timestampStartNano < FPS_60_NANO );
+		console_cursor_set_position( turnInputPos.y, turnInputPos.x + 1 );
+		console_color_fg( s_pegsColor[ rowPegs[selectedPeg] ] );
+		utf16 const pegChar = rowPegs[selectedPeg] == Peg_None ? L'◌' : L'⬤';
+		wprintf( L"%lc", pegChar );
+		console_color_reset();
 
-		u64 deltaNano = timestampEndNano - timestampStartNano;
-		u64 framerate = deltaNano;
-		nanoDeltaSamplesTotal -= nanoDeltaSamples[nanoDeltaSampleIdx];
-		nanoDeltaSamplesTotal += framerate;
-		nanoDeltaSamples[nanoDeltaSampleIdx] = framerate;
-		nanoDeltaSampleIdx = ( nanoDeltaSampleIdx + 1 ) % ARR_COUNT( nanoDeltaSamples );
-
-		u64 averageNanoDelta = nanoDeltaSamplesTotal / (u64)ARR_COUNT( nanoDeltaSamples );
-
-		u64 currentFramerate = (u64)( roundf( 1.0f / ( averageNanoDelta / ( 1000 * MS_TO_NANO ) ) ) );
+		// End of the main loop
+		u64 const currFramerate = fpscounter_frame_end( fpsCounter );
+		u64 const elapsedTimeNs = fpscounter_elapsed_time_ns( fpsCounter );
 
 		console_cursor_set_position( 1, 1 );
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
-		wprintf( L"%2uFPS ", currentFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
-		u64 ms = (u64)((double)deltaNano * NANO_TO_MS);
+		wprintf( L"%2uFPS ", currFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
+		u64 ms = (u64)((double)elapsedTimeNs * 0.000001f );
 		if ( ms > 999 ) wprintf( L"+" );
-		wprintf( L"%llums   ", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
+		wprintf( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
+		wprintf( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
+		wprintf( L"\x1b[0K");
 	}
 
-	CloseHandle( waitableTimer );
+	fpscounter_uninit( fpsCounter );
 	console_global_uninit();
 	return 0;
 
