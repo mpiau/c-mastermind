@@ -487,27 +487,27 @@ void draw_title( vec2u16 const screenSize )
 
 	console_color_fg( ConsoleColorFG_RED );
 
-	console_cursor_set_position( 1, spacesEachSide + 1 );
+	console_cursor_set_position( 2, spacesEachSide + 1 );
 	wprintf( L" __  __           _                      " );
 	console_color_fg( ConsoleColorFG_GREEN );
 	wprintf( L"_" );
 	console_color_fg( ConsoleColorFG_RED );
 	wprintf( L"           _ " );
 
-	console_cursor_set_position( 2, spacesEachSide + 1 );
+	console_cursor_set_position( 3, spacesEachSide + 1 );
 	wprintf( L"|  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ " );
 	console_color_fg( ConsoleColorFG_GREEN );
 	wprintf( L"(_)" );
 	console_color_fg( ConsoleColorFG_RED );
 	wprintf( L"_ __   __| |" );
 
-	console_cursor_set_position( 3, spacesEachSide + 1 );
+	console_cursor_set_position( 4, spacesEachSide + 1 );
 	wprintf( L"| |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |" );
 
-	console_cursor_set_position( 4, spacesEachSide + 1 );
+	console_cursor_set_position( 5, spacesEachSide + 1 );
 	wprintf( L"| |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |" );
 
-	console_cursor_set_position( 5, spacesEachSide + 1 );
+	console_cursor_set_position( 6, spacesEachSide + 1 );
 	wprintf( L"|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
 }
 
@@ -530,6 +530,7 @@ u64 get_timestamp_nanoseconds()
 // SleepEx - no
 // nanosleep - no
 // Another one has a Mincore.lib dependency
+// timeBeginPeriod / timeEndPeriod -> No, don't want to modify the whole system
 
 int main( void )
 {
@@ -548,7 +549,7 @@ int main( void )
 
 	float const MS_TO_NANO = 1000000.0f;
 	float const NANO_TO_MS = 0.000001f;
-	u64 const FPS_30_NANO = (u64)roundf( ( 1000.0f * MS_TO_NANO ) / 30.0f );
+	u64 const FPS_60_NANO = (u64)roundf( ( 1000.0f * MS_TO_NANO ) / 60.0f );
 	u64 nanoDeltaSamples[8] = {};
 	u64 nanoDeltaSamplesTotal = 0;
 	u8 nanoDeltaSampleIdx = 0;
@@ -562,7 +563,7 @@ int main( void )
 	while ( true )
 	{
 		LARGE_INTEGER li;
-		li.QuadPart = (i64)( (u64)( FPS_30_NANO ) / (u64)100 ) * -1;
+		li.QuadPart = (i64)( (u64)( FPS_60_NANO - 1000000 ) / (u64)100 ) * -1; // - 1 ms for accuracy, otherwise we will be at 59fps instead of 60fps
 		bool const success = SetWaitableTimerEx( waitableTimer, &li, 0, NULL, NULL, NULL, 0 );
 		u64 const timestampStartNano = get_timestamp_nanoseconds();
 
@@ -586,91 +587,19 @@ int main( void )
 		{
 			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
 			// Check if the screen is too small than required.
-			console_screen_clear();
+			console_cursor_set_position( 2, 1 );
+			wprintf( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 			draw_title( newSize );
 			draw_game( newSize );
 			oldSize = newSize;
 		}
 
-/*		u64 timestampEndNano = get_timestamp_nanoseconds();
-		if ( timestampEndNano - timestampStartNano < FPS_30_NANO )
-		{
-			u64 delta100ns = ( FPS_30_NANO - ( timestampEndNano - timestampStartNano ) ) / 100;
-			i64 deltaNanoNoSleep = (i64)( delta100ns ) * (i64)-1;
-			console_cursor_set_position( 17, 1 );
-			wprintf( L"\x1b[K" );
-			wprintf( L"30 fps : %llu (delta100ns = %lli) %lc", FPS_30_NANO, delta100ns, timestampEndNano < timestampStartNano ? L'F' : L'S'  );
-			console_cursor_set_position( 18, 1 );
-			wprintf( L"\x1b[K" );
-			wprintf( L"Wait time : %lli (start %llu - end %llu)", deltaNanoNoSleep, timestampStartNano, timestampEndNano );
-			LARGE_INTEGER li;
-			li.QuadPart = deltaNanoNoSleep;
-			bool const success = SetWaitableTimerEx( waitableTimer, &li, 0, NULL, NULL, NULL, 0 );
-			wprintf( L" - %lc", success ? L'S' : L'F' );
-			if ( !success )
-			{
-				wprintf( L" Error code %u", GetLastError() );
-			}
-			WaitForSingleObject( waitableTimer, INFINITE );
-			timestampEndNano = get_timestamp_nanoseconds();
-			wprintf( L" - End wait (%llu)", timestampEndNano );
-//			_getwch();
-		}*/
-/*		if ( deltaNanoNoSleep < FPS_30_NANO )
-		{
-			u64 remainingTime = ( FPS_30_NANO - deltaNanoNoSleep ) / 100 ;
-
-			struct timespec sleepTime = (struct timespec) {
-				.tv_sec = remainingTime / (u64)1000000000,
-				.tv_nsec = remainingTime % (u64)1000000000
-			};*/
-
-			//console_cursor_set_position( 17, 1 );
-			//wprintf( L"\x1b[K Remaining %llu ( %llu us and %llu s)", remainingTime, sleepTime.tv_nsec, sleepTime.tv_sec );
-
-			// struct timespec rem;
-//			nanosleep( &sleepTime, NULL );
-			// console_cursor_set_position( 18, 1 );
-			// wprintf( L"\x1b[K remaining ( %llu us and %llu s)", rem.tv_nsec, rem.tv_sec );
-			//QueryInterruptTimePrecise( &remainingTime ); // 100ns of precision
-//			SleepEx( remainingTime / MS_TO_NANO, TRUE );
-			//NtDelayExecution( )
-//	}
-
-/*		u64 const spinLockTime = 15 * MS_TO_NANO;
-		if ( deltaNanoNoSleep + spinLockTime < FPS_30_NANO )
-		{
-			u64 const sleepMsTime = ( FPS_30_NANO - abs( deltaNanoNoSleep - spinLockTime ) ) * NANO_TO_MS;
-			Sleep( sleepMsTime );
-		}
-		else
-		{
-			console_cursor_set_position( 19, 1 );
-			wprintf( L"\x1b[K Took %llu ms", deltaNanoNoSleep );
-
-			console_cursor_set_position( 20, 1 );
-			wprintf( L"\x1b[K Sleeping for 0 ms" );
-		}*/
-
-		// timestampEndNano = get_timestamp_nanoseconds();
-
-/*		do
-		{
-			timestampEndNano = get_timestamp_nanoseconds();
-		} while ( timestampEndNano - timestampStartNano < FPS_30_NANO );*/
-		
-/*		while( timestampEndNano - timestampStartNano < FPS_30_NANO )
-		{
-			Sleep( 1 );
-			timestampEndNano = get_timestamp_nanoseconds();
-		}*/
-//		while( timestampEndNano - timestampStartNano < FPS_30_NANO );
-
-		u64 timestampEndBefSleep = get_timestamp_nanoseconds();
 		WaitForSingleObject( waitableTimer, INFINITE );
-		u64 timestampEndNano = get_timestamp_nanoseconds();
-		console_cursor_set_position( 16, 1 );
-		wprintf( L"Before Wait %llu / After Wait %llu", timestampEndBefSleep, timestampEndNano );
+		u64 timestampEndNano;
+		do
+		{
+			timestampEndNano = get_timestamp_nanoseconds();
+		} while ( timestampEndNano - timestampStartNano < FPS_60_NANO );
 
 		u64 deltaNano = timestampEndNano - timestampStartNano;
 		u64 framerate = deltaNano;
@@ -683,25 +612,20 @@ int main( void )
 
 		u64 currentFramerate = (u64)( roundf( 1.0f / ( averageNanoDelta / ( 1000 * MS_TO_NANO ) ) ) );
 
-		console_cursor_set_position( 21, 1 );
-		wprintf( L"\x1b[K" );
-		wprintf( L" %u fps (%llu ms)", currentFramerate, (u64)((double)deltaNano * NANO_TO_MS) );
-		for ( int i = 0; i < 8; ++i )
-		{
-			console_cursor_set_position( 22 + i, 1 );
-			wprintf( L"\x1b[K" );
-			wprintf( L"nano time : %llu", nanoDeltaSamples[i] );
-		}
+		console_cursor_set_position( 1, 1 );
+		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
-		// ////////
-
+		wprintf( L"%2uFPS ", currentFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
+		u64 ms = (u64)((double)deltaNano * NANO_TO_MS);
+		if ( ms > 999 ) wprintf( L"+" );
+		wprintf( L"%llums   ", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
 	}
 
 	CloseHandle( waitableTimer );
 	console_global_uninit();
 	return 0;
 
-	struct ConsoleScreen cscreen;
+/*	struct ConsoleScreen cscreen;
 	if (! console_screen_init( &cscreen ) ) return 1; // better handling needed
 
 	FlushConsoleInputBuffer( GetStdHandle( STD_INPUT_HANDLE ) );
@@ -749,5 +673,5 @@ int main( void )
 	game_menu_loop( &menus );
 
 	game_menu_shutdown( &menus );
-	return 0;
+	return 0;*/
 }
