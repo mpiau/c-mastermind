@@ -19,39 +19,43 @@
 
 enum
 {
-    NB_FRAMES_HISTORY = 8
+    FRAME_HISTORY_COUNT = 8,
+
+    FRAMERATE_120 = NANOSECONDS / 120,
+    FRAMERATE_90  = NANOSECONDS / 90,
+    FRAMERATE_60  = NANOSECONDS / 60,
+    FRAMERATE_30  = NANOSECONDS / 30
 };
 
-struct FPSHistory
+struct FrameHistory
 {
-    u64 lastFramesDurationNs[NB_FRAMES_HISTORY];
-    u64 totalFramesDurationNs;
-    u64 averageFrameDurationNs;
-    u8  index;
+    nanoseconds frameDuration[FRAME_HISTORY_COUNT];
+    nanoseconds totalDuration;
+    nanoseconds averageDuration;
+    u8  frameIndex;
 };
 
 struct FPSCounter
 {
     HANDLE waitableTimer;
-    LARGE_INTEGER minWaitTimePerFrameNs;
+    LARGE_INTEGER minWaitTimePerFrame100ns;
 
-    u64 frameBeginNs;
-    u64 frameEndNs;
+    nanoseconds frameBegin;
+    nanoseconds frameEnd;
 
-    struct FPSHistory history;
+    struct FrameHistory history;
 };
 
 static struct FPSCounter s_fpsCounter = {}; // Just to avoid dynamic alloc
 
-static float const MS_TO_NANO = 1000000.0f;
-static float const NANO_TO_MS = 0.000001f;
+static nanoseconds S_CAPPED_FRAMERATE = FRAMERATE_60;
 
 
-static u64 get_timestamp_nanoseconds()
+static nanoseconds get_timestamp_nanoseconds()
 {
     struct timespec time;
     clock_gettime( CLOCK_MONOTONIC, &time );
-    return time.tv_sec * ONE_NANOSEC  + time.tv_nsec; // time.tv_sec * 1000000 + time.tv_nsec / 1000;
+    return time.tv_sec * NANOSECONDS + time.tv_nsec;
 }
 
 struct FPSCounter *fpscounter_init( void )
@@ -63,10 +67,13 @@ struct FPSCounter *fpscounter_init( void )
         return NULL;
     }
 
-    u64 const FPS_60_NANO = (u64)roundf( ( ONE_NANOSEC ) / 60.0f );
     // - 1 ms for accuracy, otherwise we will be at 59fps instead of 60fps
     // negative to be relative and not UTC.
-    fpsCounter->minWaitTimePerFrameNs.QuadPart = (i64)( (u64)( FPS_60_NANO - 1000000 ) / (u64)100 ) * -1;
+    fpsCounter->minWaitTimePerFrame100ns.QuadPart = (i64)( (u64)( S_CAPPED_FRAMERATE - 1000000 ) / (u64)100 ) * -1;
+
+    SetWaitableTimerEx( fpsCounter->waitableTimer, &fpsCounter->minWaitTimePerFrame100ns, 0, NULL, NULL, NULL, 0 );
+    fpsCounter->frameBegin = get_timestamp_nanoseconds();
+
     return fpsCounter;
 }
 
@@ -80,39 +87,46 @@ void fpscounter_uninit( struct FPSCounter *fpsCounter )
 }
 
 
-void fpscounter_frame_begin( struct FPSCounter *fpsCounter )
+u64 fpscounter_average_framerate( struct FPSCounter *fpsCounter )
 {
-    SetWaitableTimerEx( fpsCounter->waitableTimer, &fpsCounter->minWaitTimePerFrameNs, 0, NULL, NULL, NULL, 0 );
-	fpsCounter->frameBeginNs = get_timestamp_nanoseconds();
+    struct FrameHistory *history = &fpsCounter->history;
+    return (u64)( roundf( 1.0f / ( history->averageDuration / (float)( NANOSECONDS ) ) ) );
 }
 
 
-u64 fpscounter_frame_end( struct FPSCounter *fpsCounter )
+u64 fpscounter_frame( struct FPSCounter *fpsCounter )
 {
     WaitForSingleObject( fpsCounter->waitableTimer, INFINITE );
 
-    u64 const FPS_60_NANO = (u64)roundf( ( ONE_NANOSEC ) / 60.0f );
-	do
-	{
-		fpsCounter->frameEndNs = get_timestamp_nanoseconds();
-	} while ( fpsCounter->frameEndNs - fpsCounter->frameBeginNs < FPS_60_NANO );
+    do
+    {
+        fpsCounter->frameEnd = get_timestamp_nanoseconds();
+    } while ( fpsCounter->frameEnd - fpsCounter->frameBegin < S_CAPPED_FRAMERATE );
 
-	u64 deltaNano = fpsCounter->frameEndNs - fpsCounter->frameBeginNs;
-	u64 framerate = deltaNano;
+	nanoseconds const delta = fpsCounter->frameEnd - fpsCounter->frameBegin;
 
-    struct FPSHistory *history = &fpsCounter->history;
-    history->totalFramesDurationNs -= history->lastFramesDurationNs[history->index];
-    history->totalFramesDurationNs += framerate;
-    history->lastFramesDurationNs[history->index] = framerate;
-    history->index = ( history->index + 1 ) % NB_FRAMES_HISTORY;
-    history->averageFrameDurationNs = history->totalFramesDurationNs / NB_FRAMES_HISTORY;
+    struct FrameHistory *history = &fpsCounter->history;
+    history->totalDuration -= history->frameDuration[history->frameIndex];
+    history->totalDuration += delta;
+    history->frameDuration[history->frameIndex] = delta;
+    history->frameIndex = ( history->frameIndex + 1 ) % FRAME_HISTORY_COUNT;
+    history->averageDuration = history->totalDuration / FRAME_HISTORY_COUNT;
 
-    return (u64)( roundf( 1.0f / ( history->averageFrameDurationNs / (float)( ONE_NANOSEC ) ) ) );
+    // Prepare the next frame
+    SetWaitableTimerEx( fpsCounter->waitableTimer, &fpsCounter->minWaitTimePerFrame100ns, 0, NULL, NULL, NULL, 0 );
+	fpsCounter->frameBegin = fpsCounter->frameEnd;
 }
 
 
-u64 fpscounter_elapsed_time_ns( struct FPSCounter *fpsCounter )
+
+u64 fpscounter_elapsed_time( struct FPSCounter *fpsCounter )
 {
-    struct FPSHistory *history = &fpsCounter->history;
-    return history->lastFramesDurationNs[history->index];
+    struct FrameHistory *history = &fpsCounter->history;
+    return history->frameDuration[history->frameIndex];
+}
+
+u64 fpscounter_average_time( struct FPSCounter *fpsCounter )
+{
+    struct FrameHistory *history = &fpsCounter->history;
+    return history->averageDuration;
 }

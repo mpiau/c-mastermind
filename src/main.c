@@ -217,157 +217,6 @@ bool read_next_input( HANDLE const handle, enum KeyInput *input )
 	return key_input_from_u32( irInBuf.Event.KeyEvent.wVirtualKeyCode, input );
 }
 
-
-// System headers
-#include <windows.h>
-
-// Standard library C-style
-#include <wchar.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#define ESC "\x1b"
-#define CSI "\x1b["
-
-void PrintVerticalBorder()
-{
-	console_line_drawing_mode_enter();
-	console_color( ConsoleColorFG_BRIGHT_YELLOW, ConsoleColorBG_BRIGHT_BLUE );
-    printf( "%c", ConsoleLineDrawing_VERT_LINE );
-	console_color_reset();
-	console_line_drawing_mode_exit();
-}
-
-
-void PrintHorizontalBorder(COORD const Size, bool fIsTop)
-{
-    console_line_drawing_mode_enter();
-    printf(CSI "104;93m"); // Make the border bright yellow on bright blue
-    printf(fIsTop ? "l" : "m"); // print left corner 
-
-    for (int i = 1; i < Size.X - 1; i++)
-        printf("q"); // in line drawing mode, \x71 -> \u2500 "HORIZONTAL SCAN LINE-5"
-
-    printf(fIsTop ? "k" : "j"); // print right corner
-	console_color_reset();
-	console_line_drawing_mode_exit();
-}
-
-void PrintStatusLine(const char* const pszMessage, COORD const Size)
-{
-    printf(CSI "%d;1H", Size.Y);
-    printf(CSI "K"); // clear the line
-    printf(pszMessage);
-}
-
-int wmain2()
-{
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE)
-    {
-        printf("Couldn't get the console handle. Quitting.\n");
-        return -1;
-    }
-
-    CONSOLE_SCREEN_BUFFER_INFO ScreenBufferInfo;
-    GetConsoleScreenBufferInfo(hOut, &ScreenBufferInfo);
-    COORD Size;
-    Size.X = ScreenBufferInfo.srWindow.Right - ScreenBufferInfo.srWindow.Left + 1;
-    Size.Y = ScreenBufferInfo.srWindow.Bottom - ScreenBufferInfo.srWindow.Top + 1;
-
-	for ( int i = 0; i < 50; i++ ) {
-		// Clear screen, tab stops, set, stop at columns 16, 32
-		printf(CSI "1;1H");
-		printf(CSI "2J"); // Clear screen
-
-		int iNumTabStops = 4; // (0, 20, 40, width)
-		printf(CSI "3g"); // clear all tab stops
-		printf(CSI "1;20H"); // Move to column 20
-		printf(ESC "H"); // set a tab stop
-
-		printf(CSI "1;40H"); // Move to column 40
-		printf(ESC "H"); // set a tab stop
-
-		// Set scrolling margins to 3, h-2
-		printf(CSI "3;%dr", Size.Y - 2);
-		int iNumLines = Size.Y - 4;
-
-		printf(CSI "1;1H");
-		printf(CSI "102;30m");
-		printf("Windows 10 Anniversary Update - VT Example");
-		printf(CSI "0m");
-
-		// Print a top border - Yellow
-		printf(CSI "2;1H");
-		PrintHorizontalBorder(Size, true);
-
-		// // Print a bottom border
-		printf(CSI "%d;1H", Size.Y - 1);
-		PrintHorizontalBorder(Size, false);
-
-		wchar_t wch;
-
-		// draw columns
-		printf(CSI "3;1H");
-		int line = 0;
-		for (line = 0; line < iNumLines * iNumTabStops; line++)
-		{
-			PrintVerticalBorder();
-			if (line + 1 != iNumLines * iNumTabStops) // don't advance to next line if this is the last line
-				printf("\t"); // advance to next tab stop
-
-		}
-
-		PrintStatusLine("Press any key to see text printed between tab stops.", Size);
-		Sleep( 1000 );
-	//    wch = _getwch();
-
-		// Fill columns with output
-		printf(CSI "3;1H");
-		for (line = 0; line < iNumLines; line++)
-		{
-			int tab = 0;
-			for (tab = 0; tab < iNumTabStops - 1; tab++)
-			{
-				PrintVerticalBorder();
-				printf("line=%d", line);
-				printf("\t"); // advance to next tab stop
-			}
-			PrintVerticalBorder();// print border at right side
-			if (line + 1 != iNumLines)
-				printf("\t"); // advance to next tab stop, (on the next line)
-		}
-
-		PrintStatusLine("Press any key to demonstrate scroll margins", Size);
-		Sleep( 1000 );
-	//    wch = _getwch();
-
-		printf(CSI "3;1H");
-		for (line = 0; line < iNumLines * 2; line++)
-		{
-			printf(CSI "K"); // clear the line
-			int tab = 0;
-			for (tab = 0; tab < iNumTabStops - 1; tab++)
-			{
-				PrintVerticalBorder();
-				printf("line=%d", line);
-				printf("\t"); // advance to next tab stop
-			}
-			PrintVerticalBorder(); // print border at right side
-			if (line + 1 != iNumLines * 2)
-			{
-				printf("\n"); //Advance to next line. If we're at the bottom of the margins, the text will scroll.
-				printf("\r"); //return to first col in buffer
-			}
-		}
-
-		PrintStatusLine("Press any key to exit", Size);
-		Sleep( 1000 );
-	//    wch = _getwch();
-	}
-}
-
-
 // Get cursor position
 // ESC [ 6 n 	DECXCPR 	Report Cursor Position 	Emit the cursor position as: ESC [ <r> ; <c> R Where <r> = cursor row and <c> = cursor column
 
@@ -513,8 +362,6 @@ void draw_title( vec2u16 const screenSize )
 }
 
 
-#include <wchar.h>
-
 void move_current_selection( vec2u16 const oldPos, vec2u16 const newPos )
 {
 	console_cursor_set_position( oldPos.y, oldPos.x );
@@ -532,11 +379,11 @@ void move_current_selection( vec2u16 const oldPos, vec2u16 const newPos )
 enum PegType
 {
 	Peg_None = 0,
-	Peg_Red,
 	Peg_Green,
 	Peg_Magenta,
 	Peg_Blue,
 	Peg_Yellow,
+	Peg_Red,
 	Peg_Cyan,
 	Peg_White
 };
@@ -544,14 +391,15 @@ enum PegType
 static enum ConsoleColorFG s_pegsColor[] = 
 {
 	[Peg_None] = ConsoleColorFG_WHITE,
-	[Peg_Red] = ConsoleColorFG_RED,
 	[Peg_Green] = ConsoleColorFG_GREEN,
 	[Peg_Magenta] = ConsoleColorFG_MAGENTA,
 	[Peg_Blue] = ConsoleColorFG_BLUE,
 	[Peg_Yellow] = ConsoleColorFG_YELLOW,
+	[Peg_Red] = ConsoleColorFG_RED,
 	[Peg_Cyan] = ConsoleColorFG_CYAN,
 	[Peg_White] = ConsoleColorFG_WHITE,
 };
+
 
 
 int main( void )
@@ -574,17 +422,25 @@ int main( void )
 	HANDLE hOut = console_output_handle();
 	vec2u16 newSize = console_screen_get_size( hOut );
 	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
-	CONSOLE_SCREEN_BUFFER_INFO csinfo;
 
 	vec2u16 turnInputPos = (vec2u16) { .x = 11, .y = 8 };
+	enum PegType solution[4] = {};
+	bool used[7] = {};
+	for ( usize i = 0; i < 4; ++i )
+	{
+		do
+		{
+			solution[i] = ( rand() % 7 ) + 1; // 0 is now wanted, equals to Peg_None
+		} while ( used[solution[i]] );
+
+		used[solution[i]] = true;
+	}
 	enum PegType rowPegs[4] = {};
 	u16 selectedPeg = 0;
 
 	bool mainLoop = true;
 	while ( mainLoop )
 	{
-		fpscounter_frame_begin( fpsCounter );
-
 		DWORD nbEvents = 0;
 		GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents );
 		while ( nbEvents-- > 0 )
@@ -597,6 +453,7 @@ int main( void )
 			{
 				COORD const size = irInBuf.Event.WindowBufferSizeEvent.dwSize;
 				newSize = *(vec2u16 *)&size;
+				continue;
 			}
 
 			if ( irInBuf.EventType == KEY_EVENT && irInBuf.Event.KeyEvent.bKeyDown )
@@ -671,18 +528,20 @@ int main( void )
 		console_color_reset();
 
 		// End of the main loop
-		u64 const currFramerate = fpscounter_frame_end( fpsCounter );
-		u64 const elapsedTimeNs = fpscounter_elapsed_time_ns( fpsCounter );
+		nanoseconds const currFramerate = fpscounter_average_framerate( fpsCounter );
+		nanoseconds const average = fpscounter_average_time( fpsCounter );
 
 		console_cursor_set_position( 1, 1 );
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
 		wprintf( L"%2uFPS ", currFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
-		u64 ms = (u64)((double)elapsedTimeNs * 0.000001f );
+		milliseconds const ms = nanoseconds_to_milliseconds( average );
 		if ( ms > 999 ) wprintf( L"+" );
 		wprintf( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
 		wprintf( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 		wprintf( L"\x1b[0K");
+
+		fpscounter_frame( fpsCounter );
 	}
 
 	fpscounter_uninit( fpsCounter );
