@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <windows.h>
 #include <stdatomic.h>
+#include <stdarg.h>
+#include <wchar.h>
 
 struct Console
 {
@@ -16,6 +18,9 @@ struct Console
 static u32 s_oldInputMode = 0;
 static u32 s_oldOutputMode = 0;
 static atomic_bool s_isInit = false;
+
+static utf16 s_screenBuffer[4096] = {};
+static u16 s_bufPos = 0;
 
 static BOOL console_ctrl_handler( DWORD const ctrlType )
 {
@@ -136,7 +141,7 @@ bool console_set_title( char const *const title )
 		return false;
 	}
 
-	wprintf( L"\x1B]0;%s\007", title );
+	console_draw( L"\x1B]0;%s\007", title );
 	return true;
 }
 
@@ -155,47 +160,47 @@ HANDLE console_output_handle( void )
 
 void console_cursor_hide( void )
 {
-	wprintf( L"\x1B[?25l" );
+	console_draw( L"\x1B[?25l" );
 }
 
 void console_cursor_show( void )
 {
-	wprintf( L"\x1B[?25h" );
+	console_draw( L"\x1B[?25h" );
 }
 
 void console_cursor_start_blinking( void )
 {
-	wprintf( L"\x1B[?12h" );
+	console_draw( L"\x1B[?12h" );
 }
 
 void console_cursor_stop_blinking( void )
 {
-	wprintf( L"\x1B[?12l" );
+	console_draw( L"\x1B[?12l" );
 }
 
 void console_cursor_set_position( short const y, short const x )
 {
-    wprintf( L"\x1B[%u;%uH", y, x );
+    console_draw( L"\x1B[%u;%uH", y, x );
 }
 
 void console_cursor_move_up_by( short const n )
 {
-    wprintf( L"\x1B[%uA", n );
+    console_draw( L"\x1B[%uA", n );
 }
 
 void console_cursor_move_down_by( short const n )
 {
-    wprintf( L"\x1B[%uB", n );
+    console_draw( L"\x1B[%uB", n );
 }
 
 void console_cursor_move_left_by( short const n )
 {
-    wprintf( L"\x1B[%uD", n );
+    console_draw( L"\x1B[%uD", n );
 }
 
 void console_cursor_move_right_by( short const n )
 {
-    wprintf( L"\x1B[%uC", n );
+    console_draw( L"\x1B[%uC", n );
 }
 
 /*
@@ -208,74 +213,74 @@ ESC [ <n> M 	DL 	Delete Line 	Deletes <n> lines from the buffer, starting with t
 
 void console_line_drawing_mode_enter( void )
 {
-	wprintf( L"\x1B(0" );
+	console_draw( L"\x1B(0" );
 }
 
 void console_line_drawing_mode_exit( void )
 {
-	wprintf( L"\x1B(B" );
+	console_draw( L"\x1B(B" );
 }
 
 
 void console_alternate_buffer_enter( void )
 {
-	wprintf( L"\x1b[?1049h" );
+	console_draw( L"\x1b[?1049h" );
 }
 
 void console_alternate_buffer_exit( void )
 {
-	wprintf( L"\x1b[?1049l" );
+	console_draw( L"\x1b[?1049l" );
 }
 
 
 void console_color_reset( void )
 {
-    wprintf( L"\x1b[0;0m" );
+    console_draw( L"\x1b[0;0m" );
 }
 
 void console_color_bold( void )
 {
-    wprintf( L"\x1b[1m" );
+    console_draw( L"\x1b[1m" );
 }
 
 void console_color_no_bold( void )
 {
-    wprintf( L"\x1b[22m" );
+    console_draw( L"\x1b[22m" );
 }
 
 void console_color_underline( void )
 {
-    wprintf( L"\x1b[4m" );
+    console_draw( L"\x1b[4m" );
 }
 
 void console_color_no_underline( void )
 {
-    wprintf( L"\x1b[24m" );
+    console_draw( L"\x1b[24m" );
 }
 
 void console_color_negative( void )
 {
-    wprintf( L"\x1b[7m" );
+    console_draw( L"\x1b[7m" );
 }
 
 void console_color_positive( void )
 {
-    wprintf( L"\x1b[27m" );
+    console_draw( L"\x1b[27m" );
 }
 
 void console_color( enum ConsoleColorFG const fgColor, enum ConsoleColorBG const bgColor )
 {
-    wprintf( L"\x1b[%u;%um", fgColor, bgColor );
+    console_draw( L"\x1b[%u;%um", fgColor, bgColor );
 }
 
 void console_color_fg( enum ConsoleColorFG const fgColor )
 {
-    wprintf( L"\x1b[%um", fgColor );
+    console_draw( L"\x1b[%um", fgColor );
 }
 
 void console_color_bg( enum ConsoleColorBG const bgColor )
 {
-    wprintf( L"\x1b[%um", bgColor );
+    console_draw( L"\x1b[%um", bgColor );
 }
 
 
@@ -293,5 +298,31 @@ vec2u16 console_screen_get_size( HANDLE const handle )
 
 void console_screen_clear( void )
 {
-	wprintf( L"\x1b[2J" );
+	console_draw( L"\x1b[2J" );
+}
+
+// ////////////////////////////////////////////////
+
+void console_setpos( screenpos pos )
+{
+    console_draw( L"\x1B[%u;%uH", pos.y, pos.x );
+}
+
+
+void console_draw( utf16 const *format, ... )
+{
+	va_list args;
+	va_start( args, format );
+	s_bufPos += vsnwprintf( s_screenBuffer + s_bufPos, ARR_COUNT( s_screenBuffer ) - s_bufPos, format, args );
+	va_end( args );
+}
+
+
+void console_refresh( void )
+{
+    if ( s_bufPos > 0 )
+    {
+        wprintf( s_screenBuffer );
+        s_bufPos = 0;
+    }
 }

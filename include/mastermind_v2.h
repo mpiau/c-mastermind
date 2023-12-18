@@ -5,8 +5,6 @@
 
 #include "console.h"
 
-typedef vec2u16 screenpos;
-
 enum
 {
     Mastermind_MIN_TURNS = 5,

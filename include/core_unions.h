@@ -9,3 +9,5 @@ typedef union vec2u16
 } vec2u16;
 
 static_assert( sizeof( vec2u16 ) == 2 * sizeof( u16 ) );
+
+typedef vec2u16 screenpos;

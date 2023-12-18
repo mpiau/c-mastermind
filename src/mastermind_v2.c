@@ -26,17 +26,17 @@ void board_draw_horizontal_borders( vec2u16 const beginCoords, bool const isTopB
 
 	console_cursor_set_position( beginCoords.y, beginCoords.x );
 
-	wprintf( L"%lc", leftCorner );
+	console_draw( L"%lc", leftCorner );
 	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
 	{
 		if ( x % WIDTH_PER_TURN == 0 )
 		{
-			wprintf( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
+			console_draw( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
 			continue;
 		}
-		wprintf( L"%lc", horizLine );
+		console_draw( L"%lc", horizLine );
 	}
-	wprintf( L"%lc", rightCorner );	
+	console_draw( L"%lc", rightCorner );	
 }
 
 void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
@@ -54,17 +54,17 @@ void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, 
 
 	console_cursor_set_position( beginCoords.y, beginCoords.x );
 
-	wprintf( L"%lc", leftCorner );
+	console_draw( L"%lc", leftCorner );
 	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
 	{
 		if ( x % WIDTH_PER_TURN == 0 )
 		{
-			wprintf( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
+			console_draw( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
 			continue;
 		}
-		wprintf( L"%lc", horizLine );
+		console_draw( L"%lc", horizLine );
 	}
-	wprintf( L"%lc", rightCorner );	
+	console_draw( L"%lc", rightCorner );	
 }
 
 
@@ -81,10 +81,10 @@ void draw_center_board( vec2u16 const screenPos, u16 const pegsPerRow, u16 const
 			console_cursor_set_position( screenPos.y + y, screenPos.x + x );
 			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
 			{
-				wprintf( L"%lc", UTF16C_DoubleVert );
+				console_draw( L"%lc", UTF16C_DoubleVert );
 				continue;
 			}
-			wprintf( L"%lc", UTF16C_LightVert );
+			console_draw( L"%lc", UTF16C_LightVert );
 		}
 	}
 }
@@ -109,25 +109,25 @@ static void board_draw_pegs( struct PegSlot const *slot, bool hidden )
 	if ( slot->type == PegSlotType_EMPTY )
 	{
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		wprintf( L"%lc", UTF16C_SmallDottedCircle );
+		console_draw( L"%lc", UTF16C_SmallDottedCircle );
 	}
 	else if ( slot->type == PegSlotType_CODE_PEG )
 	{
 		if ( hidden )
 		{
 			console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-			wprintf( L"%lc", L'?' );
+			console_draw( L"%lc", L'?' );
 		}
 		else
 		{
 			console_color_fg( slot->codePeg + 91 ); // + 91 to match console colors, temp hack
-			wprintf( L"%lc", UTF16C_BigFilledCircle );
+			console_draw( L"%lc", UTF16C_BigFilledCircle );
 		}
 	}
 	else if ( slot->type == PegSlotType_KEY_PEG )
 	{
 		console_color_fg( slot->keyPeg ); // + 91 to match console colors, temp hack
-		wprintf( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle );
+		console_draw( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle );
 	}
 }
 
@@ -267,9 +267,9 @@ static void unselect_peg( struct MastermindBoard const *board )
 {
     screenpos const pos = get_selection_position( board );
 	console_cursor_set_position( pos.y, pos.x );
-	wprintf( L" " );
+	console_draw( L" " );
 	console_cursor_set_position( pos.y, pos.x + 2 );
-	wprintf( L" " );
+	console_draw( L" " );
 }
 
 static void select_peg( struct MastermindBoard const *board )
@@ -277,9 +277,9 @@ static void select_peg( struct MastermindBoard const *board )
     screenpos const pos = get_selection_position( board );
 	console_color_fg( ConsoleColorFG_WHITE );
 	console_cursor_set_position( pos.y, pos.x );
-	wprintf( L"◃" );
+	console_draw( L"◃" );
 	console_cursor_set_position( pos.y, pos.x + 2 );
-	wprintf( L"▹" );
+	console_draw( L"▹" );
 }
 
 
@@ -515,25 +515,25 @@ static void draw_peg( struct PegSlot const *slot, bool hidden )
 	if ( slot->type == PegSlotType_EMPTY )
 	{
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		wprintf( L"%lc", L'◌' );
+		console_draw( L"%lc", L'◌' );
 	}
 	else if ( slot->type == PegSlotType_CODE_PEG )
 	{
 		if ( hidden )
 		{
 			console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-			wprintf( L"%lc", L'?' );
+			console_draw( L"%lc", L'?' );
 		}
 		else
 		{
 			console_color_fg( slot->codePeg + 91 ); // + 91 to match console colors, temp hack
-			wprintf( L"%lc", L'⬤' );
+			console_draw( L"%lc", L'⬤' );
 		}
 	}
 	else if ( slot->type == PegSlotType_KEY_PEG )
 	{
 		console_color_fg( slot->keyPeg ); // + 91 to match console colors, temp hack
-		wprintf( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? L'◌' : L'●' );
+		console_draw( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? L'◌' : L'●' );
 	}
 }
 

@@ -308,7 +308,7 @@ int main( void )
 				}
 
 				console_cursor_set_position( 20, 1 );
-				wprintf( L"Key input: %2u", input );
+				console_draw( L"Key input: %2u", input );
 
 				if ( mastermind_try_consume_input( &mastermind, input ) )
 				{
@@ -328,7 +328,7 @@ int main( void )
 			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
 			// Check if the screen is too small than required.
 			console_cursor_set_position( 2, 1 );
-			wprintf( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
+			console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 			// draw_title( newSize );
 			draw_entire_game( &mastermind );
 
@@ -342,12 +342,14 @@ int main( void )
 		console_cursor_set_position( 1, 1 );
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
-		wprintf( L"%2uFPS ", currFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
+		console_draw( L"%2uFPS ", currFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
 		milliseconds const ms = nanoseconds_to_milliseconds( average );
-		if ( ms > 999 ) wprintf( L"+" );
-		wprintf( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
-		wprintf( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
-		wprintf( L"\x1b[0K");
+		if ( ms > 999 ) console_draw( L"+" );
+		console_draw( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
+		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
+		console_draw( L"\x1B[0K" );
+
+		console_refresh();
 
 		fpscounter_frame( fpsCounter );
 	}
@@ -355,54 +357,4 @@ int main( void )
 	fpscounter_uninit( fpsCounter );
 	console_global_uninit();
 	return 0;
-
-/*	struct ConsoleScreen cscreen;
-	if (! console_screen_init( &cscreen ) ) return 1; // better handling needed
-
-	FlushConsoleInputBuffer( GetStdHandle( STD_INPUT_HANDLE ) );
-	HANDLE const hStdin = GetStdHandle( STD_INPUT_HANDLE );
-
-	while ( true )
-	{
-		console_screen_update_state( &cscreen );
-		int newInputReceived = 0;
-
-		DWORD nbInputs = 0;
-		GetNumberOfConsoleInputEvents( hStdin, &nbInputs );
-		if ( nbInputs > 0 )
-		{
-			enum KeyInput input;
-			if ( read_next_input( hStdin, &input ) )
-			{
-				if ( input == KeyInput_ARROW_DOWN ) newInputReceived = 1;
-				else if ( input == KeyInput_ARROW_UP )  newInputReceived = -1;
-				else if ( input == KeyInput_ENTER )
-				{
-					if ( s_currSelect == 2 ) break; // Quit
-				}
-			}
-		}
-
-		if ( console_screen_is_too_small( &cscreen ) )
-		{
-			if ( cscreen.rewriteNeeded ) write_too_small_screen_warning( &cscreen );
-		}
-		else if ( cscreen.rewriteNeeded || newInputReceived != 0 )
-		{
-			write_hardcoded_game( &cscreen, newInputReceived );
-		}
-
-		Sleep( 32 );		
-	}
-
-	console_global_uninit();
-	return 0;
-
-	struct GameMenuList menus = {};
-	game_menu_init( &menus );
-
-	game_menu_loop( &menus );
-
-	game_menu_shutdown( &menus );
-	return 0;*/
 }

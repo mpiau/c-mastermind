@@ -119,8 +119,7 @@ void console_color_bg( enum ConsoleColorBG bgColor );
 vec2u16 console_screen_get_size( HANDLE handle );
 void console_screen_clear( void );
 
+void console_refresh( void );
+void console_draw( utf16 const *format, ... );
 
-
-// bool console_screen_get_size( void );
-// bool console_screen_has_been_resized( void );
-// bool console_screen_is_too_small( void );
+void console_setpos( screenpos pos );
