@@ -309,12 +309,15 @@ void console_setpos( screenpos pos )
 }
 
 
-void console_draw( utf16 const *format, ... )
+int console_draw( utf16 const *format, ... )
 {
 	va_list args;
 	va_start( args, format );
-	s_bufPos += vsnwprintf( s_screenBuffer + s_bufPos, ARR_COUNT( s_screenBuffer ) - s_bufPos, format, args );
+    int const nbWritten = vsnwprintf( s_screenBuffer + s_bufPos, ARR_COUNT( s_screenBuffer ) - s_bufPos, format, args );
 	va_end( args );
+
+    s_bufPos += nbWritten;
+    return nbWritten;
 }
 
 

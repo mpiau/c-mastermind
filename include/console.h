@@ -120,6 +120,6 @@ vec2u16 console_screen_get_size( HANDLE handle );
 void console_screen_clear( void );
 
 void console_refresh( void );
-void console_draw( utf16 const *format, ... );
+int console_draw( utf16 const *format, ... );
 
 void console_setpos( screenpos pos );

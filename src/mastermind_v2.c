@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 
-
 // DRAW GAME /////////////////////////////////////////////////////////////////////
 // DRAW GAME /////////////////////////////////////////////////////////////////////
 
@@ -205,7 +204,148 @@ void draw_gameboard_content( vec2u16 screenPos, struct MastermindConfig const *c
 }
 
 
-void draw_entire_game( struct MastermindV2 *mastermind )
+// DRAW SUMMARY GAME //////////////////////////////////////////////////////////////
+// DRAW SUMMARY GAME //////////////////////////////////////////////////////////////
+
+void summary_draw_borders( screenpos pos, struct MastermindV2 const *mastermind )
+{
+    u32 const nbTurns = mastermind->config.nbTurns;
+    u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+
+    // Upper border
+    console_cursor_set_position( pos.y, pos.x );
+    console_color_fg( ConsoleColorFG_WHITE );
+    int prefixSize = console_draw( L"┌" );
+    console_color_fg( ConsoleColorFG_GREEN );
+    prefixSize += console_draw( L" Summary " );
+    console_color_fg( ConsoleColorFG_WHITE );
+    for ( int i = 0; i < borderWidth - 1 - prefixSize; ++ i )
+    {
+        console_draw( L"─" );
+    }
+    console_draw( L"┐" );
+    pos.y += 1;
+
+    // Middle border
+    for ( int i = 0; i < nbTurns; i++ )
+    {
+        console_cursor_set_position( pos.y + i, pos.x );
+        console_draw( L"│" );
+        console_cursor_set_position( pos.y + i, pos.x + 2 * nbPegsPerTurn + 2 );
+        console_draw( L"-" );
+        console_cursor_set_position( pos.y + i, pos.x + borderWidth - 1 );
+        console_draw( L"│" );
+    }
+    pos.y += nbTurns;
+
+    utf16 title[] = L"MASTERMIND";
+    u16 nbSpacesEachSide = ( borderWidth - ARR_COUNT( title ) ) / 2;
+
+   	console_cursor_set_position( pos.y, pos.x );
+	console_draw( L"│" );
+    console_cursor_move_right_by( nbSpacesEachSide );
+	console_color_fg( ConsoleColorFG_YELLOW );
+	console_draw( L"MASTERMIND" );
+	console_color_fg( ConsoleColorFG_WHITE );
+    console_cursor_set_position( pos.y, pos.x + borderWidth - 1 );
+	console_draw( L"│", nbSpacesEachSide );
+
+    pos.y += 1;
+    console_cursor_set_position( pos.y, pos.x );
+	console_draw( L"│" );
+    console_cursor_move_right_by( borderWidth - 2 );
+	console_draw( L"│" );
+
+    pos.y += 1;
+    console_cursor_set_position( pos.y, pos.x );
+    console_draw( L"└" );
+    for ( int i = 0; i < borderWidth - 2; ++ i )
+    {
+        console_draw( L"─" );
+    }
+    console_draw( L"┘" );
+}
+
+
+void summary_draw_content( screenpos pos, struct MastermindV2 const *mastermind )
+{
+    u32 const nbTurns = mastermind->config.nbTurns;
+    u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+    
+    struct MastermindConfig const *config = &mastermind->config;
+    struct MastermindBoard const *board = &mastermind->board;
+    pos.y += 1; // to get from borders to first line
+    pos.x += 2; // to get from border + space to first peg
+
+    for ( int y = 0; y < config->nbTurns; ++y )
+    {
+        for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+        {
+			console_cursor_set_position( pos.y + y, pos.x + ( x * 2 ) );
+			board_draw_pegs( &board->pegSlots[y][x], false );
+        }
+
+        console_cursor_move_right_by( 3 );
+        for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+        {
+			board_draw_pegs( &board->pegSlots[y][x + config->nbCodePegPerTurn], false );
+        }
+    }
+
+    console_cursor_set_position( pos.y + config->nbTurns + 1, pos.x );
+
+    u16 feedbackSpace = config->nbCodePegPerTurn + ( config->nbCodePegPerTurn - 1 ) * 2; // peg + 2 spaces between them
+    u16 nbSpacesEachSide = ( borderWidth - feedbackSpace - 2 ) / 2; // - 2 because of the += 2 in the x at the beginning
+    console_cursor_move_right_by( nbSpacesEachSide - 1 );
+
+    for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+    {
+		board_draw_pegs( &board->solution[x], mastermind->board.hideSolution );
+		console_cursor_move_right_by( 2 );
+    }
+}
+
+
+void summary_draw( screenpos const screenSize, struct MastermindV2 const *mastermind )
+{
+   u32 const nbTurns = mastermind->config.nbTurns;
+   u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+   u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+
+    // Upper border
+   screenpos upLeft = (screenpos){ .x = screenSize.x - borderWidth, .y = 2 };
+
+    summary_draw_borders( upLeft, mastermind );
+    summary_draw_content( upLeft, mastermind );
+
+    console_color_fg( ConsoleColorFG_WHITE );
+    upLeft.y += 16;
+    console_cursor_set_position( upLeft.y, upLeft.x );
+    console_draw( L"┌" );
+    console_color_fg( ConsoleColorFG_GREEN );
+    console_draw( L" Timer " );
+    console_color_fg( ConsoleColorFG_WHITE );
+    console_draw( L"─────────┐");
+    console_cursor_set_position( upLeft.y + 1, upLeft.x );
+    console_draw( L"│    " );
+    console_color_fg( ConsoleColorFG_RED ); // Blue, yellow, blinking yellow, red, blinking red ?
+    console_draw( L"\033[5m" );
+    console_draw( L"01:59:59" );
+    console_draw( L"\033[0m" );
+    console_color_fg( ConsoleColorFG_WHITE );
+    console_draw( L"    │" );
+    console_cursor_set_position( upLeft.y + 2, upLeft.x );
+    console_draw( L"└────────────────┘" );
+    // if timer <= 0, game lost + reveal of the solution
+}
+
+// /////////////////////////////////////////////////////////////////////
+void draw_entire_game( struct MastermindV2 *mastermind, screenpos const screenSize )
 {
 	vec2u16 upLeft = mastermind->board.upLeft;
 	u16 const nbTurns = mastermind->config.nbTurns;
@@ -221,10 +361,9 @@ void draw_entire_game( struct MastermindV2 *mastermind )
 	// ? at the end or solution if finished
 	// The feedback row up to current turn (excluded)
 	draw_gameboard_content( upLeft, &mastermind->config, &mastermind->board );
+    summary_draw( screenSize, mastermind );
 	mastermindv2_draw_selected_peg( mastermind );
 }
-
-// /////////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////////////////////////
 
 static inline

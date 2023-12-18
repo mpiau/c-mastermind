@@ -227,38 +227,6 @@ void draw_title( vec2u16 const screenSize )
 }
 
 
-void display_board_summary( screenpos const screenSize, struct MastermindV2 const *mastermind )
-{
-	screenpos upLeft = (screenpos){ .x = screenSize.x - 18, .y = 2 };
-
-	console_color_fg( ConsoleColorFG_WHITE );
-	int i = 0;
-	console_cursor_set_position( upLeft.y + i++, upLeft.x );
-	console_draw( L"┌" );
-	console_color_fg( ConsoleColorFG_GREEN );
-	console_draw( L" Summary " );
-	console_color_fg( ConsoleColorFG_WHITE );
-	console_draw( L"───────┐" );
-	console_cursor_set_position( upLeft.y + i++, upLeft.x );
-	console_draw( L"│ ⬤ ⬤ ⬤ ⬤ - ●●◌◌ │" );
-	for ( int j = 0; j < 11; j++ )
-	{
-		console_cursor_set_position( upLeft.y + i++, upLeft.x );
-		console_draw( L"│ ◌ ◌ ◌ ◌ - ◌◌◌◌ │" );		
-	}
-	console_cursor_set_position( upLeft.y + i++, upLeft.x );
-	console_draw( L"│   " );
-	console_color_fg( ConsoleColorFG_YELLOW );
-	console_draw( L"MASTERMIND" );
-	console_color_fg( ConsoleColorFG_WHITE );
-	console_draw( L"   │" );
-	console_cursor_set_position( upLeft.y + i++, upLeft.x );
-	console_draw( L"│   ?  ?  ?  ?   │" );
-	console_cursor_set_position( upLeft.y + i++, upLeft.x );
-	console_draw( L"└────────────────┘");
-}
-
-
 int main( void )
 {
 	if ( !console_global_init( "Mastermind Game", true ) )
@@ -333,7 +301,7 @@ int main( void )
 			console_cursor_set_position( 2, 1 );
 			console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 			// draw_title( newSize );
-			draw_entire_game( &mastermind );
+			draw_entire_game( &mastermind, newSize );
 
 			oldSize = newSize;
 		}
@@ -351,8 +319,6 @@ int main( void )
 		console_draw( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L"\x1B[0K" );
-
-		display_board_summary( newSize, &mastermind );
 
 		console_refresh();
 
