@@ -1,8 +1,11 @@
 #pragma once
 
 #include "core_types.h"
+#include "core_unions.h"
 
 #include "console.h"
+
+typedef vec2u16 screenpos;
 
 enum
 {
@@ -70,7 +73,8 @@ struct MastermindBoard
     struct PegSlot solution[Mastermind_MAX_CODE_PEG_PER_TURN];
     bool hideSolution;
     u8 currentTurn;
-    u8 currentCodePegIdx;
+    u8 codePegIdx;
+    screenpos upLeft;
 };
 
 struct MastermindV2
@@ -87,7 +91,27 @@ void mastermindv2_start_game( struct MastermindV2 *mastermind );
 void mastermindv2_next_peg_in_row( struct MastermindV2 *mastermind );
 void mastermindv2_previous_peg_in_row( struct MastermindV2 *mastermind );
 
-void mastermindv2_code_peg_next_color( struct MastermindV2 *mastermind );
-void mastermindv2_code_peg_previous_color( struct MastermindV2 *mastermind );
-
 void mastermindv2_remove_current_codepeg( struct MastermindV2 *mastermind );
+bool mastermindv2_next_turn( struct MastermindV2 *mastermind );
+
+void mastermindv2_draw_selected_peg( struct MastermindV2 *mastermind );
+
+
+// Next version ///////////////////////////////////////////
+
+void mastermind_codepeg_color_prev( struct MastermindV2 *mastermind );
+void mastermind_codepeg_color_next( struct MastermindV2 *mastermind );
+
+/*
+enum MastermindTurnStatus
+{
+    MastermindTurnStatus_SUCCESS,
+    MastermindTurnStatus_ERROR_EMPTY_SLOT,
+    MastermindTurnStatus_ERROR_DUPLICATE_PEG
+};
+
+enum MastermindTurnStatus mastermind_board_finish_turn( struct MastermindV2 *mastermind );
+
+void mastermind_board_prev_codepeg( struct MastermindV2 *mastermind );
+void mastermind_board_next_codepeg( struct MastermindV2 *mastermind );
+*/
