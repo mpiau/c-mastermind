@@ -597,10 +597,29 @@ void mastermind_board_next_codepeg( struct MastermindV2 *mastermind )
 
 bool mastermind_try_consume_input( struct MastermindV2 *mastermind, enum KeyInput input )
 {
+    if ( mastermind->status == MastermindGameStatus_PAUSED && input == KeyInput_P )
+    {
+        mastermind->status = MastermindGameStatus_IN_PROGRESS;
+        console_cursor_set_position( 2, 1 );
+        console_draw( L"            ");
+        return true;
+    }
+    else if ( mastermind->status != MastermindGameStatus_IN_PROGRESS )
+    {
+        // If the game isn't currently running, do not 
+        return false;
+    }
     // We need to prevent having same keys on 2 differents actions on the entire game
 
     switch ( input )
     {
+		case KeyInput_P:
+        {
+			mastermind->status = MastermindGameStatus_PAUSED;
+            console_cursor_set_position( 2, 1 );
+            console_draw( L"-- Paused --");
+            return true;
+        }
 		case KeyInput_ARROW_LEFT:
         {
 			mastermind_codepeg_color_prev( mastermind );

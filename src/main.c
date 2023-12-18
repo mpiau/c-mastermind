@@ -174,35 +174,6 @@ void game_menu_tile( char buffer[static 256], char const *name, bool selected )
 	}	
 }
 
-static int s_currSelect = 0;
-
-
-void write_hardcoded_game( struct ConsoleScreen *const cscreen, int selectMoved )
-{
-	char tiles[3][256] = {};
-
-	int temp = s_currSelect;
-	temp += selectMoved;
-	if ( temp < 0 ) temp = 0;
-	if ( temp > 2 ) temp = 2;
-
-	if ( temp != s_currSelect ) s_currSelect = temp;
-	else if ( !cscreen->rewriteNeeded ) return;
-
-	game_menu_tile( tiles[0], "        SINGLEPLAYER        ", s_currSelect == 0 );
-	game_menu_tile( tiles[1], "     MULTIPLAYER (Local)    ", s_currSelect == 1 );
-	game_menu_tile( tiles[2], "           QUIT             ", s_currSelect == 2 );
-
-	printf(
-		"\033[H\x1B[2J\x1B[3J%s\n"
-		"%s\n%s\n%s\n"
-		, get_game_name(),
-		tiles[0], tiles[1], tiles[2]
-	);
-
-	cscreen->rewriteNeeded = false;
-}
-
 
 bool read_next_input( HANDLE const handle, enum KeyInput *input )
 {
@@ -253,6 +224,38 @@ void draw_title( vec2u16 const screenSize )
 
 	console_cursor_set_position( 6, spacesEachSide + 1 );
 	wprintf( L"|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
+}
+
+
+void display_board_summary( screenpos const screenSize, struct MastermindV2 const *mastermind )
+{
+	screenpos upLeft = (screenpos){ .x = screenSize.x - 18, .y = 2 };
+
+	console_color_fg( ConsoleColorFG_WHITE );
+	int i = 0;
+	console_cursor_set_position( upLeft.y + i++, upLeft.x );
+	console_draw( L"┌" );
+	console_color_fg( ConsoleColorFG_GREEN );
+	console_draw( L" Summary " );
+	console_color_fg( ConsoleColorFG_WHITE );
+	console_draw( L"───────┐" );
+	console_cursor_set_position( upLeft.y + i++, upLeft.x );
+	console_draw( L"│ ⬤ ⬤ ⬤ ⬤ - ●●◌◌ │" );
+	for ( int j = 0; j < 11; j++ )
+	{
+		console_cursor_set_position( upLeft.y + i++, upLeft.x );
+		console_draw( L"│ ◌ ◌ ◌ ◌ - ◌◌◌◌ │" );		
+	}
+	console_cursor_set_position( upLeft.y + i++, upLeft.x );
+	console_draw( L"│   " );
+	console_color_fg( ConsoleColorFG_YELLOW );
+	console_draw( L"MASTERMIND" );
+	console_color_fg( ConsoleColorFG_WHITE );
+	console_draw( L"   │" );
+	console_cursor_set_position( upLeft.y + i++, upLeft.x );
+	console_draw( L"│   ?  ?  ?  ?   │" );
+	console_cursor_set_position( upLeft.y + i++, upLeft.x );
+	console_draw( L"└────────────────┘");
 }
 
 
@@ -348,6 +351,8 @@ int main( void )
 		console_draw( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L"\x1B[0K" );
+
+		display_board_summary( newSize, &mastermind );
 
 		console_refresh();
 

@@ -37,6 +37,7 @@ enum MastermindGameStatusV2
 {
 	MastermindGameStatus_NOT_STARTED,
 	MastermindGameStatus_IN_PROGRESS,
+    MastermindGameStatus_PAUSED,
 	MastermindGameStatus_FINISHED,
 };
 
