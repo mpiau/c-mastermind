@@ -223,163 +223,6 @@ bool read_next_input( HANDLE const handle, enum KeyInput *input )
 // https://www.w3schools.com/charsets/ref_utf_box.asp 
 // https://www.compart.com/en/unicode/U+25CF
 
-#define NB_TURNS 12
-#define SC_TURN_WIDTH 4
-#define SC_ALL_TURNS_WIDTH	( SC_TURN_WIDTH * NB_TURNS )
-
-
-void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
-{
-	utf16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
-	utf16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
-
-	utf16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
-	utf16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
-	utf16 const horizLine = UTF16C_DoubleHoriz;
-
-	u16 const WIDTH_PER_TURN          = 4;
-	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
-	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
-
-	console_cursor_set_position( beginCoords.y, beginCoords.x );
-
-	wprintf( L"%lc", leftCorner );
-	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
-	{
-		if ( x % WIDTH_PER_TURN == 0 )
-		{
-			wprintf( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
-			continue;
-		}
-		wprintf( L"%lc", horizLine );
-	}
-	wprintf( L"%lc", rightCorner );	
-}
-
-
-void draw_center_board( vec2u16 const screenPos, u16 const pegsPerRow, u16 const nbTurns )
-{
-	u16 const WIDTH_PER_TURN          = 4;
-	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
-	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
-
-	for ( int y = 0; y < pegsPerRow; ++y )
-	{
-		for ( int x = 0; x <= TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
-		{
-			console_cursor_set_position( screenPos.y + y, screenPos.x + x );
-			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
-			{
-				wprintf( L"%lc", UTF16C_DoubleVert );
-				continue;
-			}
-			wprintf( L"%lc", UTF16C_LightVert );
-		}
-	}
-}
-
-
-void draw_gameboard( vec2u16 upLeftPos, struct MastermindConfig const *config )
-{
-	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-
-	draw_horizontal_border( upLeftPos, true, config->nbTurns );
-
-	upLeftPos.y += 1;
-	draw_center_board( upLeftPos, config->nbCodePegPerTurn, config->nbTurns );
-
-	upLeftPos.y += config->nbCodePegPerTurn;
-	draw_horizontal_border( upLeftPos, false, config->nbTurns );
-}
-
-
-static void draw_peg( struct PegSlot const *slot, bool hidden )
-{
-	if ( slot->type == PegSlotType_EMPTY )
-	{
-		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		wprintf( L"%lc", UTF16C_SmallDottedCircle );
-	}
-	else if ( slot->type == PegSlotType_CODE_PEG )
-	{
-		if ( hidden )
-		{
-			console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-			wprintf( L"%lc", L'?' );
-		}
-		else
-		{
-			console_color_fg( slot->codePeg + 91 ); // + 91 to match console colors, temp hack
-			wprintf( L"%lc", UTF16C_BigFilledCircle );
-		}
-	}
-	else if ( slot->type == PegSlotType_KEY_PEG )
-	{
-		console_color_fg( slot->keyPeg ); // + 91 to match console colors, temp hack
-		wprintf( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle );
-	}
-}
-
-
-void draw_gameboard_content( vec2u16 screenPos, struct MastermindConfig const *config, struct MastermindBoard const *board )
-{
-	u16 const WIDTH_PER_TURN          = 4;
-	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * config->nbTurns;
-	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
-
-	// Turn-pegs
-	for ( int turn = 0; turn < config->nbTurns; ++turn )
-	{
-		for ( int y = 0; y < config->nbCodePegPerTurn; ++y )
-		{
-			console_cursor_set_position( screenPos.y + y, screenPos.x + ( turn * WIDTH_PER_TURN ) );
-			draw_peg( &board->pegSlots[turn][y], false );
-		}
-	}
-
-	// Solution
-	for ( int y = 0; y < config->nbCodePegPerTurn; ++y )
-	{
-		console_cursor_set_position( screenPos.y + y, screenPos.x + TOTAL_WIDTH );
-		draw_peg( &board->solution[y], board->hideSolution );
-	}
-
-	// Feedback
-	for ( int turn = 0; turn < board->currentTurn; ++turn )
-	{
-		for ( int y = 0; y < ( config->nbCodePegPerTurn + 1 ) / 2; ++y )
-		{
-			console_cursor_set_position( screenPos.y + y + config->nbCodePegPerTurn + 1, ( screenPos.x - 1 ) + ( turn * WIDTH_PER_TURN ) );
-			draw_peg( &board->pegSlots[turn][y * 2 + config->nbCodePegPerTurn], false );
-			if ( y + 1 < config->nbCodePegPerTurn )
-			{
-				console_cursor_set_position( screenPos.y + y + config->nbCodePegPerTurn + 1, screenPos.x + ( turn * WIDTH_PER_TURN ) );
-				draw_peg( &board->pegSlots[turn][y * 2 + config->nbCodePegPerTurn + 1], false );
-			}
-		}
-	}
-}
-
-
-void draw_game( struct MastermindV2 *mastermind )
-{
-	vec2u16 upLeft = mastermind->board.upLeft;
-	u16 const nbTurns = mastermind->config.nbTurns;
-	u16 const pegsPerRow = mastermind->config.nbCodePegPerTurn;
-
-	draw_gameboard( upLeft, &mastermind->config );//pegsPerRow, nbTurns );
-
-	upLeft.x += 2;
-	upLeft.y += 1;
-
-	// Need to take actual data to set : 
-	// The colored pegs / placeholder
-	// ? at the end or solution if finished
-	// The feedback row up to current turn (excluded)
-	draw_gameboard_content( upLeft, &mastermind->config, &mastermind->board );
-	mastermindv2_draw_selected_peg( mastermind );
-}
-
 
 void draw_title( vec2u16 const screenSize )
 {
@@ -465,59 +308,16 @@ int main( void )
 				}
 
 				console_cursor_set_position( 20, 1 );
-				wprintf( L"Key input: %2u", input ); 
+				wprintf( L"Key input: %2u", input );
 
-				// TODO: mastermind_try_consume_input( )
-				// Where false -> not consumed (key not used by board game)
-				//       true  -> consumed
-				// if false, continue to process
-				// It will allow us to define keys for an associated board
-				// However, we need to prevent having keys on 2 differents action
+				if ( mastermind_try_consume_input( &mastermind, input ) )
+				{
+					continue;
+				}
 
-				if ( input == KeyInput_ARROW_DOWN )
-				{
-					mastermindv2_next_peg_in_row( &mastermind );
-					draw_game( &mastermind ); // Costly operation because it redraw the entire board
-				}
-				else if ( input == KeyInput_ARROW_UP )
-				{
-					mastermindv2_previous_peg_in_row( &mastermind );
-					draw_game( &mastermind ); // Costly operation because it redraw the entire board
-				}
-				else if ( input == KeyInput_ARROW_LEFT )
-				{
-					mastermind_codepeg_color_prev( &mastermind );
-				}
-				else if ( input == KeyInput_ARROW_RIGHT )
-				{
-					mastermind_codepeg_color_next( &mastermind );
-				}
-				else if ( input == KeyInput_ENTER )
-				{
-					bool const success = mastermindv2_next_turn( &mastermind );
-					if ( success )
-					{
-						draw_game( &mastermind ); // Costly operation because it redraw the entire board
-					}
-				}
-				else if ( input == KeyInput_ESCAPE )
+				if ( input == KeyInput_ESCAPE )
 				{
 					mainLoop = false;
-				}
-				else if ( input == KeyInput_H )
-				{
-					mastermind.board.hideSolution = !mastermind.board.hideSolution;
-					draw_game( &mastermind ); // Costly operation because it redraw the entire board
-				}
-				else if ( input == KeyInput_D )
-				{
-					mastermindv2_remove_current_codepeg( &mastermind );
-					draw_game( &mastermind ); // Costly operation because it redraw the entire board
-				}
-				else if ( input == KeyInput_R )
-				{
-					mastermindv2_start_game( &mastermind );
-					draw_game( &mastermind ); // Costly operation because it redraw the entire board
 				}
 			}
 		}
@@ -530,7 +330,7 @@ int main( void )
 			console_cursor_set_position( 2, 1 );
 			wprintf( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 			// draw_title( newSize );
-			draw_game( &mastermind );
+			draw_entire_game( &mastermind );
 
 			oldSize = newSize;
 		}

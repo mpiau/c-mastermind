@@ -102,6 +102,11 @@ void mastermindv2_draw_selected_peg( struct MastermindV2 *mastermind );
 void mastermind_codepeg_color_prev( struct MastermindV2 *mastermind );
 void mastermind_codepeg_color_next( struct MastermindV2 *mastermind );
 
+enum KeyInput;
+bool mastermind_try_consume_input( struct MastermindV2 *mastermind, enum KeyInput input );
+
+void draw_entire_game( struct MastermindV2 *mastermind );
+
 /*
 enum MastermindTurnStatus
 {
