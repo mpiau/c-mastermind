@@ -6,6 +6,7 @@
 #include "characters_list.h"
 #include "core_unions.h"
 #include "fps_counter.h"
+#include "widgets/widget_timer.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -252,6 +253,24 @@ int main( void )
 	vec2u16 newSize = console_screen_get_size( hOut );
 	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
 
+	struct WidgetTimer timer = {};
+	timer.screenData.upLeft = (vec2u16){ .x = newSize.x - 18, .y = 18 };
+	timer.screenData.bottomRight = (vec2u16){ .x = newSize.x, .y = 20 };
+	timer.screenData.name = NULL;//L"Countdown";
+	timer.lastUpdateTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
+	timer.totalDuration = 60;
+	timer.endTimerTimestamp = timer.lastUpdateTimestamp + timer.totalDuration;
+
+	struct WidgetTimer board = {};
+	board.screenData.upLeft = (vec2u16){ .x = 20, .y = 2 };
+	board.screenData.bottomRight = (vec2u16){ .x = newSize.x - 19, .y = 30 };
+	board.screenData.name = L"Board";
+
+	// settings ⚙
+	// pause/resume ⏸ // ▶
+	// return to menu ⌂ ?
+	// back previous turn ? ⟲
+
 	bool mainLoop = true;
 	while ( mainLoop )
 	{
@@ -304,6 +323,9 @@ int main( void )
 			draw_entire_game( &mastermind, newSize );
 
 			oldSize = newSize;
+
+			widget_timer_redraw( &timer );
+			widget_timer_redraw( &board );
 		}
 
 		// End of the main loop
@@ -319,6 +341,8 @@ int main( void )
 		console_draw( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 		console_draw( L"\x1B[0K" );
+
+		widget_timer_update( &timer, false );
 
 		console_refresh();
 

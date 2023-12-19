@@ -322,26 +322,6 @@ void summary_draw( screenpos const screenSize, struct MastermindV2 const *master
 
     summary_draw_borders( upLeft, mastermind );
     summary_draw_content( upLeft, mastermind );
-
-    console_color_fg( ConsoleColorFG_WHITE );
-    upLeft.y += 16;
-    console_cursor_set_position( upLeft.y, upLeft.x );
-    console_draw( L"┌" );
-    console_color_fg( ConsoleColorFG_GREEN );
-    console_draw( L" Timer " );
-    console_color_fg( ConsoleColorFG_WHITE );
-    console_draw( L"─────────┐");
-    console_cursor_set_position( upLeft.y + 1, upLeft.x );
-    console_draw( L"│    " );
-    console_color_fg( ConsoleColorFG_RED ); // Blue, yellow, blinking yellow, red, blinking red ?
-    console_draw( L"\033[5m" );
-    console_draw( L"01:59:59" );
-    console_draw( L"\033[0m" );
-    console_color_fg( ConsoleColorFG_WHITE );
-    console_draw( L"    │" );
-    console_cursor_set_position( upLeft.y + 2, upLeft.x );
-    console_draw( L"└────────────────┘" );
-    // if timer <= 0, game lost + reveal of the solution
 }
 
 // /////////////////////////////////////////////////////////////////////

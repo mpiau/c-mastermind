@@ -50,7 +50,7 @@ static struct FPSCounter s_fpsCounter = {}; // Just to avoid dynamic alloc
 static nanoseconds S_CAPPED_FRAMERATE = FRAMERATE_60;
 
 
-static nanoseconds get_timestamp_nanoseconds()
+nanoseconds get_timestamp_nanoseconds()
 {
     struct timespec time;
     clock_gettime( CLOCK_MONOTONIC, &time );
