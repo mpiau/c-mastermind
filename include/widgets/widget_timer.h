@@ -4,12 +4,8 @@
 #include "core_unions.h"
 #include "time_units.h"
 
-enum WidgetType
-{
-    WidgetType_TIMER,
-    WidgetType_BOARD_SUMMARY
-};
-
+#include "widgets/widgets.h"
+#include "widgets/widget_definition.h"
 
 struct WidgetScreenData
 {
@@ -36,9 +32,17 @@ struct WidgetTimer // Not Timer, countdown !
 
 void widget_timer_create( );
 
+void widget_timer_start( struct WidgetTimer *timer );
+void widget_timer_pause( struct WidgetTimer *timer );
+void widget_timer_reset( struct WidgetTimer *timer );
+void widget_timer_frame( struct WidgetTimer *timer );
+void widget_timer_set_duration( struct WidgetTimer *timer, seconds duration  );
+
 // redraw -> borders + content
 void widget_timer_redraw( struct WidgetTimer *timer );
 // update -> redraw content only
 void widget_timer_update( struct WidgetTimer *timer, bool forceUpdate );
 
 void widget_draw_borders( struct WidgetScreenData *screenData );
+
+struct WidgetTimer *widget_timer_get_instance( void );

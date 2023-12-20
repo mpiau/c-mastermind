@@ -136,3 +136,31 @@ void widget_draw_borders( struct WidgetScreenData *screenData )
     currPos.y = screenData->upLeft.y + height;
     widget_draw_bottom_border( currPos, widthNoBorders );
 }
+
+
+void widget_timer_start( struct WidgetTimer *timer )
+{
+
+}
+void widget_timer_pause( struct WidgetTimer *timer )
+{
+
+}
+void widget_timer_reset( struct WidgetTimer *timer )
+{
+
+}
+void widget_timer_frame( struct WidgetTimer *timer )
+{
+
+}
+
+void widget_timer_set_duration( struct WidgetTimer *timer, seconds duration )
+{
+    timer->totalDuration = duration;
+}
+
+struct WidgetTimer *widget_timer_get_instance( void )
+{
+    return NULL;
+}
