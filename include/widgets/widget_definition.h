@@ -1,15 +1,16 @@
 #pragma once
 
 #include "core_types.h"
+#include "core_unions.h"
 
-enum WidgetType
+enum WidgetId
 {
-    WidgetType_TIMER,
-    WidgetType_COUNTDOWN,
-    WidgetType_BOARD_SUMMARY,
-    WidgetType_FRAMERATE_BAR,
+    WidgetId_TIMER,
+    WidgetId_COUNTDOWN,
+    WidgetId_BOARD_SUMMARY,
+    WidgetId_FPS_BAR,
 
-    WidgetType_Count
+    WidgetId_Count,
 };
 
 
@@ -18,12 +19,7 @@ typedef void (* HideCallback)( void );
 
 struct Widget
 {
-    enum WidgetType type;
-    int             id;
-
-    // The higher the value, the latest is will be updated
-    // You can think of the ZIndex in Web development, where the highest ZIndex is in front.
-    u32             order;
+    enum WidgetId id;
 
     // If references > 0, don't free it because it's still referenced somewhere !
     // And if they shouldn't be referenced anymore, fix your code.
@@ -31,4 +27,7 @@ struct Widget
     int             references;
 
     HideCallback    hideCallback;
+
+    screenpos boxUpLeft;
+    vec2u16   boxSize;
 };

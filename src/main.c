@@ -7,6 +7,7 @@
 #include "core_unions.h"
 #include "fps_counter.h"
 #include "widgets/widget_timer.h"
+#include "widgets/widget_fpsbar.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -242,6 +243,7 @@ int main( void )
 		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
 		return 2;
 	}
+	widget_fpsbar_init( fpsCounter );
 
 	srand( time( NULL ) );
 
@@ -252,6 +254,9 @@ int main( void )
 	HANDLE hOut = console_output_handle();
 	vec2u16 newSize = console_screen_get_size( hOut );
 	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
+	nanoseconds resizeTimestamp = 0;
+	nanoseconds WAIT_BEFORE_RESIZE = 200 * 1000 * 1000; // 200ms
+
 
 	struct WidgetTimer timer = {};
 	timer.screenData.upLeft = (vec2u16){ .x = newSize.x - 18, .y = 18 };
@@ -286,6 +291,7 @@ int main( void )
 			{
 				COORD const size = irInBuf.Event.WindowBufferSizeEvent.dwSize;
 				newSize = *(vec2u16 *)&size;
+				resizeTimestamp = get_timestamp_nanoseconds();
 				continue;
 			}
 
@@ -315,40 +321,40 @@ int main( void )
 		// Handle resize
 		if ( newSize.x != oldSize.x || newSize.y != oldSize.y )
 		{
-			// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
-			// Check if the screen is too small than required.
-			console_cursor_set_position( 2, 1 );
-			console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
-			// draw_title( newSize );
-			draw_entire_game( &mastermind, newSize );
+			// On resize : wait Xms before redraw
+			// If another resize occurs during that delay, reset and wait again.
+			// This way, we save plenty of redraw frames while the user messes up with his window size
+			nanoseconds timestamp = get_timestamp_nanoseconds();
+			if ( timestamp - resizeTimestamp >= WAIT_BEFORE_RESIZE )
+			{
+				// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
+				// Check if the screen is too small than required.
+				console_cursor_set_position( 2, 1 );
+				console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
+				// draw_title( newSize );
+				draw_entire_game( &mastermind, newSize );
 
-			oldSize = newSize;
+				oldSize = newSize;
 
-			widget_timer_redraw( &timer );
-			widget_timer_redraw( &board );
+				widget_timer_redraw( &timer );
+				widget_timer_redraw( &board );
+			}
 		}
 
 		// End of the main loop
-		nanoseconds const currFramerate = fpscounter_average_framerate( fpsCounter );
-		nanoseconds const average = fpscounter_average_time( fpsCounter );
 
-		console_cursor_set_position( 1, 1 );
-		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-
-		console_draw( L"%2uFPS ", currFramerate ); // %2u -> assume we can't go over 99 fps. (capped at 60fps)
-		milliseconds const ms = nanoseconds_to_milliseconds( average );
-		if ( ms > 999 ) console_draw( L"+" );
-		console_draw( L"%3llums", ms > 999 ? 999 : ms ); // spaces at the end to remove size fluctuation if bigger size before
+		console_cursor_set_position( 1, 15 );
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
-		console_draw( L"\x1B[0K" );
 
 		widget_timer_update( &timer, false );
+		widget_fpsbar_frame();
 
 		console_refresh();
 
 		fpscounter_frame( fpsCounter );
 	}
 
+	widget_fpsbar_uninit(); // Could be done in fpsCounter directly ?
 	fpscounter_uninit( fpsCounter );
 	console_global_uninit();
 	return 0;

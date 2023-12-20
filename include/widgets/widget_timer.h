@@ -21,7 +21,7 @@ struct WidgetScreenData
 // should have the same width as WidgetBoardSummary, how could we make the dependency more explicit ?
 struct WidgetTimer // Not Timer, countdown !
 {
-    enum WidgetType type;
+    enum WidgetId id;
     struct WidgetScreenData screenData;
     // Specific data to timer
     seconds endTimerTimestamp;
