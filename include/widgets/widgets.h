@@ -1,6 +1,10 @@
 #include "core_types.h"
 #include "terminal.h"
 
+// Widgets should be graphical only !!
+// No widget -> the game can still run the same
+// Ex: removing the fps bar widgte doesn't stop the game from calculating the FPS.
+
 struct Widget;
 
 bool widgets_hook( struct Widget *widget );

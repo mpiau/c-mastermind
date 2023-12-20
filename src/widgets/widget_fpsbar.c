@@ -24,7 +24,7 @@ struct WidgetFPSBar s_widgetFPSBar = {};
 static bool s_init = false;
 
 
-static void hide( void )
+static void hide_callback( void )
 {
     // Do something
 }
@@ -60,41 +60,7 @@ static void draw( void )
 }
 
 
-bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
-{
-    if ( s_init ) { return false; }
-    if ( !fpsCounter ) { return false; }
-
-    // Avoid reinit if already init
-    s_widgetFPSBar.header.id = WidgetId_FPS_BAR;
-    s_widgetFPSBar.header.references = 0;
-    s_widgetFPSBar.header.hideCallback = hide;
-
-    s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 1, .y = 1 };
-    s_widgetFPSBar.header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
-
-    s_widgetFPSBar.fpsCounter = fpsCounter;
-    s_widgetFPSBar.averageFPS = 0;
-    s_widgetFPSBar.averageMsPerFrame = 0;
-
-    // Define size of the widget
-    // Define style of the widget
-
-    widgets_hook( (struct Widget *)&s_widgetFPSBar );
-
-    s_init = true;
-    return s_init;
-}
-
-
-void widget_fpsbar_uninit( void )
-{
-    widgets_unhook( (struct Widget const *)&s_widgetFPSBar );
-    s_init = false;
-}
-
-
-void widget_fpsbar_frame( void )
+static void frame_callback( void )
 {
     assert( s_init );
 
@@ -122,4 +88,39 @@ void widget_fpsbar_frame( void )
     // drawCall += 1;
     // console_cursor_set_position( 10, 1 );
     // console_draw( L"FPS Widget draw calls: %u", drawCall );
+}
+
+
+bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
+{
+    if ( s_init ) { return false; }
+    if ( !fpsCounter ) { return false; }
+
+    // Avoid reinit if already init
+    s_widgetFPSBar.header.id = WidgetId_FPS_BAR;
+    s_widgetFPSBar.header.references = 0;
+    s_widgetFPSBar.header.hideCallback = hide_callback;
+    s_widgetFPSBar.header.frameCallback = frame_callback;
+
+    s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 1, .y = 1 };
+    s_widgetFPSBar.header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
+
+    s_widgetFPSBar.fpsCounter = fpsCounter;
+    s_widgetFPSBar.averageFPS = 0;
+    s_widgetFPSBar.averageMsPerFrame = 0;
+
+    // Define size of the widget
+    // Define style of the widget
+
+    widgets_hook( (struct Widget *)&s_widgetFPSBar );
+
+    s_init = true;
+    return s_init;
+}
+
+
+void widget_fpsbar_uninit( void )
+{
+    widgets_unhook( (struct Widget const *)&s_widgetFPSBar );
+    s_init = false;
 }

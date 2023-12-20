@@ -15,6 +15,7 @@ enum WidgetId
 
 
 typedef void (* HideCallback)( void );
+typedef void (* FrameCallback)( void );
 
 
 struct Widget
@@ -27,6 +28,7 @@ struct Widget
     int             references;
 
     HideCallback    hideCallback;
+    FrameCallback   frameCallback;
 
     screenpos boxUpLeft;
     vec2u16   boxSize;

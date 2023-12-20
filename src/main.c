@@ -255,7 +255,7 @@ int main( void )
 	vec2u16 newSize = console_screen_get_size( hOut );
 	vec2u16 oldSize = (vec2u16) {}; // Not equal to newSize to trigger a first draw at the beginning.
 	nanoseconds resizeTimestamp = 0;
-	nanoseconds WAIT_BEFORE_RESIZE = 200 * 1000 * 1000; // 200ms
+	nanoseconds WAIT_BEFORE_RESIZE = 100 * 1000 * 1000; // 100ms
 
 
 	struct WidgetTimer timer = {};
@@ -347,7 +347,7 @@ int main( void )
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 
 		widget_timer_update( &timer, false );
-		widget_fpsbar_frame();
+		widgets_frame();
 
 		console_refresh();
 

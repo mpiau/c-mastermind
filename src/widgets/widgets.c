@@ -55,7 +55,15 @@ bool widgets_is_hook( struct Widget const *const widget )
 
 void widgets_frame( void )
 {
-
+    // Need to define an order of frame, because some popups can be put on top of the others
+    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *widget = s_widgets[id];
+        if ( widget && widget->frameCallback )
+        {
+            widget->frameCallback();
+        }
+    }
 }
 
 
