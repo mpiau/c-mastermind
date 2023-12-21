@@ -1,6 +1,7 @@
 #include "widgets/widgets_utils.h"
 
 #include "console.h"
+#include <stdio.h>
 
 enum
 {
@@ -20,14 +21,20 @@ enum
 };
 
 
-u16 draw_optional_border_title( utf16 const *const optTitle )
+u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const ellipsisMode )
 {
     if ( !optTitle || optTitle[0] == L'\0' ) return 0;
 
-    // How many spaces left ?
+    utf16 title[maxSize];
+    snwprintf( title, maxSize, L" %S ", optTitle );
+
+    if ( ellipsisMode )
+    {
+        return console_draw( title );
+    }
 
     console_color_fg( BorderColor_TITLE );
-    u16 const titleSize = console_draw( L" %S ", optTitle );
+    u16 const titleSize = console_draw( title );
     console_color_fg( BorderColor_LINES );
 
     return titleSize;
@@ -56,18 +63,15 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
     u16 const nbVertBars  = ( ellipsisYNeeded ? ellipsisSizeY - 1 : border->size.y - 2 ); // minus 1 corner for ellipsis | 2 corners
 
 
-
-
     console_cursor_set_position( sPos.y, sPos.x );
 
     bool const ellipsisNeeded = ellipsisXNeeded || ellipsisYNeeded;
     console_color_fg( ellipsisNeeded ? BorderColor_ELLIPSIS : BorderColor_LINES );
 
-    // Set the console given in the struct
     console_draw( L"%lc", Border_UP_LEFT_CORNER );
 
     // Ignore the title for now
-    u16 const titleSize = 0;// draw_optional_border_title( border->optTitle );
+    u16 const titleSize = draw_optional_border_title( border->optTitle, nbHorizBars, ellipsisXNeeded );
     for ( u16 x = 0; x < nbHorizBars - titleSize; ++x )
     {
         console_draw( L"%lc", ellipsisXNeeded ? Border_HORIZONTAL_ELLIPSIS : Border_HORIZONTAL_BAR );
@@ -86,21 +90,7 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
             console_draw( L"%lc", ellipsisYNeeded ? Border_VERTICAL_ELLIPSIS : Border_VERTICAL_BAR );
         }
     }
-//    if ( nbVertBars > 0 ) sPos.y += ( nbVertBars - 1 );
-/*    do 
-    {
-    } while ( sPos.y < border->upLeft.y + nbVertBars );*/
 
-
-    // Bottom borders
-/*    console_cursor_set_position( sPos.y, sPos.x );
-    console_draw( L"%lc", Border_BOTTOM_LEFT_CORNER );
-    for ( u16 x = 0; x < nbHorizBars; ++x )
-    {
-        console_draw( L"%lc", Border_HORIZONTAL_BAR );
-    }
-    console_draw( L"%lc", Border_BOTTOM_RIGHT_CORNER );
-*/
     if ( ellipsisYNeeded ) return;
     // Ellipsis attempt
     console_cursor_set_position( sPos.y + 1, sPos.x );
@@ -110,65 +100,4 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
         console_draw( L"%lc", ellipsisXNeeded ? Border_HORIZONTAL_ELLIPSIS : Border_HORIZONTAL_BAR );
     }
     if (!ellipsisXNeeded) console_draw( L"%lc", Border_BOTTOM_RIGHT_CORNER );
-
-
-/*
-    u32 const nbTurns = mastermind->config.nbTurns;
-    u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
-    // 4 -> border + space each side, + 2 -> middle with - and space
-    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
-
-    // Upper border
-    console_cursor_set_position( pos.y, pos.x );
-    console_color_fg( ConsoleColorFG_WHITE );
-    int prefixSize = console_draw( L"┌" );
-    console_color_fg( ConsoleColorFG_GREEN );
-    prefixSize += console_draw( L" Summary " );
-    console_color_fg( ConsoleColorFG_WHITE );
-    for ( int i = 0; i < borderWidth - 1 - prefixSize; ++ i )
-    {
-        console_draw( L"─" );
-    }
-    console_draw( L"┐" );
-    pos.y += 1;
-
-    // Middle border
-    for ( int i = 0; i < nbTurns; i++ )
-    {
-        console_cursor_set_position( pos.y + i, pos.x );
-        console_draw( L"│" );
-        console_cursor_set_position( pos.y + i, pos.x + 2 * nbPegsPerTurn + 2 );
-        console_draw( L"-" );
-        console_cursor_set_position( pos.y + i, pos.x + borderWidth - 1 );
-        console_draw( L"│" );
-    }
-    pos.y += nbTurns;
-
-    utf16 title[] = L"MASTERMIND";
-    u16 nbSpacesEachSide = ( borderWidth - ARR_COUNT( title ) ) / 2;
-
-   	console_cursor_set_position( pos.y, pos.x );
-	console_draw( L"│" );
-    console_cursor_move_right_by( nbSpacesEachSide );
-	console_color_fg( ConsoleColorFG_YELLOW );
-	console_draw( L"MASTERMIND" );
-	console_color_fg( ConsoleColorFG_WHITE );
-    console_cursor_set_position( pos.y, pos.x + borderWidth - 1 );
-	console_draw( L"│", nbSpacesEachSide );
-
-    pos.y += 1;
-    console_cursor_set_position( pos.y, pos.x );
-	console_draw( L"│" );
-    console_cursor_move_right_by( borderWidth - 2 );
-	console_draw( L"│" );
-
-    pos.y += 1;
-    console_cursor_set_position( pos.y, pos.x );
-    console_draw( L"└" );
-    for ( int i = 0; i < borderWidth - 2; ++ i )
-    {
-        console_draw( L"─" );
-    }
-    console_draw( L"┘" );
-*/
 }
