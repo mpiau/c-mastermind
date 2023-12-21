@@ -38,7 +38,10 @@ static void update_console_mode( void )
 	HANDLE handle = console_input_handle();
 	GetConsoleMode( handle, (LPDWORD)&s_oldInputMode );
 
-	DWORD newMode = s_oldInputMode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ) | ENABLE_WINDOW_INPUT;
+    // Funny thing, we need ENABLE_EXTENDED_FLAGS alongside ENABLE_MOUSE_INPUT in order to have mouse inputs
+    // And this flag just isn't documented on the Windows documentation.
+    // See https://stackoverflow.com/questions/37069599/cant-read-mouse-event-use-readconsoleinput-in-c 
+	DWORD newMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT;
 	SetConsoleMode( handle,  newMode );
 
 	handle = console_output_handle();

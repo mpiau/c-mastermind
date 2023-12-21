@@ -16,19 +16,29 @@ enum
 
 
     BorderColor_LINES = ConsoleColorFG_WHITE,
-    BorderColor_ELLIPSIS = ConsoleColorFG_YELLOW,//BRIGHT_BLACK,
+    BorderColor_ELLIPSIS = ConsoleColorFG_YELLOW,
     BorderColor_TITLE = ConsoleColorFG_GREEN
 };
 
+enum ConsoleColorFG get_border_color( enum WidgetTruncate const truncateStatus )
+{
+    return truncateStatus == WidgetTruncate_NONE ? BorderColor_LINES : BorderColor_ELLIPSIS;
+}
 
-u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const ellipsisMode )
+utf16 get_horiz_utf16( enum WidgetTruncate const truncateStatus )
+{
+    return truncateStatus == WidgetTruncate_NONE ? Border_HORIZONTAL_BAR : Border_HORIZONTAL_ELLIPSIS;
+}
+
+
+u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const isTruncated )
 {
     if ( !optTitle || optTitle[0] == L'\0' ) return 0;
 
     utf16 title[maxSize];
     snwprintf( title, maxSize, L" %S ", optTitle );
 
-    if ( ellipsisMode )
+    if ( isTruncated )
     {
         return console_draw( title );
     }
@@ -41,6 +51,7 @@ u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, 
 }
 
 
+
 void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos const screenSize )
 {
     // Ensure that the widget is big enough to have borders
@@ -51,6 +62,8 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
     // Don't draw anything if upleft is out of screen
     if ( sPos.x > screenSize.x || sPos.y > screenSize.y ) return;
 
+    enum WidgetTruncate truncate = WidgetTruncate_NONE;
+
     // Ellipsis calculs
     u16 const ellipsisSizeX = screenSize.x - border->upLeft.x + 1; // +1 to account the current case
     u16 const ellipsisSizeY = screenSize.y - border->upLeft.y + 1; // +1 to account the current case
@@ -58,6 +71,10 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
     bool const ellipsisXNeeded = ellipsisSizeX < border->size.x;
     bool const ellipsisYNeeded = ellipsisSizeY < border->size.y;
 
+    if ( ellipsisXNeeded )      truncate |= WidgetTruncate_X_AXIS;
+    else if ( ellipsisYNeeded ) truncate |= WidgetTruncate_Y_AXIS;
+
+    bool const ellipsisNeeded = ellipsisXNeeded || ellipsisYNeeded;
 
     u16 const nbHorizBars = ( ellipsisXNeeded ? ellipsisSizeX - 1 : border->size.x - 2 ); // minus the 2 corners | 1 corner + 1 ellipsis
     u16 const nbVertBars  = ( ellipsisYNeeded ? ellipsisSizeY - 1 : border->size.y - 2 ); // minus 1 corner for ellipsis | 2 corners
@@ -65,13 +82,12 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
 
     console_cursor_set_position( sPos.y, sPos.x );
 
-    bool const ellipsisNeeded = ellipsisXNeeded || ellipsisYNeeded;
-    console_color_fg( ellipsisNeeded ? BorderColor_ELLIPSIS : BorderColor_LINES );
+    console_color_fg( get_border_color( truncate ) );
 
     console_draw( L"%lc", Border_UP_LEFT_CORNER );
 
     // Ignore the title for now
-    u16 const titleSize = draw_optional_border_title( border->optTitle, nbHorizBars, ellipsisXNeeded );
+    u16 const titleSize = draw_optional_border_title( border->optTitle, nbHorizBars, ellipsisNeeded );
     for ( u16 x = 0; x < nbHorizBars - titleSize; ++x )
     {
         console_draw( L"%lc", ellipsisXNeeded ? Border_HORIZONTAL_ELLIPSIS : Border_HORIZONTAL_BAR );
@@ -91,7 +107,7 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
         }
     }
 
-    if ( ellipsisYNeeded ) return;
+    if ( ellipsisYNeeded ) { console_color_reset(); return; }
     // Ellipsis attempt
     console_cursor_set_position( sPos.y + 1, sPos.x );
     console_draw( L"%lc", Border_BOTTOM_LEFT_CORNER );
@@ -100,4 +116,6 @@ void widget_utils_draw_borders( struct WidgetBorder const *border, screenpos con
         console_draw( L"%lc", ellipsisXNeeded ? Border_HORIZONTAL_ELLIPSIS : Border_HORIZONTAL_BAR );
     }
     if (!ellipsisXNeeded) console_draw( L"%lc", Border_BOTTOM_RIGHT_CORNER );
+
+    console_color_reset();
 }

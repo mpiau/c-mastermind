@@ -102,7 +102,7 @@ bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
     s_widgetFPSBar.header.hideCallback = hide_callback;
     s_widgetFPSBar.header.frameCallback = frame_callback;
 
-    s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 1, .y = 1 };
+    s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 2, .y = 2 };
     s_widgetFPSBar.header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
 
     s_widgetFPSBar.fpsCounter = fpsCounter;

@@ -1,3 +1,7 @@
+//temp
+// https://learn.microsoft.com/en-ca/windows/win32/api/winuser/nf-winuser-setsystemcursor?redirectedfrom=MSDN
+#define OEMRESOURCE 
+
 // Mastermind game in C
 #include "game_menus.h"
 #include "mastermind_v2.h"
@@ -258,11 +262,27 @@ int main( void )
 	nanoseconds resizeTimestamp = 0;
 	nanoseconds WAIT_BEFORE_RESIZE = 100 * 1000 * 1000; // 100ms
 
-	struct WidgetBorder border1 = {};
+	vec2u16 mousePos = {};
+
+/*	struct WidgetBorder border1 = {};
 	border1.upLeft = (screenpos) { .x = 30, .y = 10 };
 	border1.size = (vec2u16) { .x = 60, .y = 10 };
 	border1.optTitle = L"Test";
+*/
+	struct WidgetBorder border2 = {};
+	border2.upLeft = (screenpos) { .x = 1, .y = 1 };
+	border2.size = (vec2u16) { .x = 120, .y = 30 };
+	border2.optTitle = L"Mastermind";
 
+	struct WidgetBorder border3 = {};
+	border3.upLeft = (screenpos) { .x = 2, .y = 3 };
+	border3.size = (vec2u16) { .x = 30, .y = 20 };
+	border3.optTitle = L"Rules";
+
+	struct WidgetBorder border4 = {};
+	border4.upLeft = (screenpos) { .x = 32, .y = 3 };
+	border4.size = (vec2u16) { .x = 30, .y = 27 };
+	border4.optTitle = L"Board";
 
 	struct WidgetTimer timer = {};
 	timer.screenData.upLeft = (vec2u16){ .x = newSize.x - 18, .y = 18 };
@@ -271,11 +291,6 @@ int main( void )
 	timer.lastUpdateTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
 	timer.totalDuration = 60;
 	timer.endTimerTimestamp = timer.lastUpdateTimestamp + timer.totalDuration;
-
-	struct WidgetTimer board = {};
-	board.screenData.upLeft = (vec2u16){ .x = 20, .y = 2 };
-	board.screenData.bottomRight = (vec2u16){ .x = newSize.x - 19, .y = 30 };
-	board.screenData.name = L"Board";
 
 	bool mainLoop = true;
 	while ( mainLoop )
@@ -295,8 +310,14 @@ int main( void )
 				resizeTimestamp = get_timestamp_nanoseconds();
 				continue;
 			}
-
-			if ( irInBuf.EventType == KEY_EVENT && irInBuf.Event.KeyEvent.bKeyDown )
+			else if ( irInBuf.EventType == MOUSE_EVENT )
+			{
+				// Can't change the mouse icon in console app =( We will need to change some things
+				// To show to the user that the mouse is still usable
+				mousePos = *(vec2u16 *)&irInBuf.Event.MouseEvent.dwMousePosition;
+				continue;
+			}
+			else if ( irInBuf.EventType == KEY_EVENT && irInBuf.Event.KeyEvent.bKeyDown )
 			{
 				enum KeyInput input;
 				if ( !key_input_from_u32( irInBuf.Event.KeyEvent.wVirtualKeyCode, &input ) )
@@ -330,24 +351,49 @@ int main( void )
 			{
 				// Check if we need to rewrite something (x++ or y++ doesn't change anything with enough size e.g. )
 				// Check if the screen is too small than required.
-				console_cursor_set_position( 2, 1 );
-				console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
+//				console_cursor_set_position( 2, 1 );
+//				console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
 
 				// !! draw_entire_game( &mastermind, newSize );
 
 				oldSize = newSize;
 
 				// !! widget_timer_redraw( &timer );
-				// !! widget_timer_redraw( &board );
 
-				widget_utils_draw_borders( &border1, newSize );
+//				widget_utils_draw_borders( &border1, newSize );
+				widget_utils_draw_borders( &border2, newSize );
+				widget_utils_draw_borders( &border3, newSize );
+				widget_utils_draw_borders( &border4, newSize );
+
+				enum ConsoleColorFG colors[] = {
+					ConsoleColorFG_GREEN,
+					ConsoleColorFG_RED,
+					ConsoleColorFG_CYAN,
+					ConsoleColorFG_MAGENTA,
+					ConsoleColorFG_YELLOW,
+					ConsoleColorFG_WHITE,
+					ConsoleColorFG_BLUE
+				};
+
+				for ( int i = 0; i < ARR_COUNT( colors ); ++i )
+				{
+					int x = 10 + i * 8;
+					console_color_fg( colors[i] );
+					console_cursor_set_position( 10, x );
+					console_draw( L",d88b." );
+					console_cursor_set_position( 11, x );
+					console_draw( L"888888");
+					console_cursor_set_position( 12, x );
+					console_draw( L"`Y88P'" );
+				}
+				console_color_reset();
 			}
 		}
 
 		// End of the main loop
 
-		console_cursor_set_position( 1, 15 );
-		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
+		console_cursor_set_position( 2, 15 );
+		console_draw( L" Screen: %ux%u | Mouse: %ux%u  ", newSize.x, newSize.y, mousePos.x, mousePos.y );
 
 		// !! widget_timer_update( &timer, false );
 		widgets_frame();

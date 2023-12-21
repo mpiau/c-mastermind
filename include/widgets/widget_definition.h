@@ -18,9 +18,18 @@ typedef void (* HideCallback)( void );
 typedef void (* FrameCallback)( void );
 
 
+enum WidgetTruncate
+{
+    WidgetTruncate_NONE   = 0x00,
+    WidgetTruncate_X_AXIS = 0x01,
+    WidgetTruncate_Y_AXIS = 0x10
+};
+
+
 struct Widget
 {
     enum WidgetId id;
+    enum WidgetTruncate truncateStatus;
 
     // If references > 0, don't free it because it's still referenced somewhere !
     // And if they shouldn't be referenced anymore, fix your code.
