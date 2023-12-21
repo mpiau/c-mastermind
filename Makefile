@@ -9,6 +9,7 @@ SRC += src/mastermind_v2.c
 SRC += src/widgets/widget_timer.c
 SRC += src/widgets/widget_fpsbar.c
 SRC += src/widgets/widgets.c
+SRC += src/widgets/widgets_utils.c
 
 
 CFLAGS += -Iinclude

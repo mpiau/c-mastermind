@@ -8,6 +8,7 @@
 #include "fps_counter.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_fpsbar.h"
+#include "widgets/widgets_utils.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -257,6 +258,11 @@ int main( void )
 	nanoseconds resizeTimestamp = 0;
 	nanoseconds WAIT_BEFORE_RESIZE = 100 * 1000 * 1000; // 100ms
 
+	struct WidgetBorder border1 = {};
+	border1.upLeft = (screenpos) { .x = 30, .y = 10 };
+	border1.size = (vec2u16) { .x = 60, .y = 10 };
+	border1.optTitle = L"Test";
+
 
 	struct WidgetTimer timer = {};
 	timer.screenData.upLeft = (vec2u16){ .x = newSize.x - 18, .y = 18 };
@@ -270,11 +276,6 @@ int main( void )
 	board.screenData.upLeft = (vec2u16){ .x = 20, .y = 2 };
 	board.screenData.bottomRight = (vec2u16){ .x = newSize.x - 19, .y = 30 };
 	board.screenData.name = L"Board";
-
-	// settings ⚙
-	// pause/resume ⏸ // ▶
-	// return to menu ⌂ ?
-	// back previous turn ? ⟲
 
 	bool mainLoop = true;
 	while ( mainLoop )
@@ -331,13 +332,15 @@ int main( void )
 				// Check if the screen is too small than required.
 				console_cursor_set_position( 2, 1 );
 				console_draw( L"\x1b[50M" ); // 50 is arbitrary, but it avoid cleaning up the FPS line
-				// draw_title( newSize );
-				draw_entire_game( &mastermind, newSize );
+
+				// !! draw_entire_game( &mastermind, newSize );
 
 				oldSize = newSize;
 
-				widget_timer_redraw( &timer );
-				widget_timer_redraw( &board );
+				// !! widget_timer_redraw( &timer );
+				// !! widget_timer_redraw( &board );
+
+				widget_utils_draw_borders( &border1, newSize );
 			}
 		}
 
@@ -346,7 +349,7 @@ int main( void )
 		console_cursor_set_position( 1, 15 );
 		console_draw( L" %ux%u", newSize.x, newSize.y ); // spaces at the end to remove size fluctuation if bigger size before
 
-		widget_timer_update( &timer, false );
+		// !! widget_timer_update( &timer, false );
 		widgets_frame();
 
 		console_refresh();

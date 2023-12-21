@@ -7,14 +7,6 @@
 #include <stdarg.h>
 #include <wchar.h>
 
-struct Console
-{
-    HANDLE inputHandle;
-    HANDLE outputHandle;
-    HANDLE backOutputHandle;
-    bool swapBuffer;
-};
-
 static u32 s_oldInputMode = 0;
 static u32 s_oldOutputMode = 0;
 static atomic_bool s_isInit = false;

@@ -33,3 +33,26 @@ struct Widget
     screenpos boxUpLeft;
     vec2u16   boxSize;
 };
+
+
+struct WidgetBorder
+{
+    screenpos upLeft;
+    vec2u16   size;
+
+    utf16 *optTitle;
+
+    // ConsoleColor borderBackground;
+    // ConsoleColor borderForeground;
+    // bool showBorders;
+    // bool hasBorders;
+    // bool displayTitle
+    // utf16 *title
+};
+
+struct WidgetCallbacks
+{
+    FrameCallback   frameCallback;
+    HideCallback    hideCallback;
+    // [...] 
+};
