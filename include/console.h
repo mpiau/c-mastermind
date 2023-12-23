@@ -116,7 +116,7 @@ void console_color_fg( enum ConsoleColorFG fgColor );
 void console_color_bg( enum ConsoleColorBG bgColor );
 
 
-vec2u16 console_screen_get_size( HANDLE handle );
+//vec2u16 console_screen_get_size( HANDLE handle );
 void console_screen_clear( void );
 
 void console_refresh( void );

@@ -10,6 +10,8 @@ SRC += src/widgets/widget_timer.c
 SRC += src/widgets/widget_fpsbar.c
 SRC += src/widgets/widgets.c
 SRC += src/widgets/widgets_utils.c
+SRC += src/console_screen.c
+SRC += src/mouse.c
 
 
 CFLAGS += -Iinclude

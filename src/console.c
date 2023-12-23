@@ -1,4 +1,5 @@
 #include "console.h"
+#include "console_screen.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -95,7 +96,8 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
 	console_alternate_buffer_enter();
     console_cursor_hide();
 
-    vec2u16 const screenSize = console_screen_get_size( console_output_handle() );
+	console_screen_init( console_output_handle() );
+    vec2u16 const screenSize = console_screen_get_size();
     SetConsoleScreenBufferSize( console_output_handle(), *(COORD *)&screenSize );
 
     return true;
@@ -276,18 +278,6 @@ void console_color_fg( enum ConsoleColorFG const fgColor )
 void console_color_bg( enum ConsoleColorBG const bgColor )
 {
     console_draw( L"\x1b[%um", bgColor );
-}
-
-
-vec2u16 console_screen_get_size( HANDLE const handle )
-{
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo( handle, &info );
-
-    u16 const newScreenWidth = info.srWindow.Right - info.srWindow.Left + 1;
-    u16 const newscreenHeight = info.srWindow.Bottom - info.srWindow.Top + 1;
-
-    return (vec2u16) { .x = newScreenWidth, .y = newscreenHeight };    
 }
 
 
