@@ -151,6 +151,17 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 			{
 				s_mainLoop = false;
 			}
+
+			// Just to simplify testing
+			struct Widget *widget = widget_optget( WidgetId_FPS_BAR );
+			if ( input == KeyInput_NUMPAD_8 ) {
+				if ( widget_is_fps_shown( widget ) ) widget_fpsbar_hide_fps( widget );
+				else widget_fpsbar_show_fps( widget );
+			}
+			if ( input == KeyInput_NUMPAD_9 ) {
+				if ( widget_is_ms_shown( widget ) ) widget_fpsbar_hide_ms( widget );
+				else widget_fpsbar_show_ms( widget );
+			}
 			break;
 		}
 
@@ -257,11 +268,11 @@ int main( void )
 		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
 		return 2;
 	}
-	if ( !widgets_init() )
+	if ( !widget_global_init() )
 	{
 		return 3;
 	}
-	widget_fpsbar_init( fpsCounter );
+//	widget_fpsbar_init( fpsCounter );
 
 	srand( time( NULL ) );
 
@@ -298,7 +309,7 @@ int main( void )
 
 		// Frame functions
 		console_screen_frame();
-		widgets_frame();
+		widget_frame();
 
 		// TEMP - To move somewhere else
 		console_cursor_set_position( 2, 15 );
@@ -312,7 +323,8 @@ int main( void )
 		fpscounter_frame( fpsCounter );
 	}
 
-	widget_fpsbar_uninit(); // Could be done in fpsCounter directly ?
+	// widget_fpsbar_uninit(); // Could be done in fpsCounter directly ?
+	widget_global_uninit();
 	fpscounter_uninit( fpsCounter );
 	console_global_uninit();
 	return 0;

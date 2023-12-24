@@ -3,22 +3,11 @@
 #include "core_types.h"
 #include "core_unions.h"
 
+#include "widgets/widget.h"
 #include "mouse.h"
 
-enum WidgetId
-{
-    WidgetId_TIMER,
-    WidgetId_COUNTDOWN,
-    WidgetId_BOARD_SUMMARY,
-    WidgetId_FPS_BAR,
-
-    WidgetId_Count,
-};
-
-
-typedef void ( *HideCallback )( void );
-typedef void ( *FrameCallback )( void );
-
+typedef void ( *WidgetFrameCallback )( struct Widget *widget );
+typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
 
 enum WidgetTruncate
 {
@@ -26,7 +15,6 @@ enum WidgetTruncate
     WidgetTruncate_X_AXIS = 0x01,
     WidgetTruncate_Y_AXIS = 0x10
 };
-
 
 struct Widget
 {
@@ -38,9 +26,8 @@ struct Widget
     // If references is < 0, also fix your damn code.
     int             references;
 
-    HideCallback    		hideCallback;
-    FrameCallback   		frameCallback;
-	OnMouseMovementCallback mouseMouvementCallback;
+    WidgetFrameCallback   		frameCallback;
+	WidgetMouseMoveCallback 		mouseMoveCallback;
 
     screenpos boxUpLeft;
     vec2u16   boxSize;
@@ -64,8 +51,7 @@ struct WidgetBorder
 
 struct WidgetCallbacks
 {
-    FrameCallback   		frameCallback;
-    HideCallback    		hideCallback;
-	OnMouseMovementCallback mouseMouvementCallback;
+    WidgetFrameCallback   		frameCallback;
+  	WidgetMouseMoveCallback 		mouseMoveCallback;
     // [...] 
 };

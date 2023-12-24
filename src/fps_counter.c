@@ -78,6 +78,12 @@ struct FPSCounter *fpscounter_init( void )
 }
 
 
+struct FPSCounter *fpscounter_get_instance( void )
+{
+	return &s_fpsCounter;
+}
+
+
 void fpscounter_uninit( struct FPSCounter *fpsCounter )
 {
     // Note: Not sure we should export FPSCounter as we only should get only one in the entire game.

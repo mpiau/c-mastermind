@@ -2,23 +2,20 @@
 
 #include "core_types.h"
 
-struct FPSCounter;
+struct Widget *widget_fpsbar_create( void );
 
-bool widget_fpsbar_init( struct FPSCounter *fpsCounter );
-void widget_fpsbar_uninit( void );
+// You MUST give the widget given by the create function.
+// If you give another type of widget, the code will assert.
+void widget_fpsbar_show( struct Widget *widget );
+void widget_fpsbar_show_fps( struct Widget *widget );
+void widget_fpsbar_show_ms( struct Widget *widget );
 
-void widget_fpsbar_show( void );
-void widget_fpsbar_show_fps( void );
-void widget_fpsbar_show_ms( void );
+void widget_fpsbar_hide( struct Widget *widget ); // hide content maybe ?
+void widget_fpsbar_hide_fps( struct Widget *widget );
+void widget_fpsbar_hide_ms( struct Widget *widget );
 
-void widget_fpsbar_hide( void );
-void widget_fpsbar_hide_fps( void );
-void widget_fpsbar_hide_ms( void );
+bool widget_is_shown( struct Widget *widget );
+bool widget_is_fps_shown( struct Widget *widget );
+bool widget_is_ms_shown( struct Widget *widget );
 
-// Hide only stop drawing the widget, remove free up the space in the screen (thus can be used by other widgets)
-void widget_fpsbar_remove( void );
-
-
-// void widget_fpsbar_on_screen_resized(), to hook on a future screen size handler ?
-
-// struct WidgetFPSBar *widget_fpsbar_get_instance( void );
+// Note: One Toggle function instead of show + hide ?

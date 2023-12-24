@@ -1,6 +1,6 @@
 #include "widgets/widget_fpsbar.h"
 
-#include "widgets/widgets.h"
+#include "widgets/widget.h"
 #include "widgets/widget_definition.h"
 
 #include "fps_counter.h"
@@ -8,102 +8,136 @@
 
 #include "console.h"
 
-struct WidgetFPSBar
+enum Visibility
 {
-    struct Widget header; // or base ?
-    // struct WidgetStyle style ?
+    Visibility_NONE         = 0x00,
+    Visibility_FRAMERATE    = 0x01,
+    Visibility_MILLISECONDS = 0x10,
 
-    // Specific stuff
-    struct FPSCounter *fpsCounter;
-
-    u64 averageFPS;
-    milliseconds averageMsPerFrame;
-	bool mouseHoveringWidget;
+    Visibility_ALL          = 0x11
 };
 
 
-struct WidgetFPSBar s_widgetFPSBar = {};
-static bool s_init = false;
-
-
-static void hide_callback( void )
+struct WidgetFPSBar
 {
-    // Do something
+    struct Widget header;
+
+    enum Visibility visibility;
+    u64             averageFPS;
+    milliseconds    averageMsPerFrame;
+    bool            mouseHoveringWidget;
+};
+
+static inline bool can_display_fps( struct WidgetFPSBar *fpsBar )
+{
+    return ( fpsBar->visibility & Visibility_FRAMERATE ) != 0;
+}
+
+static inline bool can_display_ms( struct WidgetFPSBar *fpsBar )
+{
+    return ( fpsBar->visibility & Visibility_MILLISECONDS ) != 0;
 }
 
 
-// TODO On resize, if the size of the screen is < to what's needed, don't draw anything
-// Until rechecking on resize.
-
-static void draw( void )
+static void clear_callback( struct Widget *widget )
 {
-    // TODO It's hardcoded here, it should be relative to widget position.
-    screenpos upLeft = s_widgetFPSBar.header.boxUpLeft;
-	console_cursor_set_position( upLeft.y, upLeft.x );
-	console_color_fg( s_widgetFPSBar.mouseHoveringWidget ? ConsoleColorFG_WHITE : ConsoleColorFG_BRIGHT_BLACK );
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
+
+    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    console_cursor_set_position( upLeft.y, upLeft.x );
+
+    console_draw( L"%*lc", fpsBar->header.boxSize.x, L' ' );
+}
+
+
+static void draw_callback( struct Widget *widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
+
+    // Avoid filling the buffer with only spaces at each draw call
+    if ( fpsBar->visibility == Visibility_NONE ) return;
+
+    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    console_cursor_set_position( upLeft.y, upLeft.x );
+    console_color_fg( fpsBar->mouseHoveringWidget ? ConsoleColorFG_WHITE : ConsoleColorFG_BRIGHT_BLACK );
 
     // %2u -> assume we can't go over 99 fps. (capped at 90fps maximum)
- 	int charsDrawn = console_draw( L"%2uFPS ", s_widgetFPSBar.averageFPS );
-
-	if ( s_widgetFPSBar.averageMsPerFrame > 999 )
+    int charsDrawn = 0;
+    
+    if ( can_display_fps( fpsBar ) )
     {
-        charsDrawn += console_draw( L"+" );
+        charsDrawn += console_draw( L"%2uFPS ", fpsBar->averageFPS );
     }
-    milliseconds const msToDraw = s_widgetFPSBar.averageMsPerFrame > 999 ? 999 : s_widgetFPSBar.averageMsPerFrame;
-	charsDrawn += console_draw( L"%3llums", msToDraw ); // spaces at the end to remove size fluctuation if bigger size before
+
+    if ( can_display_ms( fpsBar ) )
+    {
+        if ( fpsBar->averageMsPerFrame > 999 )
+        {
+            charsDrawn += console_draw( L"+" );
+        }
+        milliseconds const msToDraw = fpsBar->averageMsPerFrame > 999 ? 999 : fpsBar->averageMsPerFrame;
+        charsDrawn += console_draw( L"%3llums", msToDraw );
+    }
 
     // cleanup the rest of the widget space
-    int const spaceLeft = s_widgetFPSBar.header.boxSize.x - charsDrawn;
-    assert( spaceLeft >= 0 );
+    int const spaceLeft = fpsBar->header.boxSize.x - charsDrawn;
+    assert( spaceLeft >= 0 ); // Otherwise, we would be outside the widget boundaries
     if ( spaceLeft > 0 )
     {
         console_draw( L"%*lc", spaceLeft, L' ' );
     }
-	console_color_reset();
+
+    console_color_reset();
 }
 
 
-static void on_mouse_mouvement_callback( screenpos const /*old*/, screenpos const new )
+static void mouse_move_callback( struct Widget *widget, screenpos const /*old*/, screenpos const new )
 {
-	screenpos const upLeft = s_widgetFPSBar.header.boxUpLeft;
-	screenpos const bottomRight = (screenpos) {
-		.x = upLeft.x + s_widgetFPSBar.header.boxSize.x - 1,
-		.y = upLeft.y + s_widgetFPSBar.header.boxSize.y - 1
-	};
-	bool const isMouseOnWidget =
-		( new.x >= upLeft.x && new.x <= bottomRight.x ) &&
-		( new.y >= upLeft.y && new.y <= bottomRight.y );
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
 
-	if ( isMouseOnWidget != s_widgetFPSBar.mouseHoveringWidget )
-	{
-		s_widgetFPSBar.mouseHoveringWidget = isMouseOnWidget;
-		draw();
-	}
+    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    screenpos const bottomRight = (screenpos) {
+        .x = upLeft.x + fpsBar->header.boxSize.x - 1,
+        .y = upLeft.y + fpsBar->header.boxSize.y - 1
+    };
+    bool const isMouseOnWidget =
+        ( new.x >= upLeft.x && new.x <= bottomRight.x ) &&
+        ( new.y >= upLeft.y && new.y <= bottomRight.y );
+
+    if ( isMouseOnWidget != fpsBar->mouseHoveringWidget )
+    {
+        fpsBar->mouseHoveringWidget = isMouseOnWidget;
+        draw_callback( widget );
+    }
 }
 
 
-static void frame_callback( void )
+static void frame_callback( struct Widget *widget )
 {
-    assert( s_init );
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
 
-    u64 const averageFPS = fpscounter_average_framerate( s_widgetFPSBar.fpsCounter );
-	nanoseconds const averageFrameTimeNs = fpscounter_average_time( s_widgetFPSBar.fpsCounter );
+    struct FPSCounter *fpsCounter = fpscounter_get_instance();
+    u64 const averageFPS = fpscounter_average_framerate( fpsCounter );
+    nanoseconds const averageFrameTimeNs = fpscounter_average_time( fpsCounter );
     milliseconds const averageMsPerFrame = nanoseconds_to_milliseconds( averageFrameTimeNs );
 
-    if ( averageFPS == s_widgetFPSBar.averageFPS && averageMsPerFrame == s_widgetFPSBar.averageMsPerFrame )
+    if ( averageFPS == fpsBar->averageFPS && averageMsPerFrame == fpsBar->averageMsPerFrame )
     {
         // Nothing new to update, skip it to save a draw call.
         return;
     }
 
-    s_widgetFPSBar.averageFPS = averageFPS;
-    s_widgetFPSBar.averageMsPerFrame = averageMsPerFrame;
+    fpsBar->averageFPS = averageFPS;
+    fpsBar->averageMsPerFrame = averageMsPerFrame;
 
     // The FPSCounter has a buffer of 8 frames to fill before sending real average time.
     // Do we want to do something to prevent drawing 8 times not accurate fps at the beginning of the game ?
     // Seems like a very low task as it only impact the first 8 frames of the game start...
-
-    draw();
+    draw_callback( widget );
 
     // Debug stuff
     // static u32 drawCall = 0;
@@ -113,39 +147,133 @@ static void frame_callback( void )
 }
 
 
-bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
+struct Widget *widget_fpsbar_create( void )
 {
-    if ( s_init ) { return false; }
-    if ( !fpsCounter ) { return false; }
+    struct WidgetFPSBar *const fpsBar = malloc( sizeof( struct WidgetFPSBar ) );
+    if ( !fpsBar ) return NULL;
 
-    // Avoid reinit if already init
-    s_widgetFPSBar.header.id = WidgetId_FPS_BAR;
-    s_widgetFPSBar.header.references = 0;
-    s_widgetFPSBar.header.hideCallback = hide_callback;
-    s_widgetFPSBar.header.frameCallback = frame_callback;
-	s_widgetFPSBar.header.mouseMouvementCallback = on_mouse_mouvement_callback;
+    fpsBar->header.id = WidgetId_FPS_BAR;
 
-    s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 2, .y = 2 };
-    s_widgetFPSBar.header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
+    // Improve that part
+    fpsBar->header.frameCallback = frame_callback;
+    fpsBar->header.mouseMoveCallback = mouse_move_callback;
 
-    s_widgetFPSBar.fpsCounter = fpsCounter;
-    s_widgetFPSBar.averageFPS = 0;
-    s_widgetFPSBar.averageMsPerFrame = 0;
-	s_widgetFPSBar.mouseHoveringWidget = false;
+    // This one as well
+    fpsBar->header.boxUpLeft = (screenpos) { .x = 2, .y = 2 };
+    fpsBar->header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
 
-    // Define size of the widget
-    // Define style of the widget
+    fpsBar->visibility = Visibility_ALL;
+    fpsBar->averageFPS = 0;
+    fpsBar->averageMsPerFrame = 0;
+    fpsBar->mouseHoveringWidget = false;
 
-    widgets_hook( (struct Widget *)&s_widgetFPSBar );
-	// mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
-
-    s_init = true;
-    return s_init;
+    return (struct Widget *)fpsBar;
 }
 
 
-void widget_fpsbar_uninit( void )
+// /////////////////////////////////////////////////////////////////////////////
+
+
+void widget_fpsbar_show( struct Widget *const widget )
 {
-    widgets_unhook( (struct Widget const *)&s_widgetFPSBar );
-    s_init = false;
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( fpsBar->visibility != Visibility_ALL )
+    {
+        fpsBar->visibility = Visibility_ALL;
+        draw_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_show_fps( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( !can_display_fps( fpsBar ) )
+    {
+        fpsBar->visibility |= Visibility_FRAMERATE;
+        draw_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_show_ms( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( !can_display_ms( fpsBar ) )
+    {
+        fpsBar->visibility |= Visibility_MILLISECONDS;
+        draw_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_hide( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( fpsBar->visibility != Visibility_NONE )
+    {
+        fpsBar->visibility = Visibility_NONE;
+        clear_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_hide_fps( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( can_display_fps( fpsBar ) )
+    {
+        fpsBar->visibility &= ~Visibility_FRAMERATE;
+        fpsBar->visibility == Visibility_NONE ? clear_callback( widget ) : draw_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_hide_ms( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( can_display_ms( fpsBar ) )
+    {
+        fpsBar->visibility &= ~Visibility_MILLISECONDS;
+        fpsBar->visibility == Visibility_NONE ? clear_callback( widget ) : draw_callback( widget );
+    }
+}
+
+
+bool widget_is_shown( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    return fpsBar->visibility = Visibility_ALL;
+}
+
+
+bool widget_is_fps_shown( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    return can_display_fps( fpsBar );
+}
+
+
+bool widget_is_ms_shown( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    return can_display_ms( fpsBar );
 }

@@ -7,7 +7,7 @@ struct FPSCounter;
 
 struct FPSCounter *fpscounter_init( void );
 void fpscounter_uninit( struct FPSCounter *fpsCounter );
-
+struct FPSCounter *fpscounter_get_instance( void );
 
 u64 fpscounter_frame( struct FPSCounter *fpsCounter );
 

@@ -4,7 +4,6 @@
 #include "core_unions.h"
 #include "time_units.h"
 
-#include "widgets/widgets.h"
 #include "widgets/widget_definition.h"
 
 struct WidgetScreenData
