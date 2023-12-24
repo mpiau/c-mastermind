@@ -4,10 +4,8 @@
 #include "core_unions.h"
 
 #include "widgets/widget.h"
+#include "console.h"
 #include "mouse.h"
-
-typedef void ( *WidgetFrameCallback )( struct Widget *widget );
-typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
 
 enum WidgetTruncate
 {
@@ -16,42 +14,42 @@ enum WidgetTruncate
     WidgetTruncate_Y_AXIS = 0x10
 };
 
-struct Widget
+enum WidgetBorderOption
 {
-    enum WidgetId id;
-    enum WidgetTruncate truncateStatus;
-
-    // If references > 0, don't free it because it's still referenced somewhere !
-    // And if they shouldn't be referenced anymore, fix your code.
-    // If references is < 0, also fix your damn code.
-    int             references;
-
-    WidgetFrameCallback   		frameCallback;
-	WidgetMouseMoveCallback 		mouseMoveCallback;
-
-    screenpos boxUpLeft;
-    vec2u16   boxSize;
+	WidgetBorderOption_INVISIBLE,
+	WidgetBorderOption_VISIBLE_ON_TRUNCATE,
+	WidgetBorderOption_ALWAYS_VISIBLE,
 };
-
 
 struct WidgetBorder
 {
+	enum WidgetBorderOption option;
     screenpos upLeft;
     vec2u16   size;
 
     utf16 *optTitle;
-
-    // ConsoleColor borderBackground;
-    // ConsoleColor borderForeground;
-    // bool showBorders;
-    // bool hasBorders;
-    // bool displayTitle
-    // utf16 *title
+	enum ConsoleColorFG borderColor;
+	enum ConsoleColorFG titleColor;
 };
+
+
+typedef void ( *WidgetFrameCallback )( struct Widget *widget );
+typedef void ( *WidgetClearCallback )( struct Widget *widget );
+typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
 
 struct WidgetCallbacks
 {
-    WidgetFrameCallback   		frameCallback;
-  	WidgetMouseMoveCallback 		mouseMoveCallback;
+    WidgetFrameCallback		frameCb;
+    WidgetClearCallback		clearCb;
+  	WidgetMouseMoveCallback mouseMoveCb;
     // [...] 
+};
+
+struct Widget
+{
+    enum WidgetId id;
+	struct WidgetBorder border;
+	struct WidgetCallbacks callbacks;
+
+    enum WidgetTruncate truncateStatus;
 };

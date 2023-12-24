@@ -44,10 +44,10 @@ static void clear_callback( struct Widget *widget )
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
 
-    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    screenpos const upLeft = fpsBar->header.border.upLeft;
     console_cursor_set_position( upLeft.y, upLeft.x );
 
-    console_draw( L"%*lc", fpsBar->header.boxSize.x, L' ' );
+    console_draw( L"%*lc", fpsBar->header.border.size.x, L' ' );
 }
 
 
@@ -59,7 +59,7 @@ static void draw_callback( struct Widget *widget )
     // Avoid filling the buffer with only spaces at each draw call
     if ( fpsBar->visibility == Visibility_NONE ) return;
 
-    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    screenpos const upLeft = fpsBar->header.border.upLeft;
     console_cursor_set_position( upLeft.y, upLeft.x );
     console_color_fg( fpsBar->mouseHoveringWidget ? ConsoleColorFG_WHITE : ConsoleColorFG_BRIGHT_BLACK );
 
@@ -82,7 +82,7 @@ static void draw_callback( struct Widget *widget )
     }
 
     // cleanup the rest of the widget space
-    int const spaceLeft = fpsBar->header.boxSize.x - charsDrawn;
+    int const spaceLeft = fpsBar->header.border.size.x - charsDrawn;
     assert( spaceLeft >= 0 ); // Otherwise, we would be outside the widget boundaries
     if ( spaceLeft > 0 )
     {
@@ -98,10 +98,10 @@ static void mouse_move_callback( struct Widget *widget, screenpos const /*old*/,
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *fpsBar = (struct WidgetFPSBar *)widget;
 
-    screenpos const upLeft = fpsBar->header.boxUpLeft;
+    screenpos const upLeft = fpsBar->header.border.upLeft;
     screenpos const bottomRight = (screenpos) {
-        .x = upLeft.x + fpsBar->header.boxSize.x - 1,
-        .y = upLeft.y + fpsBar->header.boxSize.y - 1
+        .x = upLeft.x + fpsBar->header.border.size.x - 1,
+        .y = upLeft.y + fpsBar->header.border.size.y - 1
     };
     bool const isMouseOnWidget =
         ( new.x >= upLeft.x && new.x <= bottomRight.x ) &&
@@ -155,12 +155,15 @@ struct Widget *widget_fpsbar_create( void )
     fpsBar->header.id = WidgetId_FPS_BAR;
 
     // Improve that part
-    fpsBar->header.frameCallback = frame_callback;
-    fpsBar->header.mouseMoveCallback = mouse_move_callback;
+    fpsBar->header.callbacks.frameCb = frame_callback;
+    fpsBar->header.callbacks.mouseMoveCb = mouse_move_callback;
 
     // This one as well
-    fpsBar->header.boxUpLeft = (screenpos) { .x = 2, .y = 2 };
-    fpsBar->header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
+    struct WidgetBorder *border = &fpsBar->header.border;
+    *border = (struct WidgetBorder) {};
+    border->upLeft = (screenpos) { .x = 2, .y = 2 };
+    border->size   = (vec2u16) { .x = 12, .y = 1 };
+    border->option = WidgetBorderOption_INVISIBLE;
 
     fpsBar->visibility = Visibility_ALL;
     fpsBar->averageFPS = 0;
@@ -186,6 +189,19 @@ void widget_fpsbar_show( struct Widget *const widget )
     }
 }
 
+void widget_fpsbar_hide( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( fpsBar->visibility != Visibility_NONE )
+    {
+        fpsBar->visibility = Visibility_NONE;
+        clear_callback( widget );
+    }
+}
+
+// FPS 
 
 void widget_fpsbar_show_fps( struct Widget *const widget )
 {
@@ -200,29 +216,13 @@ void widget_fpsbar_show_fps( struct Widget *const widget )
 }
 
 
-void widget_fpsbar_show_ms( struct Widget *const widget )
+void widget_fpsbar_toggle_fps( struct Widget *const widget )
 {
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
 
-    if ( !can_display_ms( fpsBar ) )
-    {
-        fpsBar->visibility |= Visibility_MILLISECONDS;
-        draw_callback( widget );
-    }
-}
-
-
-void widget_fpsbar_hide( struct Widget *const widget )
-{
-    assert( widget->id == WidgetId_FPS_BAR );
-    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
-
-    if ( fpsBar->visibility != Visibility_NONE )
-    {
-        fpsBar->visibility = Visibility_NONE;
-        clear_callback( widget );
-    }
+    fpsBar->visibility ^= Visibility_FRAMERATE;
+    fpsBar->visibility == Visibility_NONE ? clear_callback( widget ) : draw_callback( widget );
 }
 
 
@@ -238,6 +238,30 @@ void widget_fpsbar_hide_fps( struct Widget *const widget )
     }
 }
 
+// Milliseconds
+
+void widget_fpsbar_show_ms( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    if ( !can_display_ms( fpsBar ) )
+    {
+        fpsBar->visibility |= Visibility_MILLISECONDS;
+        draw_callback( widget );
+    }
+}
+
+
+void widget_fpsbar_toggle_ms( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_FPS_BAR );
+    struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
+
+    fpsBar->visibility ^= Visibility_MILLISECONDS;
+    fpsBar->visibility == Visibility_NONE ? clear_callback( widget ) : draw_callback( widget );
+}
+
 
 void widget_fpsbar_hide_ms( struct Widget *const widget )
 {
@@ -251,17 +275,18 @@ void widget_fpsbar_hide_ms( struct Widget *const widget )
     }
 }
 
+// is_diplayed functions
 
-bool widget_is_shown( struct Widget *const widget )
+bool widget_fpsbar_is_displayed( struct Widget const *const widget )
 {
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
 
-    return fpsBar->visibility = Visibility_ALL;
+    return fpsBar->visibility == Visibility_ALL;
 }
 
 
-bool widget_is_fps_shown( struct Widget *const widget )
+bool widget_fpsbar_is_fps_displayed( struct Widget const *const widget )
 {
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;
@@ -270,7 +295,7 @@ bool widget_is_fps_shown( struct Widget *const widget )
 }
 
 
-bool widget_is_ms_shown( struct Widget *const widget )
+bool widget_fpsbar_is_ms_displayed( struct Widget const *const widget )
 {
     assert( widget->id == WidgetId_FPS_BAR );
     struct WidgetFPSBar *const fpsBar = (struct WidgetFPSBar *const)widget;

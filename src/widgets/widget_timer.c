@@ -1,8 +1,19 @@
 #include "widgets/widget_timer.h"
 
-#include "console.h"
+#include "widgets/widget_definition.h"
+
+#include "console_screen.h"
 #include "fps_counter.h" // Not making sense, but need the current timestamp. FIX IT
 
+struct WidgetTimer
+{
+	struct Widget header;
+
+    seconds startTimestamp;
+    seconds lastUpdateTimestamp;
+};
+
+/*
 // redraw -> borders + content
 void widget_timer_redraw( struct WidgetTimer *timer )
 {
@@ -49,7 +60,7 @@ void widget_timer_update( struct WidgetTimer *timer, bool forceUpdate )
     {
         console_color_fg( ConsoleColorFG_RED ); 
     }
-    else if ( remainingTime < ( timer->totalDuration * 60 ) / 100 /* <40% */ )
+    else if ( remainingTime < ( timer->totalDuration * 60 ) / 100 )
     {
         console_color_fg( ConsoleColorFG_YELLOW );
     }
@@ -135,32 +146,52 @@ void widget_draw_borders( struct WidgetScreenData *screenData )
 
     currPos.y = screenData->upLeft.y + height;
     widget_draw_bottom_border( currPos, widthNoBorders );
+}*/
+
+void frame_callback( struct Widget *widget )
+{
+	assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
+
+    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
+	if ( newTimestamp == timer->lastUpdateTimestamp ) return;
+
+	screenpos const upLeft = timer->header.border.upLeft;
+    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 );
+
+    u32 const width = timer->header.border.size.x;
+    u32 const widthNoBorders = width - 2;
+
+    seconds const elapsedTime = newTimestamp - timer->startTimestamp;
+
+    hours   const hours = elapsedTime / 3600;
+    minutes const minutes = ( elapsedTime % 3600 ) / 60;
+    seconds const seconds = elapsedTime % 60;
+
+    console_color_fg( ConsoleColorFG_CYAN );
+    console_cursor_move_right_by( ( widthNoBorders - 8 ) / 2 ); // center
+    console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
+	console_color_reset();
+
+    timer->lastUpdateTimestamp = newTimestamp;
 }
 
 
-void widget_timer_start( struct WidgetTimer *timer )
+struct Widget *widget_timer_create( void )
 {
+	struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
+    if ( !timer ) return NULL;
 
-}
-void widget_timer_pause( struct WidgetTimer *timer )
-{
+	vec2u16 const screenSize = console_screen_get_size();
+	timer->header.id = WidgetId_TIMER;
+	timer->header.border.upLeft = (screenpos) { .x = screenSize.x - 19, .y = 18 };
+	timer->header.border.size = (vec2u16) { .x = 18, .y = 3 };
+	timer->header.border.optTitle = L"Timer";
 
-}
-void widget_timer_reset( struct WidgetTimer *timer )
-{
+	timer->header.callbacks.frameCb = frame_callback;
 
-}
-void widget_timer_frame( struct WidgetTimer *timer )
-{
+	timer->startTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
+	timer->lastUpdateTimestamp = timer->startTimestamp;
 
-}
-
-void widget_timer_set_duration( struct WidgetTimer *timer, seconds duration )
-{
-    timer->totalDuration = duration;
-}
-
-struct WidgetTimer *widget_timer_get_instance( void )
-{
-    return NULL;
+	return (struct Widget *)timer;
 }

@@ -9,7 +9,8 @@
 #include "fps_counter.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_fpsbar.h"
-#include "widgets/widgets_utils.h"
+#include "widgets/widget_countdown.h"
+#include "widgets/widget_utils.h"
 #include "mouse.h"
 
 #include <fcntl.h>
@@ -155,12 +156,26 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 			// Just to simplify testing
 			struct Widget *widget = widget_optget( WidgetId_FPS_BAR );
 			if ( input == KeyInput_NUMPAD_8 ) {
-				if ( widget_is_fps_shown( widget ) ) widget_fpsbar_hide_fps( widget );
-				else widget_fpsbar_show_fps( widget );
+				widget_fpsbar_toggle_fps( widget );
 			}
 			if ( input == KeyInput_NUMPAD_9 ) {
-				if ( widget_is_ms_shown( widget ) ) widget_fpsbar_hide_ms( widget );
-				else widget_fpsbar_show_ms( widget );
+				widget_fpsbar_toggle_ms( widget );
+			}
+			else if ( input == KeyInput_NUMPAD_4 ) {
+				widget = widget_optget( WidgetId_COUNTDOWN );
+				widget_countdown_start( widget );
+			}
+			else if ( input == KeyInput_NUMPAD_5 ) {
+				widget = widget_optget( WidgetId_COUNTDOWN );
+				widget_countdown_pause( widget );
+			}
+			else if ( input == KeyInput_NUMPAD_6 ) {
+				widget = widget_optget( WidgetId_COUNTDOWN );
+				widget_countdown_resume( widget );
+			}
+			else if ( input == KeyInput_NUMPAD_7 ) {
+				widget = widget_optget( WidgetId_COUNTDOWN );
+				widget_countdown_reset( widget );
 			}
 			break;
 		}
@@ -280,11 +295,9 @@ int main( void )
 	mastermindv2_start_game( &s_mastermind );
 
 	HANDLE hOut = console_output_handle();
-	vec2u16 newSize = console_screen_get_size();
 	console_screen_register_on_resize_callback( temp );
 	
-
-	struct WidgetBorder border2 = {};
+/*	struct WidgetBorder border2 = {};
 	border2.upLeft = (screenpos) { .x = 1, .y = 1 };
 	border2.size = (vec2u16) { .x = 120, .y = 30 };
 	border2.optTitle = L"Mastermind";
@@ -292,15 +305,7 @@ int main( void )
 	struct WidgetBorder border4 = {};
 	border4.upLeft = (screenpos) { .x = 2, .y = 3 };
 	border4.size = (vec2u16) { .x = 80, .y = 20 };
-	border4.optTitle = L"Board";
-
-	struct WidgetTimer timer = {};
-	timer.screenData.upLeft = (vec2u16){ .x = newSize.x - 18, .y = 18 };
-	timer.screenData.bottomRight = (vec2u16){ .x = newSize.x, .y = 20 };
-	timer.screenData.name = NULL;//L"Countdown";
-	timer.lastUpdateTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-	timer.totalDuration = 60;
-	timer.endTimerTimestamp = timer.lastUpdateTimestamp + timer.totalDuration;
+	border4.optTitle = L"Board";*/
 
 	// TODO Improve, shouldn't be a static
 	while ( s_mainLoop )
@@ -314,7 +319,8 @@ int main( void )
 		// TEMP - To move somewhere else
 		console_cursor_set_position( 2, 15 );
 		screenpos const mousePos = mouse_get_position();
-		console_draw( L" Screen: %ux%u | Mouse: %ux%u  ", newSize.x, newSize.y, mousePos.x, mousePos.y );
+		vec2u16 const screenSize = console_screen_get_size();
+		console_draw( L" Screen: %ux%u | Mouse: %ux%u  ", screenSize.x, screenSize.y, mousePos.x, mousePos.y );
 
 		// Refresh the game display in the console
 		console_refresh();

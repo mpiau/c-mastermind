@@ -9,7 +9,8 @@ SRC += src/mastermind_v2.c
 SRC += src/widgets/widget_timer.c
 SRC += src/widgets/widget_fpsbar.c
 SRC += src/widgets/widget.c
-SRC += src/widgets/widgets_utils.c
+SRC += src/widgets/widget_utils.c
+SRC += src/widgets/widget_countdown.c
 SRC += src/console_screen.c
 SRC += src/mouse.c
 

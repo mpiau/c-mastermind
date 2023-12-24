@@ -2,7 +2,6 @@
 
 #include "mastermind_v2.h"
 #include "widgets/widget_definition.h"
-#include "widgets/widgets.h"
 
 struct WidgetBoardSummary
 {
@@ -24,7 +23,6 @@ bool widget_board_summary_init( struct MastermindV2 const *const mastermind )
     if ( !mastermind ) { return false; }
 
     s_boardSummary.header.id = WidgetId_BOARD_SUMMARY;
-    s_boardSummary.header.references = 0;
     // [...]
 
     widgets_hook( (struct Widget *)&s_boardSummary );

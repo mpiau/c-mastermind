@@ -3,6 +3,9 @@
 
 #include "widgets/widget_timer.h"
 #include "widgets/widget_fpsbar.h"
+#include "widgets/widget_countdown.h"
+
+#include "console_screen.h"
 
 #include <stdlib.h>
 
@@ -12,16 +15,26 @@ static struct Widget *s_widgets[WidgetId_Count] = {};
 // Array with the list of ID for the priority frame / priority input
 
 
-static
-void widgets_on_mouse_mouvement( screenpos const oldPos, screenpos const newPos )
+static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const newPos )
 {
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-        if ( widget && widget->mouseMoveCallback )
+        if ( widget && widget->callbacks.mouseMoveCb )
         {
-            widget->mouseMoveCallback( widget, oldPos, newPos );
+            widget->callbacks.mouseMoveCb( widget, oldPos, newPos );
         }
+    }
+}
+
+
+static void on_screen_resize_callback( vec2u16 oldSize, vec2u16 newSize )
+{
+    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *widget = s_widgets[id];
+        // For each widget, calculate if the widget is truncated or not.
+        // If truncated || not anymore, call the redraw callback
     }
 }
 
@@ -29,11 +42,13 @@ void widgets_on_mouse_mouvement( screenpos const oldPos, screenpos const newPos 
 bool widget_global_init( void )
 {
     s_widgets[WidgetId_FPS_BAR] = widget_fpsbar_create();
+    s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
+    s_widgets[WidgetId_TIMER] = widget_timer_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
-    mouse_register_on_mouse_mouvement_callback( widgets_on_mouse_mouvement );
-    // TODO add resize
+    mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
+    console_screen_register_on_resize_callback( on_screen_resize_callback );
     // TODO add keyboard input
     return true;
 }
@@ -72,9 +87,9 @@ void widget_frame( void )
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-        if ( widget && widget->frameCallback )
+        if ( widget && widget->callbacks.frameCb )
         {
-            widget->frameCallback( widget );
+            widget->callbacks.frameCb( widget );
         }
     }
 }

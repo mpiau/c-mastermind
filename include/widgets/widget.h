@@ -12,8 +12,8 @@ enum WidgetId
     WidgetId_FPS_BAR,
     WidgetId_BOARD,
     WidgetId_BOARD_SUMMARY,
-    WidgetId_TIMER,
     WidgetId_COUNTDOWN,
+    WidgetId_TIMER,
     WidgetId_RULES,
     WidgetId_OPTIONS_MENU,
     WidgetId_PAUSE_MENU,
@@ -22,11 +22,14 @@ enum WidgetId
     WidgetId_Count,
 };
 
+// Forward declaration
+struct Widget;
 
 bool widget_global_init( void );
 void widget_global_uninit( void );
 
 bool widget_exists( enum WidgetId id );
+
 struct Widget *widget_optget( enum WidgetId id ); // return NULL if doesn't exist
 
 void widget_frame( void );
