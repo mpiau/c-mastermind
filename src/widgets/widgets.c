@@ -9,10 +9,31 @@ static struct Widget *s_widgets[WidgetId_Count] = {};
 // Array with the list of ID for the priority frame / priority input
 
 
+static
+void widgets_on_mouse_mouvement( screenpos const oldPos, screenpos const newPos )
+{
+    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *widget = s_widgets[id];
+        if ( widget && widget->mouseMouvementCallback )
+        {
+            widget->mouseMouvementCallback( oldPos, newPos );
+        }
+    }
+}
+
+
 inline static
 bool widget_exists( enum WidgetId const id )
 {
     return s_widgets[id] != NULL;
+}
+
+
+bool widgets_init( void )
+{
+	mouse_register_on_mouse_mouvement_callback( widgets_on_mouse_mouvement );
+	return true;
 }
 
 

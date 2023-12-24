@@ -110,7 +110,7 @@ static bool s_mainLoop = true;
 static struct MastermindV2 s_mastermind = {};
 
 
-void analyse_user_input( INPUT_RECORD const *const recordedInput )
+static void consume_input( INPUT_RECORD const *const recordedInput )
 {
 	assert( recordedInput );
 
@@ -124,13 +124,16 @@ void analyse_user_input( INPUT_RECORD const *const recordedInput )
 		}
 		case MOUSE_EVENT:
 		{
+			// If the mouse moved but didn't move enough to change its coordinates on the screen,
+			// The event won't be sent. So there is no need to manually filter this edge case here.
 			COORD const mousePos = recordedInput->Event.MouseEvent.dwMousePosition;
-			mouse_on_position_update( *(vec2u16 *)&mousePos );
+			mouse_update_position( *(vec2u16 *)&mousePos );
 			return;
 		}
 		case KEY_EVENT:
 		{
-			// TODO temp only in order to cleanup main function, to improve
+			if ( !recordedInput->Event.KeyEvent.bKeyDown ) return;
+
 			enum KeyInput input;
 			if ( !key_input_from_u32( recordedInput->Event.KeyEvent.wVirtualKeyCode, &input ) )
 			{
@@ -160,7 +163,7 @@ void analyse_user_input( INPUT_RECORD const *const recordedInput )
 }
 
 
-void read_user_inputs( HANDLE const consoleHandle )
+static bool consume_user_inputs( HANDLE const consoleHandle )
 {
 	assert( consoleHandle != INVALID_HANDLE_VALUE );
 
@@ -168,73 +171,75 @@ void read_user_inputs( HANDLE const consoleHandle )
 	if ( !GetNumberOfConsoleInputEvents( consoleHandle, &nbEvents ) )
 	{
 		fprintf( stderr, "[ERROR]: GetNumberOfConsoleInputEvents failure. (Code %u)\n", GetLastError() );
-		return;
+		return false;
 	}
-	if ( nbEvents == 0 ) return; // Nothing more to do.
+	if ( nbEvents == 0 ) return true; // Nothing to do.
 
 	DWORD nbInputsRead;
 	INPUT_RECORD inputsBuffer[nbEvents];
 	if ( !ReadConsoleInput( consoleHandle, &inputsBuffer[0], nbEvents, &nbInputsRead ) )
 	{
 		fprintf( stderr, "[ERROR]: ReadConsoleInput failure. (Code %u)\n", GetLastError() );
-		return;
+		return false;
 	}
 
 	for ( DWORD idx = 0; idx < nbInputsRead; ++idx )
 	{
-		analyse_user_input( &inputsBuffer[idx] );
+		consume_input( &inputsBuffer[idx] );
 	}
+
+	return true;
 }
 
 
 void temp( vec2u16, vec2u16 )
 {
-				int x = 6;
-				int y = 5;
+	int x = 6;
+	int y = 5;
 
-				console_color_fg( ConsoleColorFG_BRIGHT_BLUE );//BRIGHT_BLACK );
-				console_cursor_set_position( y++, x );
-				console_draw( L"   #######################################################   " );
-				console_cursor_set_position( y++, x );
-				console_draw( L" ####   %S_  _ ____ ____ ___ ____ ____ _  _ _ _  _ ___    %S#### ",
-				 L"\x1b[1;33m", L"\x1b[0;94m" );
-				console_cursor_set_position( y++, x );
-				console_draw( L" ##     %S|\\/| |__| [__   |  |___ |__/ |\\/| | |\\ | |  \\     %S## ",  L"\x1b[1;33m", L"\x1b[0;94m" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"###     %S|  | |  | ___]  |  |___ |  \\ |  | | | \\| |__/     %S###",  L"\x1b[1;33m", L"\x1b[0;94m" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"#####                                                   #####" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"#############################################################" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"#############################################################" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"###                                   #####  %S,db. %S,db.  %S#####", 
-					L"\x1b[1;31m", L"\x1b[1;31m", L"\x1b[0;94m"
-				);
-				console_cursor_set_position( y++, x );
-				console_draw( L"##  %S,d88b.   %S,d88b.   %S.::::.   %S,d88b.  %S###   %S`YP' %S`YP'   %S####",
-					L"\x1b[1;31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-					L"\x1b[31m", L"\x1b[31m", L"\x1b[94m"
-				 );
-				console_cursor_set_position( y++, x );
-				console_draw( L"##  %S888888   %S888888   %S::::::   %S888888  %S### %S01%S            ####",
-					L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-					L"\x1b[37m", L"\x1b[94m"
-				);
-				console_cursor_set_position( y++, x );
-				console_draw( L"##  %S`Y88P'   %S`Y88P'   %S`::::'   %S`Y88P'  %S###   %S,db. %S.::.%S   ####", 
-					L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-					L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-				);
-				console_cursor_set_position( y++, x );
-				console_draw( L"###                                   #####  %S`YP' %S'::'  %S#####",
-					L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-				);
-				console_cursor_set_position( y++, x );
-				console_draw( L"#############################################################" );
-				console_cursor_set_position( y++, x );
-				console_draw( L"#############################################################" );
+	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );//BRIGHT_BLACK );
+	console_cursor_set_position( y++, x );
+	console_draw( L"   #######################################################   " );
+	console_cursor_set_position( y++, x );
+	console_draw( L" ####   %S_  _ ____ ____ ___ ____ ____ _  _ _ _  _ ___    %S#### ",
+		L"\x1b[1;33m", L"\x1b[0;94m" );
+	console_cursor_set_position( y++, x );
+	console_draw( L" ##     %S|\\/| |__| [__   |  |___ |__/ |\\/| | |\\ | |  \\     %S## ",  L"\x1b[1;33m", L"\x1b[0;94m" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"###     %S|  | |  | ___]  |  |___ |  \\ |  | | | \\| |__/     %S###",  L"\x1b[1;33m", L"\x1b[0;94m" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"#####                                                   #####" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"#############################################################" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"#############################################################" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"###                                   #####  %S,db. %S,db.  %S#####", 
+		L"\x1b[1;31m", L"\x1b[1;31m", L"\x1b[0;94m"
+	);
+	console_cursor_set_position( y++, x );
+	console_draw( L"##  %S,d88b.   %S,d88b.   %S.::::.   %S,d88b.  %S###   %S`YP' %S`YP'   %S####",
+		L"\x1b[1;31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
+		L"\x1b[31m", L"\x1b[31m", L"\x1b[94m"
+	 );
+	console_cursor_set_position( y++, x );
+	console_draw( L"##  %S888888   %S888888   %S::::::   %S888888  %S### %S01%S            ####",
+		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
+		L"\x1b[37m", L"\x1b[94m"
+	);
+	console_cursor_set_position( y++, x );
+	console_draw( L"##  %S`Y88P'   %S`Y88P'   %S`::::'   %S`Y88P'  %S###   %S,db. %S.::.%S   ####", 
+		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
+		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
+	);
+	console_cursor_set_position( y++, x );
+	console_draw( L"###                                   #####  %S`YP' %S'::'  %S#####",
+		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
+	);
+	console_cursor_set_position( y++, x );
+	console_draw( L"#############################################################" );
+	console_cursor_set_position( y++, x );
+	console_draw( L"#############################################################" );
 }
 
 
@@ -251,6 +256,10 @@ int main( void )
 	{
 		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
 		return 2;
+	}
+	if ( !widgets_init() )
+	{
+		return 3;
 	}
 	widget_fpsbar_init( fpsCounter );
 
@@ -285,7 +294,7 @@ int main( void )
 	// TODO Improve, shouldn't be a static
 	while ( s_mainLoop )
 	{
-		read_user_inputs( console_input_handle() );
+		consume_user_inputs( console_input_handle() );
 
 		// Frame functions
 		console_screen_frame();

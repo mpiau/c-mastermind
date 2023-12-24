@@ -18,5 +18,5 @@ nanoseconds fpscounter_elapsed_time( struct FPSCounter *fpsCounter );
 nanoseconds fpscounter_average_time( struct FPSCounter *fpsCounter );
 u64 fpscounter_average_framerate( struct FPSCounter *fpsCounter );
 
-// TEMP but needed
+// TEMP but needed, move it to another place
 nanoseconds get_timestamp_nanoseconds();

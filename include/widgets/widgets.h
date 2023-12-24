@@ -7,6 +7,8 @@
 
 struct Widget;
 
+bool widgets_init( void );
+
 bool widgets_hook( struct Widget *widget );
 void widgets_unhook( struct Widget const *widget );
 bool widgets_is_hook( struct Widget const *widget );

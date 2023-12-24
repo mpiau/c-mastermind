@@ -5,6 +5,7 @@
 
 enum
 {
+	// TODO replace by characters_list.h
     Border_UP_LEFT_CORNER = L'┌',
     Border_UP_RIGHT_CORNER = L'┐',
     Border_BOTTOM_LEFT_CORNER = L'└',

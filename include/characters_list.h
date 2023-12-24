@@ -6,14 +6,25 @@
 
 enum UTF16Characters
 {
-    UTF16C_DoubleDownLeft   = L'╗',
-    UTF16C_DoubleDownRight  = L'╔',
-    UTF16C_DoubleUpLeft     = L'╝',
-    UTF16C_DoubleUpRight    = L'╚',
+    UTF16C_SingleDownLeft = L'┐',
+    UTF16C_DoubleDownLeft = L'╗',
 
-    UTF16C_DoubleHoriz  = L'═',
-    UTF16C_DoubleVert   = L'║',
-    UTF16C_LightVert    = L'│',
+    UTF16C_SingleDownRight = L'┌',
+    UTF16C_DoubleDownRight = L'╔',
+
+    UTF16C_SingleUpLeft = L'┘',
+    UTF16C_DoubleUpLeft = L'╝',
+
+    UTF16C_SingleUpRight = L'└',
+    UTF16C_DoubleUpRight = L'╚',
+
+    UTF16C_SingleHoriz     = L'─',
+    UTF16C_SingleHorizDash = L'╌',
+    UTF16C_DoubleHoriz     = L'═',
+
+    UTF16C_LightVert     = L'│',
+    UTF16C_LightVertDash = L'┆',
+    UTF16C_DoubleVert    = L'║',
 
     UTF16C_DoubleHorizSingleDown = L'╤',
     UTF16C_DoubleHorizSingleUp   = L'╧',

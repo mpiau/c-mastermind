@@ -4,6 +4,7 @@
 #include "widgets/widget_definition.h"
 
 #include "fps_counter.h"
+#include "mouse.h"
 
 #include "console.h"
 
@@ -17,6 +18,7 @@ struct WidgetFPSBar
 
     u64 averageFPS;
     milliseconds averageMsPerFrame;
+	bool mouseHoveringWidget;
 };
 
 
@@ -38,7 +40,7 @@ static void draw( void )
     // TODO It's hardcoded here, it should be relative to widget position.
     screenpos upLeft = s_widgetFPSBar.header.boxUpLeft;
 	console_cursor_set_position( upLeft.y, upLeft.x );
-	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+	console_color_fg( s_widgetFPSBar.mouseHoveringWidget ? ConsoleColorFG_WHITE : ConsoleColorFG_BRIGHT_BLACK );
 
     // %2u -> assume we can't go over 99 fps. (capped at 90fps maximum)
  	int charsDrawn = console_draw( L"%2uFPS ", s_widgetFPSBar.averageFPS );
@@ -57,6 +59,26 @@ static void draw( void )
     {
         console_draw( L"%*lc", spaceLeft, L' ' );
     }
+	console_color_reset();
+}
+
+
+static void on_mouse_mouvement_callback( screenpos const /*old*/, screenpos const new )
+{
+	screenpos const upLeft = s_widgetFPSBar.header.boxUpLeft;
+	screenpos const bottomRight = (screenpos) {
+		.x = upLeft.x + s_widgetFPSBar.header.boxSize.x - 1,
+		.y = upLeft.y + s_widgetFPSBar.header.boxSize.y - 1
+	};
+	bool const isMouseOnWidget =
+		( new.x >= upLeft.x && new.x <= bottomRight.x ) &&
+		( new.y >= upLeft.y && new.y <= bottomRight.y );
+
+	if ( isMouseOnWidget != s_widgetFPSBar.mouseHoveringWidget )
+	{
+		s_widgetFPSBar.mouseHoveringWidget = isMouseOnWidget;
+		draw();
+	}
 }
 
 
@@ -101,6 +123,7 @@ bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
     s_widgetFPSBar.header.references = 0;
     s_widgetFPSBar.header.hideCallback = hide_callback;
     s_widgetFPSBar.header.frameCallback = frame_callback;
+	s_widgetFPSBar.header.mouseMouvementCallback = on_mouse_mouvement_callback;
 
     s_widgetFPSBar.header.boxUpLeft = (screenpos) { .x = 2, .y = 2 };
     s_widgetFPSBar.header.boxSize   = (vec2u16) { .x = 12, .y = 1 };
@@ -108,11 +131,13 @@ bool widget_fpsbar_init( struct FPSCounter *fpsCounter )
     s_widgetFPSBar.fpsCounter = fpsCounter;
     s_widgetFPSBar.averageFPS = 0;
     s_widgetFPSBar.averageMsPerFrame = 0;
+	s_widgetFPSBar.mouseHoveringWidget = false;
 
     // Define size of the widget
     // Define style of the widget
 
     widgets_hook( (struct Widget *)&s_widgetFPSBar );
+	// mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
 
     s_init = true;
     return s_init;
