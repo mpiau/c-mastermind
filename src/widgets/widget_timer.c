@@ -5,13 +5,161 @@
 #include "console_screen.h"
 #include "fps_counter.h" // Not making sense, but need the current timestamp. FIX IT
 
+enum TimerStatus
+{
+    TimerStatus_NOT_STARTED,
+    TimerStatus_RUNNING,
+    TimerStatus_PAUSED,
+};
+
+
 struct WidgetTimer
 {
-	struct Widget header;
+    struct Widget header;
 
-    seconds startTimestamp;
-    seconds lastUpdateTimestamp;
+    enum TimerStatus status;
+    nanoseconds      totalDuration;
+    nanoseconds      lastUpdateTimestamp;
 };
+
+
+static void clear_callback( struct Widget *widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
+
+    screenpos const upLeft = timer->header.border.upLeft;
+    u32 const width = timer->header.border.size.x;
+    u32 const widthNoBorders = width - 2;
+
+    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 );
+    console_draw( L"%*lc", widthNoBorders, ' ' );
+}
+
+
+static void redraw_callback( struct Widget *widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
+
+    // TODO If widget truncated, return. Don't display anything
+
+    screenpos const upLeft = timer->header.border.upLeft;
+    u32 const width = timer->header.border.size.x;
+    u32 const widthNoBorders = width - 2;
+
+    seconds const totalDuration = timer->totalDuration / NANOSECONDS;
+
+    hours   const hours   = ( totalDuration / 3600 );
+    minutes const minutes = ( totalDuration % 3600 ) / 60;
+    seconds const seconds = totalDuration % 60;
+
+    console_color_fg( ConsoleColorFG_WHITE );
+    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 + ( ( widthNoBorders - 8 ) / 2 ) );
+    console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
+    console_color_reset();
+}
+
+
+void frame_callback( struct Widget *widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
+
+    if ( timer->status != TimerStatus_RUNNING ) return;
+
+    seconds const oldDuration = timer->totalDuration / NANOSECONDS;
+    nanoseconds const newTimestamp = get_timestamp_nanoseconds();
+    nanoseconds const elapsedTime = newTimestamp - timer->lastUpdateTimestamp;
+
+    timer->totalDuration += elapsedTime;
+    timer->lastUpdateTimestamp = newTimestamp;
+
+    seconds const newDuration = timer->totalDuration / NANOSECONDS;
+
+    if ( oldDuration != newDuration )
+    {
+        redraw_callback( widget );
+    }
+}
+
+
+struct Widget *widget_timer_create( void )
+{
+    struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
+    if ( !timer ) return NULL;
+
+    vec2u16 const screenSize = console_screen_get_size();
+    timer->header.id = WidgetId_TIMER;
+    timer->header.border.upLeft = (screenpos) { .x = screenSize.x - 19, .y = 18 };
+    timer->header.border.size = (vec2u16) { .x = 18, .y = 3 };
+    timer->header.border.optTitle = L"Timer";
+
+    struct WidgetCallbacks *const callbacks = &timer->header.callbacks;
+    callbacks->frameCb = frame_callback;
+    callbacks->redrawCb = redraw_callback;
+    callbacks->clearCb = clear_callback;
+
+    timer->totalDuration = 0;
+    timer->status = TimerStatus_NOT_STARTED;
+
+    return (struct Widget *)timer;
+}
+
+
+bool widget_timer_start( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
+
+    if ( timer->status != TimerStatus_NOT_STARTED ) return false;
+
+    timer->lastUpdateTimestamp = get_timestamp_nanoseconds();
+    timer->status = TimerStatus_RUNNING;
+    return true;
+}
+
+
+bool widget_timer_reset( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
+
+    if ( timer->status != TimerStatus_RUNNING && timer->status != TimerStatus_PAUSED ) return false;
+
+    timer->totalDuration = 0;
+    timer->status = TimerStatus_NOT_STARTED;
+    return false;
+}
+
+
+bool widget_timer_pause( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
+
+    if ( timer->status != TimerStatus_RUNNING ) return false;
+
+    timer->status = TimerStatus_PAUSED;
+
+    return true;
+}
+
+
+bool widget_timer_resume( struct Widget *const widget )
+{
+    assert( widget->id == WidgetId_TIMER );
+    struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
+
+    if ( timer->status != TimerStatus_PAUSED ) return false;
+
+    timer->lastUpdateTimestamp = get_timestamp_nanoseconds();
+    timer->status = TimerStatus_RUNNING;
+
+    return true;
+}
+
+
 
 /*
 // redraw -> borders + content
@@ -148,50 +296,3 @@ void widget_draw_borders( struct WidgetScreenData *screenData )
     widget_draw_bottom_border( currPos, widthNoBorders );
 }*/
 
-void frame_callback( struct Widget *widget )
-{
-	assert( widget->id == WidgetId_TIMER );
-    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
-
-    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-	if ( newTimestamp == timer->lastUpdateTimestamp ) return;
-
-	screenpos const upLeft = timer->header.border.upLeft;
-    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 );
-
-    u32 const width = timer->header.border.size.x;
-    u32 const widthNoBorders = width - 2;
-
-    seconds const elapsedTime = newTimestamp - timer->startTimestamp;
-
-    hours   const hours = elapsedTime / 3600;
-    minutes const minutes = ( elapsedTime % 3600 ) / 60;
-    seconds const seconds = elapsedTime % 60;
-
-    console_color_fg( ConsoleColorFG_CYAN );
-    console_cursor_move_right_by( ( widthNoBorders - 8 ) / 2 ); // center
-    console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
-	console_color_reset();
-
-    timer->lastUpdateTimestamp = newTimestamp;
-}
-
-
-struct Widget *widget_timer_create( void )
-{
-	struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
-    if ( !timer ) return NULL;
-
-	vec2u16 const screenSize = console_screen_get_size();
-	timer->header.id = WidgetId_TIMER;
-	timer->header.border.upLeft = (screenpos) { .x = screenSize.x - 19, .y = 18 };
-	timer->header.border.size = (vec2u16) { .x = 18, .y = 3 };
-	timer->header.border.optTitle = L"Timer";
-
-	timer->header.callbacks.frameCb = frame_callback;
-
-	timer->startTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-	timer->lastUpdateTimestamp = timer->startTimestamp;
-
-	return (struct Widget *)timer;
-}

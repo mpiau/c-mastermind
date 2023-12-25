@@ -16,24 +16,25 @@ enum WidgetTruncate
 
 enum WidgetBorderOption
 {
-	WidgetBorderOption_INVISIBLE,
-	WidgetBorderOption_VISIBLE_ON_TRUNCATE,
-	WidgetBorderOption_ALWAYS_VISIBLE,
+    WidgetBorderOption_INVISIBLE,
+    WidgetBorderOption_VISIBLE_ON_TRUNCATE,
+    WidgetBorderOption_ALWAYS_VISIBLE,
 };
 
 struct WidgetBorder
 {
-	enum WidgetBorderOption option;
+    enum WidgetBorderOption option;
     screenpos upLeft;
     vec2u16   size;
 
     utf16 *optTitle;
-	enum ConsoleColorFG borderColor;
-	enum ConsoleColorFG titleColor;
+    enum ConsoleColorFG borderColor;
+    enum ConsoleColorFG titleColor;
 };
 
 
 typedef void ( *WidgetFrameCallback )( struct Widget *widget );
+typedef void ( *WidgetRedrawCallback )( struct Widget *widget );
 typedef void ( *WidgetClearCallback )( struct Widget *widget );
 typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
 
@@ -41,15 +42,16 @@ struct WidgetCallbacks
 {
     WidgetFrameCallback		frameCb;
     WidgetClearCallback		clearCb;
-  	WidgetMouseMoveCallback mouseMoveCb;
+    WidgetRedrawCallback	redrawCb;
+    WidgetMouseMoveCallback mouseMoveCb;
     // [...] 
 };
 
 struct Widget
 {
     enum WidgetId id;
-	struct WidgetBorder border;
-	struct WidgetCallbacks callbacks;
+    struct WidgetBorder border;
+    struct WidgetCallbacks callbacks;
 
     enum WidgetTruncate truncateStatus;
 };

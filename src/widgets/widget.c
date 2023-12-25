@@ -1,6 +1,7 @@
 #include "widgets/widget.h"
 #include "widgets/widget_definition.h"
 
+#include "widgets/widget_utils.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_fpsbar.h"
 #include "widgets/widget_countdown.h"
@@ -33,8 +34,24 @@ static void on_screen_resize_callback( vec2u16 oldSize, vec2u16 newSize )
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-        // For each widget, calculate if the widget is truncated or not.
-        // If truncated || not anymore, call the redraw callback
+        if ( !widget ) continue;
+
+        // TODO If the size doesn't change anything on the position/truncation of the widget, don't redraw for nothing.
+
+        // TODO For each widget, calculate if the widget is truncated or not.
+        // TODO If the widget go from not truncated to truncated, clear the widget view.
+
+        if ( widget->border.option == WidgetBorderOption_ALWAYS_VISIBLE ) // Ou truncated and display on truncate
+        {
+            widget_utils_draw_borders( &widget->border, newSize );
+        }
+
+        // TODO If not anymore truncated, call the redraw callback
+
+        if ( widget->callbacks.redrawCb )
+        {
+            widget->callbacks.redrawCb( widget );
+        }
     }
 }
 

@@ -296,6 +296,8 @@ int main( void )
 
 	HANDLE hOut = console_output_handle();
 	console_screen_register_on_resize_callback( temp );
+
+	widget_timer_start( widget_optget( WidgetId_TIMER ) );
 	
 /*	struct WidgetBorder border2 = {};
 	border2.upLeft = (screenpos) { .x = 1, .y = 1 };
