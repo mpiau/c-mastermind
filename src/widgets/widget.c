@@ -69,7 +69,7 @@ static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const
 }
 
 
-static void on_screen_resize_callback( vec2u16 oldSize, vec2u16 newSize )
+static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newSize )
 {
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
@@ -161,10 +161,6 @@ void widget_frame( void )
         struct Widget *widget = s_widgets[id];
 		if ( !widget ) continue;
 
-        if ( widget->callbacks.frameCb )
-        {
-            widget->callbacks.frameCb( widget );
-		}
 		if ( widget->redrawNeeded && !console_screen_is_being_resized() && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
 		{
 			if ( widget->callbacks.redrawCb  )
@@ -172,6 +168,11 @@ void widget_frame( void )
 				widget->callbacks.redrawCb( widget );
 			}
 			widget->redrawNeeded = false;
+		}
+
+        if ( widget->callbacks.frameCb )
+        {
+            widget->callbacks.frameCb( widget );
 		}
     }
 }
