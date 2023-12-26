@@ -5,4 +5,5 @@
 // Forward declaration
 struct Widget;
 
-struct Widget *widget_board_create( void );
+struct Widget *widget_framerate_create( void );
+

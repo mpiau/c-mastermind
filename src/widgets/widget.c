@@ -2,8 +2,10 @@
 #include "widgets/widget_definition.h"
 
 #include "widgets/widget_utils.h"
+#include "widgets/widget_game.h"
+#include "widgets/widget_board.h"
 #include "widgets/widget_timer.h"
-#include "widgets/widget_fpsbar.h"
+#include "widgets/widget_framerate.h"
 #include "widgets/widget_countdown.h"
 
 #include "console_screen.h"
@@ -36,31 +38,36 @@ static void on_screen_resize_callback( vec2u16 oldSize, vec2u16 newSize )
         struct Widget *widget = s_widgets[id];
         if ( !widget ) continue;
 
+		widget_utils_calculate_truncation( &widget->box, newSize );
+
         // TODO If the size doesn't change anything on the position/truncation of the widget, don't redraw for nothing.
 
         // TODO For each widget, calculate if the widget is truncated or not.
         // TODO If the widget go from not truncated to truncated, clear the widget view.
 
-        if ( widget->border.option == WidgetBorderOption_ALWAYS_VISIBLE ) // Ou truncated and display on truncate
+        if ( widget->box.borderOption != WidgetBorderOption_INVISIBLE ) // Ou truncated and display on truncate
         {
-            widget_utils_draw_borders( &widget->border, newSize );
+            widget_utils_draw_borders( &widget->box );
         }
 
         // TODO If not anymore truncated, call the redraw callback
 
-        if ( widget->callbacks.redrawCb )
+/*        if ( widget->callbacks.clearCb )
         {
-            widget->callbacks.redrawCb( widget );
-        }
+            widget->callbacks.clearCb( widget );
+        }*/
     }
 }
 
 
 bool widget_global_init( void )
 {
-    s_widgets[WidgetId_FPS_BAR] = widget_fpsbar_create();
-    s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
+    s_widgets[WidgetId_GAME] = widget_game_create();
+    s_widgets[WidgetId_FRAMERATE] = widget_framerate_create();
+	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
+	// boardSummary
+    s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)

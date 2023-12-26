@@ -8,7 +8,7 @@
 #include "core_unions.h"
 #include "fps_counter.h"
 #include "widgets/widget_timer.h"
-#include "widgets/widget_fpsbar.h"
+#include "widgets/widget_framerate.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_utils.h"
 #include "mouse.h"
@@ -154,14 +154,14 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 			}
 
 			// Just to simplify testing
-			struct Widget *widget = widget_optget( WidgetId_FPS_BAR );
-			if ( input == KeyInput_NUMPAD_8 ) {
+			struct Widget *widget = widget_optget( WidgetId_FRAMERATE );
+/*			if ( input == KeyInput_NUMPAD_8 ) {
 				widget_fpsbar_toggle_fps( widget );
 			}
 			if ( input == KeyInput_NUMPAD_9 ) {
 				widget_fpsbar_toggle_ms( widget );
-			}
-			else if ( input == KeyInput_NUMPAD_4 ) {
+			}*/
+			if ( input == KeyInput_NUMPAD_4 ) {
 				widget = widget_optget( WidgetId_COUNTDOWN );
 				widget_countdown_start( widget );
 			}
@@ -218,59 +218,10 @@ static bool consume_user_inputs( HANDLE const consoleHandle )
 }
 
 
-void temp( vec2u16, vec2u16 )
-{
-	int x = 6;
-	int y = 5;
-
-	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );//BRIGHT_BLACK );
-	console_cursor_set_position( y++, x );
-	console_draw( L"   #######################################################   " );
-	console_cursor_set_position( y++, x );
-	console_draw( L" ####   %S_  _ ____ ____ ___ ____ ____ _  _ _ _  _ ___    %S#### ",
-		L"\x1b[1;33m", L"\x1b[0;94m" );
-	console_cursor_set_position( y++, x );
-	console_draw( L" ##     %S|\\/| |__| [__   |  |___ |__/ |\\/| | |\\ | |  \\     %S## ",  L"\x1b[1;33m", L"\x1b[0;94m" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"###     %S|  | |  | ___]  |  |___ |  \\ |  | | | \\| |__/     %S###",  L"\x1b[1;33m", L"\x1b[0;94m" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"#####                                                   #####" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"###                                   #####  %S,db. %S,db.  %S#####", 
-		L"\x1b[1;31m", L"\x1b[1;31m", L"\x1b[0;94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S,d88b.   %S,d88b.   %S.::::.   %S,d88b.  %S###   %S`YP' %S`YP'   %S####",
-		L"\x1b[1;31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[31m", L"\x1b[31m", L"\x1b[94m"
-	 );
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S888888   %S888888   %S::::::   %S888888  %S### %S01%S            ####",
-		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[37m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S`Y88P'   %S`Y88P'   %S`::::'   %S`Y88P'  %S###   %S,db. %S.::.%S   ####", 
-		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"###                                   #####  %S`YP' %S'::'  %S#####",
-		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-}
-
-
 int main( void )
 {
+	srand( time( NULL ) );
+
 	if ( !console_global_init( "Mastermind Game", true ) )
 	{
 		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
@@ -287,28 +238,13 @@ int main( void )
 	{
 		return 3;
 	}
-//	widget_fpsbar_init( fpsCounter );
 
-	srand( time( NULL ) );
 
 	mastermindv2_init( &s_mastermind );
 	mastermindv2_start_game( &s_mastermind );
 
-	HANDLE hOut = console_output_handle();
-	console_screen_register_on_resize_callback( temp );
-
 	widget_timer_start( widget_optget( WidgetId_TIMER ) );
 	
-/*	struct WidgetBorder border2 = {};
-	border2.upLeft = (screenpos) { .x = 1, .y = 1 };
-	border2.size = (vec2u16) { .x = 120, .y = 30 };
-	border2.optTitle = L"Mastermind";
-
-	struct WidgetBorder border4 = {};
-	border4.upLeft = (screenpos) { .x = 2, .y = 3 };
-	border4.size = (vec2u16) { .x = 80, .y = 20 };
-	border4.optTitle = L"Board";*/
-
 	// TODO Improve, shouldn't be a static
 	while ( s_mainLoop )
 	{
@@ -331,7 +267,6 @@ int main( void )
 		fpscounter_frame( fpsCounter );
 	}
 
-	// widget_fpsbar_uninit(); // Could be done in fpsCounter directly ?
 	widget_global_uninit();
 	fpscounter_uninit( fpsCounter );
 	console_global_uninit();

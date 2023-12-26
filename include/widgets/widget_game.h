@@ -5,4 +5,4 @@
 // Forward declaration
 struct Widget;
 
-struct Widget *widget_board_create( void );
+struct Widget *widget_game_create( void );

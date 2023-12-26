@@ -1,6 +1,7 @@
 #include "widgets/widget_timer.h"
 
 #include "widgets/widget_definition.h"
+#include "widgets/widget_utils.h"
 
 #include "console_screen.h"
 #include "fps_counter.h" // Not making sense, but need the current timestamp. FIX IT
@@ -25,28 +26,23 @@ struct WidgetTimer
 
 static void clear_callback( struct Widget *widget )
 {
-    assert( widget->id == WidgetId_TIMER );
-    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
-
-    screenpos const upLeft = timer->header.border.upLeft;
-    u32 const width = timer->header.border.size.x;
-    u32 const widthNoBorders = width - 2;
-
-    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 );
-    console_draw( L"%*lc", widthNoBorders, ' ' );
+	// widget_utils_clear_content( &widget->border );
 }
 
 
 static void redraw_callback( struct Widget *widget )
 {
     assert( widget->id == WidgetId_TIMER );
+	if ( widget->visibilityStatus == WidgetVisibilityStatus_HIDDEN ) return;
+	if ( widget->box.truncatedStatus != WidgetTruncatedStatus_NONE ) return;
+
     struct WidgetTimer *timer = (struct WidgetTimer *)widget;
 
     // TODO If widget truncated, return. Don't display anything
 
-    screenpos const upLeft = timer->header.border.upLeft;
-    u32 const width = timer->header.border.size.x;
-    u32 const widthNoBorders = width - 2;
+    screenpos const contentUL = timer->header.box.contentUpLeft;
+    screenpos const contentBR = timer->header.box.contentBottomRight;
+    u32 const width = contentBR.x - contentUL.x + 1;
 
     seconds const totalDuration = timer->totalDuration / NANOSECONDS;
 
@@ -55,7 +51,7 @@ static void redraw_callback( struct Widget *widget )
     seconds const seconds = totalDuration % 60;
 
     console_color_fg( ConsoleColorFG_WHITE );
-    console_cursor_set_position( upLeft.y + 1, upLeft.x + 1 + ( ( widthNoBorders - 8 ) / 2 ) );
+    console_cursor_set_position( contentUL.y, contentUL.x + ( ( width - 8 ) / 2 ) );
     console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
     console_color_reset();
 }
@@ -89,16 +85,26 @@ struct Widget *widget_timer_create( void )
     struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
     if ( !timer ) return NULL;
 
-    vec2u16 const screenSize = console_screen_get_size();
-    timer->header.id = WidgetId_TIMER;
-    timer->header.border.upLeft = (screenpos) { .x = screenSize.x - 19, .y = 18 };
-    timer->header.border.size = (vec2u16) { .x = 18, .y = 3 };
-    timer->header.border.optTitle = L"Timer";
+	struct Widget *const widget = &timer->header;
 
-    struct WidgetCallbacks *const callbacks = &timer->header.callbacks;
+    widget->id = WidgetId_TIMER;
+	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+
+	assert( widget_exists( WidgetId_BOARD ) );
+	struct WidgetBox const *boardBox = &widget_optget( WidgetId_BOARD )->box;
+
+    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 1, .y = boardBox->borderUpLeft.y };
+    screenpos const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
+	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
+	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
+	widget_utils_set_title( &widget->box, L"Timer", ConsoleColorFG_MAGENTA );
+
+    struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
     callbacks->clearCb = clear_callback;
+
+	// Specific to widget 
 
     timer->totalDuration = 0;
     timer->status = TimerStatus_NOT_STARTED;

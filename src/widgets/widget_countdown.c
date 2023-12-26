@@ -33,10 +33,9 @@ static void frame_callback( struct Widget *widget )
     seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
     if ( countdown->status == CountdownStatus_TIME_OUT || newTimestamp == countdown->lastUpdateTimestamp ) return;
 
-    console_cursor_set_position( countdown->header.border.upLeft.y + 1, countdown->header.border.upLeft.x + 1 );
+    console_cursor_set_position( countdown->header.box.contentUpLeft.y, countdown->header.box.contentUpLeft.x );
 
-    u32 const width = countdown->header.border.size.x;
-    u32 const widthNoBorders = width - 2;
+    u32 const width = countdown->header.box.contentBottomRight.x - countdown->header.box.contentUpLeft.x + 1;
 
     if ( countdown->status == CountdownStatus_IN_PROGRESS && newTimestamp > countdown->endTimerTimestamp )
     {
@@ -79,7 +78,7 @@ static void frame_callback( struct Widget *widget )
         console_color_fg( ConsoleColorFG_CYAN );
     }
 
-    console_cursor_move_right_by( ( widthNoBorders - 8 ) / 2 ); // center
+    console_cursor_move_right_by( ( width - 8 ) / 2 ); // center
     console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
     console_draw( L"\033[0m" ); // blink mode off in case
 
@@ -95,12 +94,23 @@ struct Widget *widget_countdown_create( void )
     struct WidgetCountdown *const countdown = malloc( sizeof( struct WidgetCountdown ) );
     if ( !countdown ) return NULL;
 
-    countdown->header.id = WidgetId_COUNTDOWN;
+	struct Widget *const widget = &countdown->header;
+
+    widget->id = WidgetId_COUNTDOWN;
+	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+
+	assert( widget_exists( WidgetId_TIMER ) );
+	struct WidgetBox const *TimerBox = &widget_optget( WidgetId_TIMER )->box;
+
+    screenpos const borderUpLeft = (screenpos) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
+    vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
+	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
+	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
+	widget_utils_set_title( &widget->box, L"Countdown", ConsoleColorFG_CYAN );
 
     countdown->header.callbacks.frameCb = frame_callback;
 
-	countdown->header.border.upLeft = (vec2u16) { .x = 40, .y = 18 };
-	countdown->header.border.size   = (vec2u16) { .x = 12, .y = 3 };
+	// Widget specific
 
 	countdown->status = CountdownStatus_NOT_STARTED;
 	countdown->totalDuration = 60;

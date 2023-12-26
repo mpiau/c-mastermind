@@ -8,12 +8,12 @@
 
 enum WidgetId
 {
-    WidgetId_GAME,
-    WidgetId_FPS_BAR,
+    WidgetId_FRAMERATE,
     WidgetId_BOARD,
-    WidgetId_BOARD_SUMMARY,
+    WidgetId_GAME,
     WidgetId_COUNTDOWN,
     WidgetId_TIMER,
+    WidgetId_BOARD_SUMMARY,
     WidgetId_RULES,
     WidgetId_OPTIONS_MENU,
     WidgetId_PAUSE_MENU,

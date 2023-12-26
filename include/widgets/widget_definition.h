@@ -7,11 +7,18 @@
 #include "console.h"
 #include "mouse.h"
 
-enum WidgetTruncate
+enum WidgetTruncatedStatus
 {
-    WidgetTruncate_NONE   = 0x00,
-    WidgetTruncate_X_AXIS = 0x01,
-    WidgetTruncate_Y_AXIS = 0x10
+    WidgetTruncatedStatus_NONE   		= 0x000,
+    WidgetTruncatedStatus_X_AXIS 		= 0x001,
+    WidgetTruncatedStatus_Y_AXIS 		= 0x010,
+    WidgetTruncatedStatus_OUT_OF_BOUNDS = 0x100,
+};
+
+enum WidgetVisibilityStatus
+{
+    WidgetVisibilityStatus_VISIBLE,
+    WidgetVisibilityStatus_HIDDEN
 };
 
 enum WidgetBorderOption
@@ -21,15 +28,26 @@ enum WidgetBorderOption
     WidgetBorderOption_ALWAYS_VISIBLE,
 };
 
-struct WidgetBorder
-{
-    enum WidgetBorderOption option;
-    screenpos upLeft;
-    vec2u16   size;
 
-    utf16 *optTitle;
+struct WidgetBox
+{
+    // Screen positions
+    screenpos borderUpLeft;
+    screenpos borderBottomRight;
+    screenpos contentUpLeft;
+    screenpos contentBottomRight;
+
+    // Truncation related
+    screenpos truncatedBorderBottomRight;
+    enum WidgetTruncatedStatus truncatedStatus;
+
+    // Title
+    utf16 const *borderOptionalTitle;
+    enum ConsoleColorFG borderTitleColor;
+
+    // Border customization
     enum ConsoleColorFG borderColor;
-    enum ConsoleColorFG titleColor;
+    enum WidgetBorderOption borderOption;
 };
 
 
@@ -49,9 +67,8 @@ struct WidgetCallbacks
 
 struct Widget
 {
-    enum WidgetId id;
-    struct WidgetBorder border;
-    struct WidgetCallbacks callbacks;
-
-    enum WidgetTruncate truncateStatus;
+    enum WidgetId	 			id;
+    struct WidgetBox 			box;
+    struct WidgetCallbacks	    callbacks;
+    enum WidgetVisibilityStatus	visibilityStatus;
 };
