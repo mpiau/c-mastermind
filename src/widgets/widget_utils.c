@@ -2,6 +2,7 @@
 
 #include "console.h"
 #include "console_screen.h"
+#include "widgets/widget_border.h"
 #include <stdio.h>
 
 enum
@@ -36,6 +37,7 @@ utf16 get_horiz_utf16( enum WidgetTruncatedStatus const truncateStatus )
 u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const isTruncated, enum ConsoleColorFG color )
 {
     if ( !optTitle || optTitle[0] == L'\0' ) return 0;
+	if ( maxSize <= 2 ) return 0; // don't bother to display anything
 
     utf16 title[maxSize];
     snwprintf( title, maxSize, L" %S ", optTitle );
@@ -53,11 +55,11 @@ u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, 
 }
 
 
-
 void widget_utils_draw_borders( struct WidgetBox const *box )
 {
+	if ( widget_is_out_of_bounds( box ) ) return;
+
     screenpos borderUL = box->borderUpLeft;
-	if ( box->truncatedStatus == WidgetTruncatedStatus_OUT_OF_BOUNDS ) return;
 
     bool const ellipsisNeeded = box->truncatedStatus != WidgetTruncatedStatus_NONE;
 	bool const ellipsisXNeeded = ( box->truncatedStatus & WidgetTruncatedStatus_X_AXIS ) != 0;
@@ -77,6 +79,8 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 
     // Ignore the title for now
     u16 const titleSize = draw_optional_border_title( box->borderOptionalTitle, nbHorizBars, ellipsisNeeded, box->borderTitleColor );
+	assert( titleSize <= nbHorizBars );
+
 	console_color_fg( ellipsisNeeded ? BorderColor_ELLIPSIS : box->borderColor );
     for ( u16 x = 0; x < nbHorizBars - titleSize; ++x )
     {
@@ -113,12 +117,16 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 
 void widget_utils_clear_content( struct WidgetBox *box )
 {
-/*	screenpos contentUL = box->contentUpLeft.x;
-	for ( u16 y = 0; y < border->size.y - 2; ++y )
+	screenpos const contentUL = box->contentUpLeft;
+	screenpos const contentBR = box->contentBottomRight;
+	u16 const contentWidth = contentBR.x - contentUL.x + 1;
+	u16 const contentHeight = contentBR.y - contentUL.y + 1;
+
+	for ( u16 y = 0; y < contentHeight; ++y )
 	{
-		console_cursor_set_position( border->upLeft.y + 1 + y, border->upLeft.x + 1 ); // + 1 for borders
-		console_draw( L"%*lc", border->size.x - 2, L' ' );
-	}*/
+		console_cursor_set_position( contentUL.y + y, contentUL.x );
+		console_draw( L"%*lc", contentWidth, L' ' );
+	}
 }
 
 
@@ -136,6 +144,12 @@ void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos c
 {
 	screenpos const borderUL = box->borderUpLeft;
 	screenpos const borderBR = box->borderBottomRight;
+	screenpos const contentBR = box->contentBottomRight;
+
+	// reset
+	box->truncatedBorderBottomRight = borderBR;
+	box->truncatedContentBottomRight = contentBR;
+	box->truncatedStatus = WidgetTruncatedStatus_NONE;
 
 	// Edge cases where it's not necessary to calculate truncation
 	if ( borderBR.x <= screenSize.x && borderBR.y <= screenSize.y )
@@ -143,28 +157,28 @@ void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos c
 		box->truncatedStatus = WidgetTruncatedStatus_NONE;
 		return; // Everything normal here, no truncation / out-of-bounds
 	}
-	else if ( borderUL.x > screenSize.x && borderUL.y > screenSize.y )
+	else if ( borderUL.x > screenSize.x || borderUL.y > screenSize.y )
 	{
 		box->truncatedStatus = WidgetTruncatedStatus_OUT_OF_BOUNDS;
 		return;
 	}
 
-	box->truncatedBorderBottomRight = borderBR;
-
-	screenpos const truncBorderBR = (screenpos) {
-		.x = screenSize.x - borderUL.x + 1,
-		.y = screenSize.y - borderUL.y + 1
-	};
-
-	box->truncatedStatus = WidgetTruncatedStatus_NONE;
-	if ( truncBorderBR.x < borderBR.x )
+	if ( screenSize.x < borderBR.x )
 	{
-		box->truncatedBorderBottomRight.x = truncBorderBR.x;
+		if ( screenSize.x < contentBR.x )
+		{
+			box->truncatedContentBottomRight.x = screenSize.x;
+		}
+		box->truncatedBorderBottomRight.x = screenSize.x;
 		box->truncatedStatus |= WidgetTruncatedStatus_X_AXIS;
 	}
-	if ( truncBorderBR.y < borderBR.y )
+	if ( screenSize.y < borderBR.y )
 	{
-		box->truncatedBorderBottomRight.y = truncBorderBR.y;
+		if ( screenSize.y < contentBR.y )
+		{
+			box->truncatedContentBottomRight.y = screenSize.y;
+		}
+		box->truncatedBorderBottomRight.y = screenSize.y;
 		box->truncatedStatus |= WidgetTruncatedStatus_Y_AXIS;
 	}
 }

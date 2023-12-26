@@ -39,6 +39,7 @@ struct WidgetBox
 
     // Truncation related
     screenpos truncatedBorderBottomRight;
+    screenpos truncatedContentBottomRight;
     enum WidgetTruncatedStatus truncatedStatus;
 
     // Title
@@ -71,4 +72,5 @@ struct Widget
     struct WidgetBox 			box;
     struct WidgetCallbacks	    callbacks;
     enum WidgetVisibilityStatus	visibilityStatus;
+    bool                        redrawNeeded;
 };

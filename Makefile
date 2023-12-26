@@ -12,6 +12,7 @@ SRC += src/widgets/widget_board.c
 SRC += src/widgets/widget.c
 SRC += src/widgets/widget_game.c
 SRC += src/widgets/widget_utils.c
+SRC += src/widgets/widget_border.c
 SRC += src/widgets/widget_countdown.c
 SRC += src/console_screen.c
 SRC += src/mouse.c

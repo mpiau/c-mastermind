@@ -10,6 +10,11 @@ struct WidgetBoard
 };
 
 
+void clear_callback( struct Widget *widget )
+{
+	widget_utils_clear_content( &widget->box );
+}
+
 void redraw_callback( struct Widget *widget )
 {
 	int x = widget->box.contentUpLeft.x + 4;
@@ -90,6 +95,7 @@ struct Widget *widget_board_create( void )
 
 	widget->callbacks.redrawCb = redraw_callback;
 	widget->callbacks.frameCb = frame_callback;
+	widget->callbacks.clearCb = clear_callback;
 
 	return (struct Widget *)board;
 }

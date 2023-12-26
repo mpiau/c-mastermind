@@ -24,17 +24,11 @@ struct WidgetTimer
 };
 
 
-static void clear_callback( struct Widget *widget )
-{
-	// widget_utils_clear_content( &widget->border );
-}
-
-
 static void redraw_callback( struct Widget *widget )
 {
     assert( widget->id == WidgetId_TIMER );
-	if ( widget->visibilityStatus == WidgetVisibilityStatus_HIDDEN ) return;
-	if ( widget->box.truncatedStatus != WidgetTruncatedStatus_NONE ) return;
+    assert( widget->visibilityStatus != WidgetVisibilityStatus_HIDDEN );
+    assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
 
     struct WidgetTimer *timer = (struct WidgetTimer *)widget;
 
@@ -75,7 +69,7 @@ void frame_callback( struct Widget *widget )
 
     if ( oldDuration != newDuration )
     {
-        redraw_callback( widget );
+		widget->redrawNeeded = true;
     }
 }
 
@@ -102,7 +96,6 @@ struct Widget *widget_timer_create( void )
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
-    callbacks->clearCb = clear_callback;
 
 	// Specific to widget 
 

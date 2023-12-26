@@ -33,3 +33,5 @@ bool widget_exists( enum WidgetId id );
 struct Widget *widget_optget( enum WidgetId id ); // return NULL if doesn't exist
 
 void widget_frame( void );
+
+

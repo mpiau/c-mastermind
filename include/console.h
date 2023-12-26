@@ -88,6 +88,7 @@ void console_cursor_show( void );
 void console_cursor_start_blinking( void );
 void console_cursor_stop_blinking( void );
 void console_cursor_set_position( short y, short x );
+void console_cursor_setpos( screenpos position );
 void console_cursor_move_up_by( short n );
 void console_cursor_move_down_by( short n );
 void console_cursor_move_left_by( short n );

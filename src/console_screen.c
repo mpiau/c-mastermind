@@ -7,7 +7,7 @@
 
 enum // Constants
 {
-    RESIZE_DELAY_NS = 100 * 1000 * 1000, // 100 nanoseconds
+    RESIZE_DELAY_NS = 200 * 1000 * 1000, // 200 milliseconds
     RESIZE_CALLBACKS_MAX_COUNT = 16
 };
 
@@ -70,6 +70,13 @@ bool console_screen_resize( vec2u16 const newSize )
     s_newSize = newSize;
     s_resizeTimestamp = get_timestamp_nanoseconds();
     return true;
+}
+
+
+bool console_screen_is_being_resized( void )
+{
+	nanoseconds const timestamp = get_timestamp_nanoseconds();
+	return timestamp - s_resizeTimestamp < RESIZE_DELAY_NS;
 }
 
 

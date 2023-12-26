@@ -1,6 +1,7 @@
 #include "widgets/widget.h"
 #include "widgets/widget_definition.h"
 
+#include "widgets/widget_border.h"
 #include "widgets/widget_utils.h"
 #include "widgets/widget_game.h"
 #include "widgets/widget_board.h"
@@ -13,6 +14,43 @@
 #include <stdlib.h>
 
 static struct Widget *s_widgets[WidgetId_Count] = {};
+
+
+static void clear_rect( screenpos const upleft, vec2u16 const size, bool const borderOnly )
+{
+	for ( u16 y = 0; y < size.y; ++y )
+	{
+		console_cursor_set_position( upleft.y + y, upleft.x );
+
+		if ( !borderOnly || ( y == 0 || y == size.y - 1 ) )
+		{
+			console_draw( L"%*lc", size.x, L' ' );
+		}
+		else
+		{
+			console_draw( L"%lc", L' ' );
+			console_cursor_move_right_by( size.x - 2 );
+			console_draw( L"%lc", L' ' );
+		}
+
+	}
+}
+
+
+static void clear_content( struct WidgetBox const *box )
+{
+	clear_rect( box->contentUpLeft, widget_content_get_size( box ), false );
+}
+
+static void clear_borders( struct WidgetBox const *box )
+{
+	clear_rect( box->borderUpLeft, widget_border_get_size( box ), true );
+}
+
+static void clear_widget( struct WidgetBox const *box )
+{
+	clear_rect( box->borderUpLeft, widget_border_get_size( box ), false );
+}
 
 
 // Array with the list of ID for the priority frame / priority input
@@ -38,24 +76,34 @@ static void on_screen_resize_callback( vec2u16 oldSize, vec2u16 newSize )
         struct Widget *widget = s_widgets[id];
         if ( !widget ) continue;
 
+		enum WidgetTruncatedStatus oldStatus = widget->box.truncatedStatus;
 		widget_utils_calculate_truncation( &widget->box, newSize );
+		enum WidgetTruncatedStatus newStatus = widget->box.truncatedStatus;
 
-        // TODO If the size doesn't change anything on the position/truncation of the widget, don't redraw for nothing.
+		// TODO, this function should only mark as redrawNeeded
+		// A function could be called on redrawNeeded that will check for borders + content
 
-        // TODO For each widget, calculate if the widget is truncated or not.
-        // TODO If the widget go from not truncated to truncated, clear the widget view.
-
-        if ( widget->box.borderOption != WidgetBorderOption_INVISIBLE ) // Ou truncated and display on truncate
-        {
+		if ( newStatus == WidgetTruncatedStatus_NONE && widget->box.borderOption == WidgetBorderOption_ALWAYS_VISIBLE )
+		{
+            widget_utils_draw_borders( &widget->box );
+        }
+		else if ( newStatus != WidgetTruncatedStatus_NONE && widget->box.borderOption != WidgetBorderOption_INVISIBLE )
+		{
             widget_utils_draw_borders( &widget->box );
         }
 
-        // TODO If not anymore truncated, call the redraw callback
-
-/*        if ( widget->callbacks.clearCb )
-        {
-            widget->callbacks.clearCb( widget );
-        }*/
+		if ( oldStatus == WidgetTruncatedStatus_NONE && newStatus != WidgetTruncatedStatus_NONE )
+		{
+			if ( widget->id != WidgetId_GAME && !widget_is_out_of_bounds( &widget->box ) ) clear_content( &widget->box );
+		}
+		else if ( oldStatus != WidgetTruncatedStatus_NONE && newStatus == WidgetTruncatedStatus_NONE )
+		{
+			widget->redrawNeeded = true;
+			if ( widget->box.borderOption == WidgetBorderOption_VISIBLE_ON_TRUNCATE )
+			{
+				clear_borders( &widget->box );
+			}
+		}
     }
 }
 
@@ -111,9 +159,19 @@ void widget_frame( void )
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-        if ( widget && widget->callbacks.frameCb )
+		if ( !widget ) continue;
+
+        if ( widget->callbacks.frameCb )
         {
             widget->callbacks.frameCb( widget );
-        }
+		}
+		if ( widget->redrawNeeded && !console_screen_is_being_resized() && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
+		{
+			if ( widget->callbacks.redrawCb  )
+			{
+				widget->callbacks.redrawCb( widget );
+			}
+			widget->redrawNeeded = false;
+		}
     }
 }

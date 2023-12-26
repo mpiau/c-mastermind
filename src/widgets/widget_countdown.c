@@ -25,19 +25,19 @@ struct WidgetCountdown
 };
 
 
-static void frame_callback( struct Widget *widget )
+static void redraw_callback( struct Widget *widget )
 {
 	assert( widget->id == WidgetId_COUNTDOWN );
-    struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
+	if ( widget->visibilityStatus == WidgetVisibilityStatus_HIDDEN ) return;
+	if ( widget->box.truncatedStatus != WidgetTruncatedStatus_NONE ) return;
 
-    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-    if ( countdown->status == CountdownStatus_TIME_OUT || newTimestamp == countdown->lastUpdateTimestamp ) return;
+    struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
     console_cursor_set_position( countdown->header.box.contentUpLeft.y, countdown->header.box.contentUpLeft.x );
 
     u32 const width = countdown->header.box.contentBottomRight.x - countdown->header.box.contentUpLeft.x + 1;
 
-    if ( countdown->status == CountdownStatus_IN_PROGRESS && newTimestamp > countdown->endTimerTimestamp )
+    if ( countdown->status == CountdownStatus_IN_PROGRESS && countdown->lastUpdateTimestamp > countdown->endTimerTimestamp )
     {
         utf16 msg[] = L"TIME OUT";
         console_color_fg( ConsoleColorFG_RED ); 
@@ -51,11 +51,9 @@ static void frame_callback( struct Widget *widget )
 
     seconds const remainingTime = countdown->status == CountdownStatus_NOT_STARTED
 		? countdown->totalDuration
-		: countdown->status == CountdownStatus_PAUSED
-			? countdown->endTimerTimestamp - countdown->lastUpdateTimestamp
-			: countdown->endTimerTimestamp - newTimestamp;
+		: countdown->endTimerTimestamp - countdown->lastUpdateTimestamp;
 
-    hours     const hours = remainingTime / 3600;
+    hours const hours     = remainingTime / 3600;
     minutes const minutes = ( remainingTime % 3600 ) / 60;
     seconds const seconds = remainingTime % 60;
 
@@ -81,10 +79,21 @@ static void frame_callback( struct Widget *widget )
     console_cursor_move_right_by( ( width - 8 ) / 2 ); // center
     console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
     console_draw( L"\033[0m" ); // blink mode off in case
+}
+
+
+static void frame_callback( struct Widget *widget )
+{
+	assert( widget->id == WidgetId_COUNTDOWN );
+    struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
+
+    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
+    if ( countdown->status == CountdownStatus_TIME_OUT || newTimestamp == countdown->lastUpdateTimestamp ) return;
 
 	if ( countdown->status != CountdownStatus_PAUSED )
 	{
 	    countdown->lastUpdateTimestamp = newTimestamp;
+		redraw_callback( widget );
 	}
 }
 
@@ -109,6 +118,7 @@ struct Widget *widget_countdown_create( void )
 	widget_utils_set_title( &widget->box, L"Countdown", ConsoleColorFG_CYAN );
 
     countdown->header.callbacks.frameCb = frame_callback;
+	countdown->header.callbacks.redrawCb = redraw_callback;
 
 	// Widget specific
 
