@@ -20,7 +20,7 @@ struct Widget *widget_game_create( void )
 	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
 
     screenpos const borderUpLeft = (screenpos) { .x = 1, .y = 1 };
-    screenpos const contentSize  = (vec2u16)   { .x = 118, .y = 28 };
+    screenpos const contentSize  = (vec2u16)   { .x = 118, .y = 34 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
 
