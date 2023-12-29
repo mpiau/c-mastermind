@@ -1,6 +1,6 @@
 #include "widgets/widget_countdown.h"
 
-#include "fps_counter.h" // should be only time_units
+#include "time_units.h"
 #include "widgets/widget_definition.h"
 #include "widgets/widget_utils.h"
 
@@ -18,9 +18,9 @@ struct WidgetCountdown
 
     // Specific data to timer
 	enum CountdownStatus status;
-    seconds endTimerTimestamp;
-    seconds lastUpdateTimestamp;
-    seconds totalDuration;
+    nsec endTimerTimestamp;
+    nsec lastUpdateTimestamp;
+    nsec totalDuration;
     bool finished;
 };
 
@@ -49,25 +49,27 @@ static void redraw_callback( struct Widget *widget )
         return;
     }
 
-    seconds const remainingTime = countdown->status == CountdownStatus_NOT_STARTED
+    nsec const remainingTimeNsec = countdown->status == CountdownStatus_NOT_STARTED
 		? countdown->totalDuration
 		: countdown->endTimerTimestamp - countdown->lastUpdateTimestamp;
 
-    hours const hours     = remainingTime / 3600;
-    minutes const minutes = ( remainingTime % 3600 ) / 60;
-    seconds const seconds = remainingTime % 60;
+	sec const remainingTimeSec = time_nsec_to_sec( remainingTimeNsec );
+
+    hour const hours  = remainingTimeSec / 3600;
+    min const minutes = ( remainingTimeSec % 3600 ) / 60;
+    sec const seconds = remainingTimeSec % 60;
 
     // Blue, yellow, blinking yellow, red, blinking red ?
-    if ( remainingTime < ( countdown->totalDuration * 10 ) / 100 )
+    if ( remainingTimeNsec < ( countdown->totalDuration * 10 ) / 100 )
     {
         console_color_fg( ConsoleColorFG_RED ); 
         console_draw( L"\033[5m" ); // blink mode on
     }
-    else if ( remainingTime < ( countdown->totalDuration * 25 ) / 100 )
+    else if ( remainingTimeNsec < ( countdown->totalDuration * 25 ) / 100 )
     {
         console_color_fg( ConsoleColorFG_RED ); 
     }
-    else if ( remainingTime < ( countdown->totalDuration * 60 ) / 100 /* <40% */ )
+    else if ( remainingTimeNsec < ( countdown->totalDuration * 60 ) / 100 /* <40% */ )
     {
         console_color_fg( ConsoleColorFG_YELLOW );
     }
@@ -87,8 +89,10 @@ static void frame_callback( struct Widget *widget )
 	assert( widget->id == WidgetId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
-    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-    if ( countdown->status == CountdownStatus_TIME_OUT || newTimestamp == countdown->lastUpdateTimestamp ) return;
+    nsec const newTimestamp = time_get_timestamp_nsec();
+	// Would be better to check if the difference between the 2 is greater than 1 second no ?
+	bool const equalsInSeconds = time_nsec_to_sec( newTimestamp ) == time_nsec_to_sec( countdown->lastUpdateTimestamp );
+    if ( countdown->status == CountdownStatus_TIME_OUT || equalsInSeconds ) return;
 
 	if ( countdown->status != CountdownStatus_PAUSED )
 	{
@@ -123,7 +127,7 @@ struct Widget *widget_countdown_create( void )
 	// Widget specific
 
 	countdown->status = CountdownStatus_NOT_STARTED;
-	countdown->totalDuration = 60;
+	countdown->totalDuration = time_sec_to_nsec( 60 );
 
     return (struct Widget *)countdown;
 }
@@ -140,7 +144,7 @@ void widget_countdown_start( struct Widget *widget )
 	if ( countdown->status != CountdownStatus_NOT_STARTED ) return;
 	assert( countdown->totalDuration > 0 );
 
-	countdown->lastUpdateTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
+	countdown->lastUpdateTimestamp = time_get_timestamp_nsec();
 	countdown->endTimerTimestamp = countdown->lastUpdateTimestamp + countdown->totalDuration;
 	countdown->status = CountdownStatus_IN_PROGRESS;
 }
@@ -160,8 +164,7 @@ void widget_countdown_resume( struct Widget *widget )
 	assert( widget->id == WidgetId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
-	nanoseconds timestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-
+	nsec const timestamp = time_get_timestamp_nsec();
 	countdown->endTimerTimestamp += ( timestamp - countdown->lastUpdateTimestamp );
 	countdown->lastUpdateTimestamp = timestamp;
 	countdown->status = CountdownStatus_IN_PROGRESS;
@@ -177,13 +180,13 @@ void widget_countdown_reset( struct Widget *widget )
 }
 
 
-void widget_countdown_set_duration( struct Widget *widget, seconds duration )
+void widget_countdown_set_duration( struct Widget *widget, sec const duration )
 {
 	assert( widget->id == WidgetId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	if ( duration == 0 ) return;
 
-	countdown->totalDuration = duration;
+	countdown->totalDuration = time_sec_to_nsec( duration );
 }
 

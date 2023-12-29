@@ -4,7 +4,7 @@
 #include "widgets/widget_utils.h"
 
 #include "console_screen.h"
-#include "fps_counter.h" // Not making sense, but need the current timestamp. FIX IT
+#include "time_units.h"
 
 enum TimerStatus
 {
@@ -19,8 +19,8 @@ struct WidgetTimer
     struct Widget header;
 
     enum TimerStatus status;
-    nanoseconds      totalDuration;
-    nanoseconds      lastUpdateTimestamp;
+    nsec totalDuration;
+    nsec lastUpdateTimestamp;
 };
 
 
@@ -38,11 +38,11 @@ static void redraw_callback( struct Widget *widget )
     screenpos const contentBR = timer->header.box.contentBottomRight;
     u32 const width = contentBR.x - contentUL.x + 1;
 
-    seconds const totalDuration = timer->totalDuration / NANOSECONDS;
+    sec const totalDuration = time_nsec_to_sec( timer->totalDuration );
 
-    hours   const hours   = ( totalDuration / 3600 );
-    minutes const minutes = ( totalDuration % 3600 ) / 60;
-    seconds const seconds = totalDuration % 60;
+    hour const hours  = ( totalDuration / 3600 );
+    min const minutes = ( totalDuration % 3600 ) / 60;
+    sec const seconds = totalDuration % 60;
 
     console_color_fg( ConsoleColorFG_WHITE );
     console_cursor_set_position( contentUL.y, contentUL.x + ( ( width - 8 ) / 2 ) );
@@ -58,15 +58,14 @@ void frame_callback( struct Widget *widget )
 
     if ( timer->status != TimerStatus_RUNNING ) return;
 
-    seconds const oldDuration = timer->totalDuration / NANOSECONDS;
-    nanoseconds const newTimestamp = get_timestamp_nanoseconds();
-    nanoseconds const elapsedTime = newTimestamp - timer->lastUpdateTimestamp;
+    sec const oldDuration = time_nsec_to_sec( timer->totalDuration );
+    nsec const newTimestamp = time_get_timestamp_nsec();
+    nsec const elapsedTime = newTimestamp - timer->lastUpdateTimestamp;
 
     timer->totalDuration += elapsedTime;
     timer->lastUpdateTimestamp = newTimestamp;
 
-    seconds const newDuration = timer->totalDuration / NANOSECONDS;
-
+    sec const newDuration = time_nsec_to_sec( timer->totalDuration );
     if ( oldDuration != newDuration )
     {
 		widget->redrawNeeded = true;
@@ -113,7 +112,7 @@ bool widget_timer_start( struct Widget *const widget )
 
     if ( timer->status != TimerStatus_NOT_STARTED ) return false;
 
-    timer->lastUpdateTimestamp = get_timestamp_nanoseconds();
+    timer->lastUpdateTimestamp = time_get_timestamp_nsec();
     timer->status = TimerStatus_RUNNING;
     return true;
 }
@@ -152,146 +151,8 @@ bool widget_timer_resume( struct Widget *const widget )
 
     if ( timer->status != TimerStatus_PAUSED ) return false;
 
-    timer->lastUpdateTimestamp = get_timestamp_nanoseconds();
+    timer->lastUpdateTimestamp = time_get_timestamp_nsec();
     timer->status = TimerStatus_RUNNING;
 
     return true;
 }
-
-
-
-/*
-// redraw -> borders + content
-void widget_timer_redraw( struct WidgetTimer *timer )
-{
-    widget_draw_borders( &timer->screenData );
-    // widget_timer_update( timer, true );
-}
-
-// update -> redraw content only if needed
-void widget_timer_update( struct WidgetTimer *timer, bool forceUpdate )
-{
-    seconds newTimestamp = get_timestamp_nanoseconds() / NANOSECONDS;
-    if ( timer->finished || newTimestamp == timer->lastUpdateTimestamp ) return;
-
-    console_cursor_set_position( timer->screenData.upLeft.y + 1, timer->screenData.upLeft.x + 1 );
-
-    u32 const width = timer->screenData.bottomRight.x - timer->screenData.upLeft.x;
-    u32 const widthNoBorders = width - 2;
-
-    if ( newTimestamp > timer->endTimerTimestamp )
-    {
-        utf16 msg[] = L"TIME OUT";
-        console_color_fg( ConsoleColorFG_RED ); 
-        console_draw( L"\033[5m" ); // blink mode on
-        console_cursor_move_right_by( ( width - ARR_COUNT( msg ) ) / 2 ); // center
-        console_draw( L"%S", msg );
-        console_draw( L"\033[0m" ); // blink mode off
-        timer->finished = true;
-        return;
-    }
-
-    seconds const remainingTime = timer->endTimerTimestamp - newTimestamp;
-
-    hours     const hours = remainingTime / 3600;
-    minutes const minutes = ( remainingTime % 3600 ) / 60;
-    seconds const seconds = remainingTime % 60;
-
-    // Blue, yellow, blinking yellow, red, blinking red ?
-    if ( remainingTime < ( timer->totalDuration * 10 ) / 100 )
-    {
-        console_color_fg( ConsoleColorFG_RED ); 
-        console_draw( L"\033[5m" ); // blink mode on
-    }
-    else if ( remainingTime < ( timer->totalDuration * 25 ) / 100 )
-    {
-        console_color_fg( ConsoleColorFG_RED ); 
-    }
-    else if ( remainingTime < ( timer->totalDuration * 60 ) / 100 )
-    {
-        console_color_fg( ConsoleColorFG_YELLOW );
-    }
-    else
-    {
-        console_color_fg( ConsoleColorFG_CYAN );
-    }
-
-    console_cursor_move_right_by( ( widthNoBorders - 8 ) / 2 ); // center
-    console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
-    console_draw( L"\033[0m" ); // blink mode off in case
-
-    timer->lastUpdateTimestamp = newTimestamp;
-}
-
-
-// FOR ALL WIDGETS
-
-
-void widget_draw_up_border( screenpos upLeft, utf16 *name, u32 const widthNoBorders )
-{
-    console_cursor_set_position( upLeft.y, upLeft.x );
-
-    console_color_fg( ConsoleColorFG_WHITE );
-    console_draw( L"┌" );
-    
-    // Title
-    int titleWidth = 0;
-    if ( name != NULL )
-    {
-        console_color_fg( ConsoleColorFG_GREEN );
-        titleWidth = console_draw( L" %S ", name );
-        console_color_fg( ConsoleColorFG_WHITE );
-    }
-
-    for ( int i = 0; i < widthNoBorders - titleWidth; ++ i )
-    {
-        console_draw( L"─" );
-    }
-    console_draw( L"┐" );
-}
-
-void widget_draw_vert_borders( screenpos upLeft, u32 height, u32 const widthNoBorders )
-{
-    for ( int y = 0; y < height; ++y )
-    {
-        console_cursor_set_position( upLeft.y + y, upLeft.x );
-        console_draw( L"│" );
-        console_cursor_move_right_by( widthNoBorders );
-        console_draw( L"│" );
-    }
-}
-
-
-void widget_draw_bottom_border( screenpos upLeft, u32 const widthNoBorders )
-{
-    console_cursor_set_position( upLeft.y, upLeft.x );
-
-    console_draw( L"└" );
-    for ( int i = 0; i < widthNoBorders; ++ i )
-    {
-        console_draw( L"─" );
-    }
-    console_draw( L"┘" );
-}
-
-
-void widget_draw_borders( struct WidgetScreenData *screenData )
-{
-    // Ensure screen data is valid :
-    // top left and bottom right are valid between each other
-    // The title fit in the given width
-    // height > 2 because otherwise its too small to have borders
-    u32 const width = screenData->bottomRight.x - screenData->upLeft.x;
-    u32 const widthNoBorders = width - 2;
-    u32 const height = screenData->bottomRight.y - screenData->upLeft.y;
-
-    screenpos currPos = screenData->upLeft;
-
-    widget_draw_up_border( currPos, screenData->name, widthNoBorders );
-    currPos.y += 1;
-    widget_draw_vert_borders( currPos, height, widthNoBorders );
-
-    currPos.y = screenData->upLeft.y + height;
-    widget_draw_bottom_border( currPos, widthNoBorders );
-}*/
-

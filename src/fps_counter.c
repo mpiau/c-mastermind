@@ -1,15 +1,9 @@
 #include "fps_counter.h"
 
 #include <math.h>
-#include <time.h>
+//#include <time.h>
 #include <synchapi.h>
 #include <windows.h>
-
-// Sleep(0) or more - no
-// SleepEx - no
-// nanosleep - no
-// Another one has a Mincore.lib dependency
-// timeBeginPeriod / timeEndPeriod -> No, don't want to modify the whole system and consume more energy, so waitable timer is nice.
 
 // Not defined in GCC - Windows toolchain
 #ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
@@ -20,20 +14,20 @@ enum
 {
     FRAME_HISTORY_COUNT = 8,
 
-    FRAMERATE_120 = NANOSECONDS / 120,
-    FRAMERATE_90  = NANOSECONDS / 90,
-    FRAMERATE_75  = NANOSECONDS / 75,
-    FRAMERATE_60  = NANOSECONDS / 60,
-    FRAMERATE_45  = NANOSECONDS / 45,
-    FRAMERATE_30  = NANOSECONDS / 30
+    FRAMERATE_120_IN_NSEC = Time_SEC_IN_NSEC / 120,
+    FRAMERATE_90_IN_NSEC  = Time_SEC_IN_NSEC / 90,
+    FRAMERATE_75_IN_NSEC  = Time_SEC_IN_NSEC / 75,
+    FRAMERATE_60_IN_NSEC  = Time_SEC_IN_NSEC / 60,
+    FRAMERATE_45_IN_NSEC  = Time_SEC_IN_NSEC / 45,
+    FRAMERATE_30_IN_NSEC  = Time_SEC_IN_NSEC / 30
 };
 
 struct FrameHistory
 {
-    nanoseconds frameDuration[FRAME_HISTORY_COUNT];
-    nanoseconds totalDuration;
-    nanoseconds averageDuration;
-    u8  frameIndex;
+    nsec frameDuration[FRAME_HISTORY_COUNT];
+    nsec totalDuration;
+    nsec averageDuration;
+    u8   frameIndex;
 };
 
 struct FPSCounter
@@ -41,23 +35,16 @@ struct FPSCounter
     HANDLE waitableTimer;
     LARGE_INTEGER minWaitTimePerFrame100ns;
 
-    nanoseconds frameBegin;
-    nanoseconds frameEnd;
+    nsec frameBegin;
+    nsec frameEnd;
 
     struct FrameHistory history;
 };
 
 static struct FPSCounter s_fpsCounter = {}; // Just to avoid dynamic alloc
 
-static nanoseconds S_CAPPED_FRAMERATE = FRAMERATE_60;
+static nsec S_CAPPED_FRAMERATE = FRAMERATE_60_IN_NSEC;
 
-
-nanoseconds get_timestamp_nanoseconds()
-{
-    struct timespec time;
-    clock_gettime( CLOCK_MONOTONIC, &time );
-    return time.tv_sec * NANOSECONDS + time.tv_nsec;
-}
 
 struct FPSCounter *fpscounter_init( void )
 {
@@ -70,10 +57,10 @@ struct FPSCounter *fpscounter_init( void )
 
     // - 1 ms for accuracy, otherwise we will be at 59fps instead of 60fps
     // negative to be relative and not UTC.
-    fpsCounter->minWaitTimePerFrame100ns.QuadPart = (i64)( (u64)( S_CAPPED_FRAMERATE - 1000000 ) / (u64)100 ) * -1;
+    fpsCounter->minWaitTimePerFrame100ns.QuadPart = (i64)( (u64)( S_CAPPED_FRAMERATE - Time_MSEC_IN_NSEC ) / (u64)100 ) * -1;
 
     SetWaitableTimerEx( fpsCounter->waitableTimer, &fpsCounter->minWaitTimePerFrame100ns, 0, NULL, NULL, NULL, 0 );
-    fpsCounter->frameBegin = get_timestamp_nanoseconds();
+    fpsCounter->frameBegin = time_get_timestamp_nsec();
 
     return fpsCounter;
 }
@@ -98,7 +85,7 @@ void fpscounter_uninit( struct FPSCounter *fpsCounter )
 u64 fpscounter_average_framerate( struct FPSCounter *fpsCounter )
 {
     struct FrameHistory *history = &fpsCounter->history;
-    return (u64)( roundf( 1.0f / ( history->averageDuration / (float)( NANOSECONDS ) ) ) );
+    return (u64)( roundf( 1.0f / ( history->averageDuration / (float)( Time_SEC_IN_NSEC ) ) ) );
 }
 
 
@@ -108,10 +95,10 @@ u64 fpscounter_frame( struct FPSCounter *fpsCounter )
 
     do
     {
-        fpsCounter->frameEnd = get_timestamp_nanoseconds();
+        fpsCounter->frameEnd = time_get_timestamp_nsec();
     } while ( fpsCounter->frameEnd - fpsCounter->frameBegin < S_CAPPED_FRAMERATE );
 
-	nanoseconds const delta = fpsCounter->frameEnd - fpsCounter->frameBegin;
+	nsec const delta = fpsCounter->frameEnd - fpsCounter->frameBegin;
 
     struct FrameHistory *history = &fpsCounter->history;
     history->totalDuration -= history->frameDuration[history->frameIndex];

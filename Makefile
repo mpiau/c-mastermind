@@ -16,6 +16,7 @@ SRC += src/widgets/widget_border.c
 SRC += src/widgets/widget_countdown.c
 SRC += src/console_screen.c
 SRC += src/mouse.c
+SRC += src/time_units.c
 
 
 CFLAGS += -Iinclude

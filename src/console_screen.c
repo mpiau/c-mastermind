@@ -7,14 +7,14 @@
 
 enum // Constants
 {
-    RESIZE_DELAY_NS = 200 * 1000 * 1000, // 200 milliseconds
+    RESIZE_DELAY_NS = 200 * Time_MSEC_IN_NSEC,
     RESIZE_CALLBACKS_MAX_COUNT = 16
 };
 
 static HANDLE s_handle = INVALID_HANDLE_VALUE;
 static vec2u16 s_newSize = {};
 static vec2u16 s_oldSize = {}; // Not equal to newSize to trigger a first draw at the beginning.
-nanoseconds s_resizeTimestamp = 0;
+static nsec s_resizeTimestamp = 0;
 
 static OnResizeCallback s_callbacks[RESIZE_CALLBACKS_MAX_COUNT] = {};
 static u32 s_callbackCount = 0;
@@ -50,7 +50,7 @@ void console_screen_frame( void )
 {
     if ( s_newSize.x == s_oldSize.x && s_newSize.y == s_oldSize.y ) return;
 
-    nanoseconds const timestamp = get_timestamp_nanoseconds();
+    nsec const timestamp = time_get_timestamp_nsec();
 
     // Check if we had waited enough time to refresh the display
     if ( timestamp - s_resizeTimestamp < RESIZE_DELAY_NS ) return;
@@ -68,14 +68,14 @@ bool console_screen_resize( vec2u16 const newSize )
     // Handle possible invalid values ?
 
     s_newSize = newSize;
-    s_resizeTimestamp = get_timestamp_nanoseconds();
+    s_resizeTimestamp = time_get_timestamp_nsec();
     return true;
 }
 
 
 bool console_screen_is_being_resized( void )
 {
-	nanoseconds const timestamp = get_timestamp_nanoseconds();
+	nsec const timestamp = time_get_timestamp_nsec();
 	return timestamp - s_resizeTimestamp < RESIZE_DELAY_NS;
 }
 

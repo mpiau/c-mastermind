@@ -2,50 +2,47 @@
 
 #include "core_types.h"
 
-typedef u64 nanoseconds;
-typedef u64 microseconds;
-typedef u64 milliseconds;
-typedef u64 seconds;
-typedef u64 minutes;
-typedef u64 hours;
+typedef u64 nsec;
+typedef u64 usec;
+typedef u64 msec;
+typedef u64 sec;
+typedef u64 min;
+typedef u64 hour;
+typedef u64 day;
 
 enum
 {
-    SECOND       = 1, // Not clear enough, because SECOND could be different depending of the referentiel ( SECOND would be 1000000000 on nanosec )
-    MILLISECONDS = SECOND       * 1000,
-    MICROSECONDS = MILLISECONDS * 1000,
-    NANOSECONDS  = MICROSECONDS * 1000
+	Time_SEC_IN_MSEC = 1000,
+	Time_SEC_IN_USEC = Time_SEC_IN_MSEC * 1000,
+	Time_SEC_IN_NSEC = Time_SEC_IN_USEC * 1000,
+
+	Time_MSEC_IN_USEC = 1000,
+	Time_MSEC_IN_NSEC = Time_MSEC_IN_USEC * 1000,
+
+	Time_USEC_IN_NSEC = 1000,
 };
 
 
-static inline nanoseconds seconds_to_nanoseconds( seconds const s )
+nsec time_get_timestamp_nsec( void );
+
+
+static inline nsec time_msec_to_nsec( msec const milliseconds )
 {
-    return s * NANOSECONDS;
+	return milliseconds * Time_MSEC_IN_NSEC;
 }
 
-static inline milliseconds seconds_to_milliseconds( seconds const s )
+static inline msec time_nsec_to_msec( nsec const nanoseconds )
 {
-    return s * MILLISECONDS;
-}
-
-
-static inline seconds milliseconds_to_seconds( milliseconds const ms )
-{
-    return ms / MILLISECONDS;
-}
-
-static inline nanoseconds milliseconds_to_nanoseconds( milliseconds const ms )
-{
-    return ms * ( NANOSECONDS / MILLISECONDS );
+	return nanoseconds / Time_MSEC_IN_NSEC;
 }
 
 
-static inline seconds nanoseconds_to_seconds( nanoseconds const ns )
+static inline nsec time_sec_to_nsec( sec const seconds )
 {
-    return ns / NANOSECONDS;
+	return seconds * Time_SEC_IN_NSEC;
 }
 
-static inline milliseconds nanoseconds_to_milliseconds( nanoseconds const ns )
+static inline sec time_nsec_to_sec( nsec const nanoseconds )
 {
-    return ns / ( NANOSECONDS / MILLISECONDS );
+	return nanoseconds / Time_SEC_IN_NSEC;
 }
