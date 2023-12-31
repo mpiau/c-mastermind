@@ -12,7 +12,7 @@ static u32 s_oldInputMode = 0;
 static u32 s_oldOutputMode = 0;
 static atomic_bool s_isInit = false;
 
-static utf16 s_screenBuffer[4096] = {};
+static utf16 s_screenBuffer[8092] = {};
 static u16 s_bufPos = 0;
 
 static BOOL console_ctrl_handler( DWORD const ctrlType )

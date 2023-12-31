@@ -5,6 +5,8 @@
 #include "widgets/widget_utils.h"
 #include "widgets/widget_game.h"
 #include "widgets/widget_board.h"
+#include "widgets/widget_board_buttons.h"
+#include "widgets/widget_board_summary.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_framerate.h"
 #include "widgets/widget_countdown.h"
@@ -114,8 +116,10 @@ bool widget_global_init( void )
     s_widgets[WidgetId_FRAMERATE] = widget_framerate_create();
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
+	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
+	s_widgets[WidgetID_BOARD_BUTTONS] = widget_board_buttons_create();
 	// boardSummary
-    s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
+    // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)

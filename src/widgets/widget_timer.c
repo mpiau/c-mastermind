@@ -86,7 +86,7 @@ struct Widget *widget_timer_create( void )
 	assert( widget_exists( WidgetId_BOARD ) );
 	struct WidgetBox const *boardBox = &widget_optget( WidgetId_BOARD )->box;
 
-    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 1, .y = boardBox->borderUpLeft.y };
+    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
     screenpos const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;

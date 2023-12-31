@@ -14,10 +14,7 @@ enum WidgetId
     WidgetId_COUNTDOWN,
     WidgetId_TIMER,
     WidgetId_BOARD_SUMMARY,
-    WidgetId_RULES,
-    WidgetId_OPTIONS_MENU,
-    WidgetId_PAUSE_MENU,
-    // WidgetId_SCORE ?
+	WidgetID_BOARD_BUTTONS,
 
     WidgetId_Count,
 };
