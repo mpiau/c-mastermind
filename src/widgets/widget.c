@@ -71,6 +71,17 @@ static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const
     }
 }
 
+static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton button )
+{
+    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *widget = s_widgets[id];
+        if ( widget && widget->callbacks.mouseClickCb )
+        {
+            widget->callbacks.mouseClickCb( widget, mousePos, button );
+        }
+    }
+}
 
 static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newSize )
 {
@@ -132,6 +143,7 @@ bool widget_global_init( void )
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
     mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
+    mouse_register_on_mouse_click_callback( on_mouse_click_callback );
     console_screen_register_on_resize_callback( on_screen_resize_callback );
     // TODO add keyboard input
     return true;

@@ -12,6 +12,7 @@
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_utils.h"
 #include "mouse.h"
+#include "gameloop.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -111,6 +112,51 @@ static bool s_mainLoop = true;
 static struct MastermindV2 s_mastermind = {};
 
 
+static void gameloop_consume_key_input( enum KeyInput const input )
+{
+	console_cursor_set_position( 20, 1 );
+	console_draw( L"Key input: %2u", input );
+
+	if ( input == KeyInput_ESCAPE || input == KeyInput_Q )
+	{
+		s_mainLoop = false;
+		return;
+	}
+
+	// widgets_consume_input
+
+	if ( mastermind_try_consume_input( &s_mastermind, input ) )
+	{
+		return;
+	}
+
+	// Just to simplify testing
+	struct Widget *widget = widget_optget( WidgetId_FRAMERATE );
+	if ( input == KeyInput_NUMPAD_4 ) {
+		widget = widget_optget( WidgetId_COUNTDOWN );
+		widget_countdown_start( widget );
+	}
+	else if ( input == KeyInput_NUMPAD_5 ) {
+		widget = widget_optget( WidgetId_COUNTDOWN );
+		widget_countdown_pause( widget );
+	}
+	else if ( input == KeyInput_NUMPAD_6 ) {
+		widget = widget_optget( WidgetId_COUNTDOWN );
+		widget_countdown_resume( widget );
+	}
+	else if ( input == KeyInput_NUMPAD_7 ) {
+		widget = widget_optget( WidgetId_COUNTDOWN );
+		widget_countdown_reset( widget );
+	}
+}
+
+
+void gameloop_emit_key( enum KeyInput const input )
+{
+	gameloop_consume_key_input( input );
+}
+
+
 static void consume_input( INPUT_RECORD const *const recordedInput )
 {
 	assert( recordedInput );
@@ -125,81 +171,19 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 		}
 		case MOUSE_EVENT:
 		{
-			// If the mouse moved but didn't move enough to change its coordinates on the screen,
-			// The event won't be sent. So there is no need to manually filter this edge case here.
-			COORD const mousePos = recordedInput->Event.MouseEvent.dwMousePosition;
-			mouse_update_position( *(vec2u16 *)&mousePos );
-
-			// Pour le drag, bouger la souris avec le button enfoncé garde le bouton enfoncé ( pas de reset )
-			// So on pourra faire du trackign tant que mouse hold.
-			// Par contre pour le simple click, il faut que l'on detecte quand le bouton n'est plus enfoncé
-			// Donc save qu'il a été enfoncé, et ensuite emit callback cliked quand le bouton n'est plus enfoncé
-			// Le gérer correctement pour notre menu nous permettra de plus efficacement l'utiliser pour nos
-			// widgets / game.
-			// drag callback as well ? Or drag begin + drag pending + drag end ?
-			DWORD mouseState = recordedInput->Event.MouseEvent.dwButtonState;
-			switch( mouseState )
-			{
-				case FROM_LEFT_1ST_BUTTON_PRESSED:
-					console_cursor_set_position( 19, 1 );
-					console_draw( L"%llu LEFT ", time_nsec_to_msec( time_get_timestamp_nsec() ) );
-					break;
-				case RIGHTMOST_BUTTON_PRESSED:
-					console_cursor_set_position( 19, 1 );
-					console_draw( L"%llu RIGHT", time_nsec_to_msec( time_get_timestamp_nsec() ) );
-					break;
-				default: break;
-			}
-
+			mouse_consume_event( &recordedInput->Event.MouseEvent );
 			return;
 		}
 		case KEY_EVENT:
 		{
-			console_draw( L"Key input: %2u", recordedInput->Event.KeyEvent.wVirtualKeyCode );
+//			console_draw( L"Key input: %2u", recordedInput->Event.KeyEvent.wVirtualKeyCode );
 
 			if ( !recordedInput->Event.KeyEvent.bKeyDown ) return;
 
 			enum KeyInput input;
-			if ( !key_input_from_u32( recordedInput->Event.KeyEvent.wVirtualKeyCode, &input ) )
+			if ( key_input_from_u32( recordedInput->Event.KeyEvent.wVirtualKeyCode, &input ) )
 			{
-				return;
-			}
-			console_cursor_set_position( 20, 1 );
-			console_draw( L"Key input: %2u", input );
-
-			if ( mastermind_try_consume_input( &s_mastermind, input ) )
-			{
-				return;
-			}
-
-			if ( input == KeyInput_ESCAPE )
-			{
-				s_mainLoop = false;
-			}
-
-			// Just to simplify testing
-			struct Widget *widget = widget_optget( WidgetId_FRAMERATE );
-/*			if ( input == KeyInput_NUMPAD_8 ) {
-				widget_fpsbar_toggle_fps( widget );
-			}
-			if ( input == KeyInput_NUMPAD_9 ) {
-				widget_fpsbar_toggle_ms( widget );
-			}*/
-			if ( input == KeyInput_NUMPAD_4 ) {
-				widget = widget_optget( WidgetId_COUNTDOWN );
-				widget_countdown_start( widget );
-			}
-			else if ( input == KeyInput_NUMPAD_5 ) {
-				widget = widget_optget( WidgetId_COUNTDOWN );
-				widget_countdown_pause( widget );
-			}
-			else if ( input == KeyInput_NUMPAD_6 ) {
-				widget = widget_optget( WidgetId_COUNTDOWN );
-				widget_countdown_resume( widget );
-			}
-			else if ( input == KeyInput_NUMPAD_7 ) {
-				widget = widget_optget( WidgetId_COUNTDOWN );
-				widget_countdown_reset( widget );
+				gameloop_consume_key_input( input );
 			}
 			break;
 		}
@@ -225,6 +209,10 @@ static bool consume_user_inputs( HANDLE const consoleHandle )
 	}
 	if ( nbEvents == 0 ) return true; // Nothing to do.
 
+	// TODO: Perhaps have a limit of the number of inputs to acknowledge by frame
+	// And discard the rest to not take too much delay between the pressed input and the game update.
+	// Example: If the user spam keys, we will discard some of them to stay on track
+
 	DWORD nbInputsRead;
 	INPUT_RECORD inputsBuffer[nbEvents];
 	if ( !ReadConsoleInput( consoleHandle, &inputsBuffer[0], nbEvents, &nbInputsRead ) )
@@ -248,8 +236,9 @@ int main( void )
 
 	if ( !console_global_init( "Mastermind Game", true ) )
 	{
+		// TODO have a filelog for these. The console is already used for the game.
 		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
-		return 1;
+		return 1; // TODO improve these errors code.
 	}
 
 	struct FPSCounter *const fpsCounter = fpscounter_init();
@@ -258,6 +247,8 @@ int main( void )
 		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
 		return 2;
 	}
+
+	mouse_init();
 	if ( !widget_global_init() )
 	{
 		return 3;
@@ -279,21 +270,9 @@ int main( void )
 		widget_frame();
 
 		// TEMP - To move somewhere else
-/*		console_cursor_set_position( 2, 15 );
+		console_cursor_set_position( 1, 35 );
 		screenpos const mousePos = mouse_get_position();
-		vec2u16 const screenSize = console_screen_get_size();
-		console_draw( L" Screen: " );
-		bool const widthTooSmall = console_screen_is_width_too_small();
-		bool const heightTooSmall = console_screen_is_height_too_small();
-		widthTooSmall ? console_color_fg( ConsoleColorFG_RED ) : console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		console_draw( L"%u", screenSize.w );
-		if ( widthTooSmall ) console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		console_draw( L"x" );
-		heightTooSmall ? console_color_fg( ConsoleColorFG_RED ) : console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-		console_draw( L"%u", screenSize.h );
-		if ( heightTooSmall ) console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
-
-		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );*/
+		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
 
 		// Refresh the game display in the console
 		console_refresh();

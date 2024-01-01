@@ -52,15 +52,17 @@ typedef void ( *WidgetFrameCallback )( struct Widget *widget );
 typedef void ( *WidgetRedrawCallback )( struct Widget *widget );
 typedef void ( *WidgetClearCallback )( struct Widget *widget );
 typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
+typedef void ( *WidgetMouseClickCallback )( struct Widget *widget, screenpos pos, enum MouseButton button );
 typedef void ( *WidgetResizeCallback )( struct Widget *widget, vec2u16 oldSize, vec2u16 newSize );
 
 struct WidgetCallbacks
 {
-    WidgetFrameCallback		frameCb;
-    WidgetClearCallback		clearCb;
-    WidgetRedrawCallback	redrawCb;
-    WidgetMouseMoveCallback mouseMoveCb;
-	WidgetResizeCallback	resizeCb;
+    WidgetFrameCallback		 frameCb;
+    WidgetClearCallback		 clearCb;
+    WidgetRedrawCallback	 redrawCb;
+    WidgetMouseMoveCallback  mouseMoveCb;
+	WidgetMouseClickCallback mouseClickCb;
+	WidgetResizeCallback	 resizeCb;
     // [...] 
 };
 
