@@ -5,25 +5,6 @@
 
 #include <windows.h> // Temp only, will remove later but convenient for the moment
 
-// https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#designate-character-set 
-enum ConsoleLineDrawing
-{
-    ConsoleLineDrawing_UPPER_RIGHT  = 0x6B, // ┐
-    ConsoleLineDrawing_LOWER_RIGHT  = 0x6A, // ┘
-
-    ConsoleLineDrawing_UPPER_LEFT   = 0x6C, // ┌
-    ConsoleLineDrawing_LOWER_LEFT   = 0x6D, // └
-
-    ConsoleLineDrawing_HORIZ_LINE   = 0x71, // ─
-    ConsoleLineDrawing_VERT_LINE    = 0x78, // │
-
-    ConsoleLineDrawing_UPPER_CROSS  = 0x77, // ┬
-    ConsoleLineDrawing_MIDDLE_CROSS = 0x6E, // ┼
-    ConsoleLineDrawing_LOWER_CROSS  = 0x76, // ┴
-    ConsoleLineDrawing_LEFT_CROSS   = 0x74, // ├
-    ConsoleLineDrawing_RIGHT_CROSS  = 0x75, // ┤
-};
-
 enum ConsoleColorFG
 {
     ConsoleColorFG_BLACK   = 30,

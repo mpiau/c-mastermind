@@ -86,7 +86,7 @@ struct Widget *widget_board_summary_create( void )
 	struct Widget *const widget = &boardSummary->header;
 
     widget->id = WidgetId_BOARD_SUMMARY;
-	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+	widget->enabled = true;
 
 	assert( widget_exists( WidgetId_TIMER ) );
 	struct WidgetBox const *timerBox = &widget_optget( WidgetId_TIMER )->box;

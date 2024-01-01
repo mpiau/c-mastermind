@@ -9,6 +9,7 @@
 #include "widgets/widget_board_summary.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_framerate.h"
+#include "widgets/widget_screen_size.h"
 #include "widgets/widget_countdown.h"
 
 #include "console_screen.h"
@@ -78,6 +79,12 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
         struct Widget *widget = s_widgets[id];
         if ( !widget ) continue;
 
+		if ( widget->callbacks.resizeCb )
+		{
+			widget->callbacks.resizeCb( widget, oldSize, newSize );
+			continue;
+		}
+
 		enum WidgetTruncatedStatus oldStatus = widget->box.truncatedStatus;
 		widget_utils_calculate_truncation( &widget->box, newSize );
 		enum WidgetTruncatedStatus newStatus = widget->box.truncatedStatus;
@@ -114,10 +121,11 @@ bool widget_global_init( void )
 {
     s_widgets[WidgetId_GAME] = widget_game_create();
     s_widgets[WidgetId_FRAMERATE] = widget_framerate_create();
+	s_widgets[WidgetId_SCREEN_SIZE] = widget_screen_size_create();
+	s_widgets[WidgetId_BOARD_BUTTONS] = widget_board_buttons_create();
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
 	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
-	s_widgets[WidgetID_BOARD_BUTTONS] = widget_board_buttons_create();
 	// boardSummary
     // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
@@ -165,7 +173,20 @@ void widget_frame( void )
         struct Widget *widget = s_widgets[id];
 		if ( !widget ) continue;
 
-		if ( widget->redrawNeeded && !console_screen_is_being_resized() && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
+        if ( widget->callbacks.frameCb )
+        {
+            widget->callbacks.frameCb( widget );
+		}
+
+		// Exception just to test it
+		if ( ( widget->id == WidgetId_SCREEN_SIZE || widget->id == WidgetId_BOARD_BUTTONS ) && widget->redrawNeeded )
+		{
+			widget->callbacks.redrawCb( widget );
+			widget->redrawNeeded = false;
+			continue;
+		}
+
+		if ( widget->redrawNeeded && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
 		{
 			if ( widget->callbacks.redrawCb  )
 			{
@@ -173,10 +194,5 @@ void widget_frame( void )
 			}
 			widget->redrawNeeded = false;
 		}
-
-        if ( widget->callbacks.frameCb )
-        {
-            widget->callbacks.frameCb( widget );
-		}
-    }
+   }
 }

@@ -26,6 +26,8 @@ void mouse_update_position( vec2u16 const newPos )
 {
     screenpos const oldPos = mouse_get_position();
 
+	if ( oldPos.x == newPos.x && oldPos.y == newPos.y ) return;
+
     s_mouseInfo.position = (screenpos) {
         .x = newPos.x + 1,
         .y = newPos.y + 1

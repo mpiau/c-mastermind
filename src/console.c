@@ -313,6 +313,10 @@ int console_draw( utf16 const *format, ... )
 
 void console_refresh( void )
 {
+	// We should instead compare the differences between the current displayed screen and the incoming one,
+	// generate the necessary code to update the screen, and then use that generated buffer into the
+	// wprintf. This step will also us to easily handle the resize because we will only check the limits of the
+	// current size, and so only print what's visible naturally, without having each widget to do the job themselves.
     if ( s_bufPos > 0 )
     {
         wprintf( s_screenBuffer );

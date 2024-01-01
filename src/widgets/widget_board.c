@@ -267,7 +267,7 @@ struct Widget *widget_board_create( void )
 	struct Widget *const widget = &board->header;
 
     widget->id = WidgetId_BOARD;
-	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+	widget->enabled = true;
 
     screenpos const borderUpLeft = (screenpos) { .x = 2, .y = 3 };
     vec2u16 const contentSize  = (vec2u16)   { .x = 86, .y = 25 };

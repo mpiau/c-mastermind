@@ -17,7 +17,7 @@ struct Widget *widget_game_create( void )
 	struct Widget *const widget = &game->header;
 
     widget->id = WidgetId_GAME;
-	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+	widget->enabled = true;
 
     screenpos const borderUpLeft = (screenpos) { .x = 1, .y = 1 };
     screenpos const contentSize  = (vec2u16)   { .x = 118, .y = 28 };

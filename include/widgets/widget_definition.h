@@ -6,6 +6,7 @@
 #include "widgets/widget.h"
 #include "console.h"
 #include "mouse.h"
+#include "rect.h"
 
 enum WidgetTruncatedStatus
 {
@@ -15,11 +16,6 @@ enum WidgetTruncatedStatus
     WidgetTruncatedStatus_OUT_OF_BOUNDS = 0x100,
 };
 
-enum WidgetVisibilityStatus
-{
-    WidgetVisibilityStatus_VISIBLE,
-    WidgetVisibilityStatus_HIDDEN
-};
 
 enum WidgetBorderOption
 {
@@ -28,7 +24,7 @@ enum WidgetBorderOption
     WidgetBorderOption_ALWAYS_VISIBLE,
 };
 
-
+// Transition on the widgetBox, I don't think this is a good idea for a terminal base game, it takes too much space.
 struct WidgetBox
 {
     // Screen positions
@@ -56,6 +52,7 @@ typedef void ( *WidgetFrameCallback )( struct Widget *widget );
 typedef void ( *WidgetRedrawCallback )( struct Widget *widget );
 typedef void ( *WidgetClearCallback )( struct Widget *widget );
 typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
+typedef void ( *WidgetResizeCallback )( struct Widget *widget, vec2u16 oldSize, vec2u16 newSize );
 
 struct WidgetCallbacks
 {
@@ -63,14 +60,16 @@ struct WidgetCallbacks
     WidgetClearCallback		clearCb;
     WidgetRedrawCallback	redrawCb;
     WidgetMouseMoveCallback mouseMoveCb;
+	WidgetResizeCallback	resizeCb;
     // [...] 
 };
 
 struct Widget
 {
-    enum WidgetId	 			id;
-    struct WidgetBox 			box;
-    struct WidgetCallbacks	    callbacks;
-    enum WidgetVisibilityStatus	visibilityStatus;
-    bool                        redrawNeeded;
+    enum WidgetId	 	   id;
+	struct Rect            rectBox;
+    struct WidgetBox 	   box;
+    struct WidgetCallbacks callbacks;
+    bool                   enabled;
+    bool                   redrawNeeded;
 };

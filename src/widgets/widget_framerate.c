@@ -11,46 +11,22 @@
 struct WidgetFramerate
 {
     struct Widget header;
-
-    u64  lastAverageFPS;
-    bool mouseHoveringWidget;
+    u64           lastAverageFPS;
 };
 
 
 static void redraw_callback( struct Widget *widget )
 {
     assert( widget->id == WidgetId_FRAMERATE );
-    assert( widget->visibilityStatus != WidgetVisibilityStatus_HIDDEN );
-    assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
+    assert( widget->enabled );
 
     struct WidgetFramerate *framerate = (struct WidgetFramerate *)widget;
 
-    screenpos const contentUL = framerate->header.box.contentUpLeft;
- 
-    console_cursor_setpos( contentUL );
-    console_color_fg( framerate->mouseHoveringWidget ? ConsoleColorFG_WHITE : ConsoleColorFG_BRIGHT_BLACK );
+    console_cursor_setpos( rect_get_corner( &widget->rectBox, RectCorner_UL ) );
+
+    console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
     console_draw( L"%3uFPS", framerate->lastAverageFPS );
     console_color_reset();
-}
-
-
-static void mouse_move_callback( struct Widget *widget, screenpos const /*old*/, screenpos const new )
-{
-    assert( widget->id == WidgetId_FRAMERATE );
-    struct WidgetFramerate *framerate = (struct WidgetFramerate *)widget;
-
-    screenpos const upLeft      = framerate->header.box.contentUpLeft;
-    screenpos const bottomRight = framerate->header.box.contentBottomRight;
-
-    bool const isMouseOnWidget =
-        ( new.x >= upLeft.x && new.x <= bottomRight.x ) &&
-        ( new.y >= upLeft.y && new.y <= bottomRight.y );
-
-    if ( isMouseOnWidget != framerate->mouseHoveringWidget )
-    {
-        framerate->mouseHoveringWidget = isMouseOnWidget;
-        widget->redrawNeeded = true;
-    }
 }
 
 
@@ -74,24 +50,18 @@ struct Widget *widget_framerate_create( void )
     if ( !framerate ) return NULL;
 
     struct Widget *const widget = &framerate->header;
-
     widget->id = WidgetId_FRAMERATE;
-    widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+    widget->enabled = true;
+	widget->redrawNeeded = true;
 
-    screenpos const borderUpLeft = (screenpos) { .x = 1, .y = 1 };
-    vec2u16 const contentSize  = (vec2u16)   { .x = 6, .y = 1 };
-    widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
-    widget->box.borderOption = WidgetBorderOption_VISIBLE_ON_TRUNCATE;
+	widget->rectBox = rect_make( SCREENPOS( 2, 1 ), VEC2U16( 6, 1 ) );
 
-    struct WidgetCallbacks *const callbacks = &framerate->header.callbacks;
+    struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
-    callbacks->mouseMoveCb = mouse_move_callback;
     callbacks->redrawCb = redraw_callback;
 
     // Specific to the widget 
-
-    framerate->lastAverageFPS = 0;
-    framerate->mouseHoveringWidget = false;
+    framerate->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
 
     return (struct Widget *)framerate;
 }

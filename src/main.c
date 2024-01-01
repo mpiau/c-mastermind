@@ -129,10 +129,34 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 			// The event won't be sent. So there is no need to manually filter this edge case here.
 			COORD const mousePos = recordedInput->Event.MouseEvent.dwMousePosition;
 			mouse_update_position( *(vec2u16 *)&mousePos );
+
+			// Pour le drag, bouger la souris avec le button enfoncé garde le bouton enfoncé ( pas de reset )
+			// So on pourra faire du trackign tant que mouse hold.
+			// Par contre pour le simple click, il faut que l'on detecte quand le bouton n'est plus enfoncé
+			// Donc save qu'il a été enfoncé, et ensuite emit callback cliked quand le bouton n'est plus enfoncé
+			// Le gérer correctement pour notre menu nous permettra de plus efficacement l'utiliser pour nos
+			// widgets / game.
+			// drag callback as well ? Or drag begin + drag pending + drag end ?
+			DWORD mouseState = recordedInput->Event.MouseEvent.dwButtonState;
+			switch( mouseState )
+			{
+				case FROM_LEFT_1ST_BUTTON_PRESSED:
+					console_cursor_set_position( 19, 1 );
+					console_draw( L"%llu LEFT ", time_nsec_to_msec( time_get_timestamp_nsec() ) );
+					break;
+				case RIGHTMOST_BUTTON_PRESSED:
+					console_cursor_set_position( 19, 1 );
+					console_draw( L"%llu RIGHT", time_nsec_to_msec( time_get_timestamp_nsec() ) );
+					break;
+				default: break;
+			}
+
 			return;
 		}
 		case KEY_EVENT:
 		{
+			console_draw( L"Key input: %2u", recordedInput->Event.KeyEvent.wVirtualKeyCode );
+
 			if ( !recordedInput->Event.KeyEvent.bKeyDown ) return;
 
 			enum KeyInput input;
@@ -255,10 +279,21 @@ int main( void )
 		widget_frame();
 
 		// TEMP - To move somewhere else
-		console_cursor_set_position( 2, 15 );
+/*		console_cursor_set_position( 2, 15 );
 		screenpos const mousePos = mouse_get_position();
 		vec2u16 const screenSize = console_screen_get_size();
-		console_draw( L" Screen: %ux%u | Mouse: %ux%u  ", screenSize.x, screenSize.y, mousePos.x, mousePos.y );
+		console_draw( L" Screen: " );
+		bool const widthTooSmall = console_screen_is_width_too_small();
+		bool const heightTooSmall = console_screen_is_height_too_small();
+		widthTooSmall ? console_color_fg( ConsoleColorFG_RED ) : console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		console_draw( L"%u", screenSize.w );
+		if ( widthTooSmall ) console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		console_draw( L"x" );
+		heightTooSmall ? console_color_fg( ConsoleColorFG_RED ) : console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		console_draw( L"%u", screenSize.h );
+		if ( heightTooSmall ) console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+
+		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );*/
 
 		// Refresh the game display in the console
 		console_refresh();

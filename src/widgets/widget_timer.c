@@ -27,7 +27,7 @@ struct WidgetTimer
 static void redraw_callback( struct Widget *widget )
 {
     assert( widget->id == WidgetId_TIMER );
-    assert( widget->visibilityStatus != WidgetVisibilityStatus_HIDDEN );
+    assert( widget->enabled );
     assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
 
     struct WidgetTimer *timer = (struct WidgetTimer *)widget;
@@ -81,7 +81,7 @@ struct Widget *widget_timer_create( void )
 	struct Widget *const widget = &timer->header;
 
     widget->id = WidgetId_TIMER;
-	widget->visibilityStatus = WidgetVisibilityStatus_VISIBLE;
+	widget->enabled = true;
 
 	assert( widget_exists( WidgetId_BOARD ) );
 	struct WidgetBox const *boardBox = &widget_optget( WidgetId_BOARD )->box;

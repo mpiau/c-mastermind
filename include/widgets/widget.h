@@ -9,12 +9,13 @@
 enum WidgetId
 {
     WidgetId_FRAMERATE,
+	WidgetId_SCREEN_SIZE,
+	WidgetId_BOARD_BUTTONS,
     WidgetId_BOARD,
     WidgetId_GAME,
     WidgetId_COUNTDOWN,
     WidgetId_TIMER,
     WidgetId_BOARD_SUMMARY,
-	WidgetID_BOARD_BUTTONS,
 
     WidgetId_Count,
 };
