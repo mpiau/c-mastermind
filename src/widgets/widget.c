@@ -136,7 +136,7 @@ bool widget_global_init( void )
 	s_widgets[WidgetId_BOARD_BUTTONS] = widget_board_buttons_create();
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
-	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
+	//s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
 	// boardSummary
     // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
