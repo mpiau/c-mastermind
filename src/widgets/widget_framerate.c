@@ -48,6 +48,7 @@ struct Widget *widget_framerate_create( void )
 {
     struct WidgetFramerate *const framerate = malloc( sizeof( struct WidgetFramerate ) );
     if ( !framerate ) return NULL;
+    memset( framerate, 0, sizeof( *framerate ) );
 
     struct Widget *const widget = &framerate->header;
     widget->id = WidgetId_FRAMERATE;
@@ -59,6 +60,7 @@ struct Widget *widget_framerate_create( void )
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
+   	callbacks->resizeCb = NULL;
 
     // Specific to the widget 
     framerate->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );

@@ -59,6 +59,7 @@ struct Widget *widget_screen_size_create( void )
 {
     struct WidgetScreenSize *const screenSize = malloc( sizeof( struct WidgetScreenSize ) );
     if ( !screenSize ) return NULL;
+	memset( screenSize, 0, sizeof( *screenSize ) );
 
     struct Widget *const widget = &screenSize->header;
     widget->id = WidgetId_SCREEN_SIZE;
@@ -75,6 +76,7 @@ struct Widget *widget_screen_size_create( void )
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
 	callbacks->redrawCb = redraw_callback;
 	callbacks->resizeCb = on_resize_callback;
+	callbacks->frameCb = NULL;
 
     return (struct Widget *)screenSize;
 }

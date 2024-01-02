@@ -26,6 +26,8 @@ struct WidgetTimer
 
 static void redraw_callback( struct Widget *widget )
 {
+	return;
+	
     assert( widget->id == WidgetId_TIMER );
     assert( widget->enabled );
     assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
@@ -77,6 +79,7 @@ struct Widget *widget_timer_create( void )
 {
     struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
     if ( !timer ) return NULL;
+    memset( timer, 0, sizeof( *timer ) );
 
 	struct Widget *const widget = &timer->header;
 
@@ -95,6 +98,7 @@ struct Widget *widget_timer_create( void )
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
+    callbacks->resizeCb = NULL;
 
 	// Specific to widget 
 

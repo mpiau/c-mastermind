@@ -106,6 +106,7 @@ struct Widget *widget_countdown_create( void )
 {
     struct WidgetCountdown *const countdown = malloc( sizeof( struct WidgetCountdown ) );
     if ( !countdown ) return NULL;
+    memset( countdown, 0, sizeof( *countdown ) );
 
 	struct Widget *const widget = &countdown->header;
 
@@ -123,6 +124,7 @@ struct Widget *widget_countdown_create( void )
 
     countdown->header.callbacks.frameCb = frame_callback;
 	countdown->header.callbacks.redrawCb = redraw_callback;
+    countdown->header.callbacks.resizeCb = NULL;
 
 	// Widget specific
 

@@ -1,161 +1,745 @@
 #include "mastermind.h"
-#include "game_menus.h"
 
-#include "terminal.h"
+#include "characters_list.h"
+#include "keyboard_inputs.h"
+#include "settings.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <memory.h>
+static struct Mastermind s_mastermind = {};
+static MastermindCallback s_callbacks[Mastermind_MAX_CALLBACKS] = {};
+static u8 s_callbackCount = 0;
 
 
-// TODO: Rename the function, we can do better.
-static char const *get_color_from_peg( u8 const peg )
+static void emit_game_update( enum GameUpdateType const type )
 {
-	switch ( peg )
-	{
-		case 0: return "\x1b[1;31m0";
-		case 1: return "\x1b[1;32m1";
-		case 2: return "\x1b[1;33m2";
-		case 3: return "\x1b[1;35m3";
-		case 4: return "\x1b[1;36m4";
-		case 5: return "\x1b[1;37m5";
-		default: exit( 1 ); // TODO: Do something better than an exit.
-	}
+    for ( int idx = 0; idx < s_callbackCount; ++idx )
+    {
+        s_callbacks[idx]( &s_mastermind, type );
+    }
 }
 
 
-// TODO: Rename the function, color_end doesn't mean anything
-static char const *get_color_end()
+static bool abandon_game( void )
 {
-	return "\033[0m";
+    if ( s_mastermind.gameStatus == GameStatus_IN_PROGRESS )
+    {
+        s_mastermind.gameStatus = GameStatus_LOST;
+        emit_game_update( GameUpdateType_GAME_STATUS );
+        return true;
+    }
+    return false;
 }
 
 
-// TODO: begin with key_pegs ? Or pegs_key ?
-static char const *get_key_pegs_color( enum KeyPegs const keyPegs )
+static void reset_pegs_row( struct Peg *const pegs )
 {
-	switch ( keyPegs )
-	{
-		case KEY_PEGS_NOTHING: return "\033[0m ";
-		case KEY_PEGS_PARTIAL: return "\x1b[1;47m \033[0m";
-		case KEY_PEGS_CORRECT: return "\x1b[1;41m \033[0m";
-		default: exit( 2 ); // TODO: Do something better than an exit.
-	}
+    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    {
+        pegs[idx].id = PegId_Invalid;
+        pegs[idx].hidden = false;
+    }
 }
 
-
-void board_display( u8 *const board, usize const boardSize )
+static void reset_pins_row( struct Pin *const pins )
 {
-	printf( "|" );
-	for ( usize i = 0; i < boardSize; ++i )
-	{
-		printf( " %s", get_color_from_peg( board[i] ) ); // Redondancy of the value board[i] here.
-	}
-	printf( "%s |", get_color_end() );
+    for ( int idx = 0; idx < Mastermind_MAX_PINS_PER_TURN; ++idx )
+    {
+        pins[idx].id = PinId_Invalid;
+        pins[idx].hidden = false;
+    }
 }
 
-
-void feedback_display( enum KeyPegs *const keyPegs, usize const boardSize )
+static void generate_new_solution( struct Peg *const pegs )
 {
-	printf( "{" );
-	for ( usize i = 0; i < boardSize; ++i )
-	{
-		printf( " %s", get_key_pegs_color( keyPegs[i] ) );
-	}
-	printf( " }" );
-}
+    // Note: For the moment, we aren't supporting having duplicated pegs in the same row.
+    // So this generation is explicitly checking to have unique pegs in the generated solution.
+    bool pegsUsed[Mastermind_MAX_PEGS_PER_TURN] = {};
 
-
-void board_generate( struct Mastermind *const game )
-{
-	size_t const codeLength = game->settings.pegsCodeLength;
-	size_t const colorsNumber = game->settings.colorsNumber;
-	bool const allowDuplicates = game->settings.allowDuplicatePegs;
-	u8 *const code = game->codemaker;
-
-	bool used[CODE_PEGS_LENGTH_MAX] = {};
-	for ( usize i = 0; i < codeLength; ++i )
-	{
-		do
+    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    {
+        do
 		{
-			code[i] = rand() % colorsNumber;
-		} while ( !allowDuplicates && used[code[i]] );
+            pegs[idx].id = rand() % Mastermind_NB_COLORS;
+		} while ( pegsUsed[pegs[idx].id] );
 
-		used[code[i]] = true;
-	}
+		pegsUsed[pegs[idx].id] = true;
+    }
 }
 
 
-bool is_valid_user_input( struct MastermindSettings const *const settings, size_t *const board, size_t const boardSize )
+static bool new_game( u8 const nbTurns, u8 const nbPegsPerTurn, enum GameExperience const gameExperience )
 {
-	bool used[PEGS_COLORS_NUMBER_MAX] = {};
-	for ( u8 i = 0; i < boardSize; ++i )
-	{
-		if ( board[i] >= settings->colorsNumber )
-		{
-			printf( "%u is an invalid peg. Please, try again.\n", board[i] );
-			return false;
-		}
+    // Settings
+    s_mastermind.nbTurns = nbTurns;
+    s_mastermind.nbPegsPerTurn = nbPegsPerTurn;
+    s_mastermind.gameExperience = gameExperience;
 
-		if ( used[board[i]] )
-		{
-			printf( "All pegs need to be different. Please, try again.\n" );
-			return false;
-		}
+    // Game data
+    for ( int idx = 0; idx < Mastermind_MAX_TURNS; ++idx )
+    {
+        reset_pegs_row( s_mastermind.pegs[idx] );
+        reset_pins_row( s_mastermind.pins[idx] );
+    }
+    generate_new_solution( s_mastermind.solution );
 
-		used[board[i]] = true;
-	}
+    // Game logic
+    s_mastermind.currentTurn = 1;
+    s_mastermind.selectedPin = PinId_Invalid;
+    s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
 
-	return true;
+    emit_game_update( GameUpdateType_GAME_STATUS );
+    return true;
 }
 
 
-void get_user_input( struct MastermindSettings const *const settings, u8 *const board, size_t const boardSize )
+bool mastermind_consume_input( enum KeyInput const input )
 {
-	while ( true )
-	{
-		size_t userboard[CODE_PEGS_LENGTH_MAX] = {};
-		for ( size_t i = 0; i < boardSize; ++i )
-		{
-			// TODO: Remove that scanf, it shouldn't exist.
-			printf( "> ", i + 1 );
-			scanf( "%u", &userboard[i] );
-		}
+    switch( input )
+    {
+        case KeyInput_N:
+        {
+            u8 const nbTurns = settings_get_number_turns();
+            u8 const nbPegsPerTurn = settings_get_pegs_per_turn();
+            enum GameExperience gameExperience = settings_get_game_experience();
+            new_game( nbTurns, nbPegsPerTurn, gameExperience );
+            return true;
+        }
+        case KeyInput_A:
+        {
+            abandon_game();
+            return true;
+        }
+        case KeyInput_R:
+        {
+            reset_pegs_row( s_mastermind.pegs[s_mastermind.currentTurn - 1] );
+            emit_game_update( GameUpdateType_TURN_RESET );
+            return true;
+        }
+        case KeyInput_V:
+        {
+            // TODO check if the turn can be validated first
+            // Then generate feedback for the turn and either increment turn, or Win/Lost condition depending of the result
+            
+            // emit_game_update( GameUpdateType_NEXT_TURN ); for turn validation
+            // emit_game_update( GameUpdateType_GAME_STATUS ); for win-lost situation
+            return true;
+        }
+    }
+    return false;
+}
 
-		if ( !is_valid_user_input( settings, userboard, boardSize ) )
+
+bool mastermind_register_update_callback( MastermindCallback const callback )
+{
+    if ( callback == NULL )                            return false;
+    if ( s_callbackCount == Mastermind_MAX_CALLBACKS ) return false;
+
+    s_callbacks[s_callbackCount] = callback;
+    s_callbackCount++;
+    return true;    
+}
+
+
+u8 mastermind_get_current_turn( void )
+{
+    return s_mastermind.currentTurn;
+}
+
+bool mastermind_is_game_finished( void )
+{
+    return mastermind_is_game_lost() || mastermind_is_game_won();
+}
+
+bool mastermind_is_game_lost( void )
+{
+    return s_mastermind.gameStatus == GameStatus_LOST;
+}
+
+bool mastermind_is_game_won( void )
+{
+    return s_mastermind.gameStatus == GameStatus_WON;
+}
+
+/*
+// DRAW GAME /////////////////////////////////////////////////////////////////////
+// DRAW GAME /////////////////////////////////////////////////////////////////////
+
+static
+void board_draw_horizontal_borders( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
+{
+	utf16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
+	utf16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
+
+	utf16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
+	utf16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
+	utf16 const horizLine = UTF16C_DoubleHoriz;
+
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	console_cursor_set_position( beginCoords.y, beginCoords.x );
+
+	console_draw( L"%lc", leftCorner );
+	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
+	{
+		if ( x % WIDTH_PER_TURN == 0 )
 		{
+			console_draw( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
 			continue;
 		}
+		console_draw( L"%lc", horizLine );
+	}
+	console_draw( L"%lc", rightCorner );	
+}
 
-		for ( size_t i = 0; i < boardSize; ++i )
+void draw_horizontal_border( vec2u16 const beginCoords, bool const isTopBorder, u16 const nbTurns )
+{
+	utf16 const leftCorner  = isTopBorder ? UTF16C_DoubleDownRight : UTF16C_DoubleUpRight;
+	utf16 const rightCorner = isTopBorder ? UTF16C_DoubleDownLeft : UTF16C_DoubleUpLeft;
+
+	utf16 const horizLineDelim     = isTopBorder ? UTF16C_DoubleHorizSingleDown : UTF16C_DoubleHorizSingleUp;
+	utf16 const horizLineDelimWide = isTopBorder ? UTF16C_DoubleHorizAndDown : UTF16C_DoubleHorizAndUp;
+	utf16 const horizLine = UTF16C_DoubleHoriz;
+
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	console_cursor_set_position( beginCoords.y, beginCoords.x );
+
+	console_draw( L"%lc", leftCorner );
+	for ( int x = 1; x < TOTAL_WIDTH_WITH_RESULT; ++x )
+	{
+		if ( x % WIDTH_PER_TURN == 0 )
 		{
-			board[i] = (u8)userboard[i];
+			console_draw( L"%lc", x == TOTAL_WIDTH ? horizLineDelimWide : horizLineDelim );
+			continue;
 		}
+		console_draw( L"%lc", horizLine );
+	}
+	console_draw( L"%lc", rightCorner );	
+}
 
-		return;
+
+void draw_center_board( vec2u16 const screenPos, u16 const pegsPerRow, u16 const nbTurns )
+{
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	for ( int y = 0; y < pegsPerRow; ++y )
+	{
+		for ( int x = 0; x <= TOTAL_WIDTH_WITH_RESULT; x += WIDTH_PER_TURN )
+		{
+			console_cursor_set_position( screenPos.y + y, screenPos.x + x );
+			if ( x == 0 || x == TOTAL_WIDTH || x == TOTAL_WIDTH_WITH_RESULT )
+			{
+				console_draw( L"%lc", UTF16C_DoubleVert );
+				continue;
+			}
+			console_draw( L"%lc", UTF16C_LightVert );
+		}
 	}
 }
 
 
-void generate_feedback( struct Mastermind *const game )
+void draw_gameboard( vec2u16 upLeftPos, struct MastermindConfig const *config )
 {
-	// Note: Investigate the behaviour when duplicates are authorized. 
+	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+
+    board_draw_horizontal_borders( upLeftPos, true, config->nbTurns );
+
+	upLeftPos.y += 1;
+	draw_center_board( upLeftPos, config->nbCodePegPerTurn, config->nbTurns );
+
+	upLeftPos.y += config->nbCodePegPerTurn;
+    board_draw_horizontal_borders( upLeftPos, false, config->nbTurns );
+}
+
+
+static void board_draw_pegs( struct PegSlot const *slot, bool hidden )
+{
+	if ( slot->type == PegSlotType_EMPTY )
+	{
+		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		console_draw( L"%lc", UTF16C_SmallDottedCircle );
+	}
+	else if ( slot->type == PegSlotType_CODE_PEG )
+	{
+		if ( hidden )
+		{
+			console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+			console_draw( L"%lc", L'?' );
+		}
+		else
+		{
+			console_color_fg( slot->codePeg + 91 ); // + 91 to match console colors, temp hack
+			console_draw( L"%lc", UTF16C_BigFilledCircle );
+		}
+	}
+	else if ( slot->type == PegSlotType_KEY_PEG )
+	{
+		console_color_fg( slot->keyPeg ); // + 91 to match console colors, temp hack
+		console_draw( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle );
+	}
+}
+
+
+void board_draw_solution( struct MastermindConfig const *config, struct MastermindBoard const *board )
+{
+    screenpos screenPos = (screenpos) {
+        .x = board->upLeft.x + 2 + 4 * config->nbTurns,
+        .y = board->upLeft.y + 1,
+    };
+
+	for ( int y = 0; y < config->nbCodePegPerTurn; ++y )
+	{
+		console_cursor_set_position( screenPos.y + y, screenPos.x );
+		board_draw_pegs( &board->solution[y], board->hideSolution );
+	}   
+}
+
+
+void board_draw_last_turn_feedback( struct MastermindConfig const *config, struct MastermindBoard const *board )
+{
+    u32 const currTurn = board->currentTurn - 1;
+
+    screenpos screenPos = (screenpos) {
+        .x = board->upLeft.x + 2 + 4 * currTurn,
+        .y = board->upLeft.y + config->nbCodePegPerTurn + 2, // + 2 == borders
+    };
+
+	for ( int y = 0; y < ( config->nbCodePegPerTurn + 1 ) / 2; ++y )
+	{
+		console_cursor_set_position( screenPos.y + y, screenPos.x - 1 );
+		board_draw_pegs( &board->pegSlots[currTurn][y * 2 + config->nbCodePegPerTurn], false );
+		if ( y + 1 < config->nbCodePegPerTurn )
+		{
+			console_cursor_set_position( screenPos.y + y, screenPos.x );
+			board_draw_pegs( &board->pegSlots[currTurn][y * 2 + config->nbCodePegPerTurn + 1], false );
+		}
+	}
+}
+
+
+void draw_gameboard_content( vec2u16 screenPos, struct MastermindConfig const *config, struct MastermindBoard const *board )
+{
+	u16 const WIDTH_PER_TURN          = 4;
+	u16 const TOTAL_WIDTH             = WIDTH_PER_TURN * config->nbTurns;
+	u16 const TOTAL_WIDTH_WITH_RESULT = TOTAL_WIDTH + WIDTH_PER_TURN;
+
+	// Turn-pegs
+	for ( int turn = 0; turn < config->nbTurns; ++turn )
+	{
+		for ( int y = 0; y < config->nbCodePegPerTurn; ++y )
+		{
+			console_cursor_set_position( screenPos.y + y, screenPos.x + ( turn * WIDTH_PER_TURN ) );
+			board_draw_pegs( &board->pegSlots[turn][y], false );
+		}
+	}
+
+	// Solution
+    board_draw_solution( config, board );
+
+	// Feedback
+	for ( int turn = 0; turn < board->currentTurn; ++turn )
+	{
+		for ( int y = 0; y < ( config->nbCodePegPerTurn + 1 ) / 2; ++y )
+		{
+			console_cursor_set_position( screenPos.y + y + config->nbCodePegPerTurn + 1, ( screenPos.x - 1 ) + ( turn * WIDTH_PER_TURN ) );
+			board_draw_pegs( &board->pegSlots[turn][y * 2 + config->nbCodePegPerTurn], false );
+			if ( y + 1 < config->nbCodePegPerTurn )
+			{
+				console_cursor_set_position( screenPos.y + y + config->nbCodePegPerTurn + 1, screenPos.x + ( turn * WIDTH_PER_TURN ) );
+				board_draw_pegs( &board->pegSlots[turn][y * 2 + config->nbCodePegPerTurn + 1], false );
+			}
+		}
+	}
+}
+
+
+// DRAW SUMMARY GAME //////////////////////////////////////////////////////////////
+// DRAW SUMMARY GAME //////////////////////////////////////////////////////////////
+
+void summary_draw_borders( screenpos pos, struct MastermindV2 const *mastermind )
+{
+    u32 const nbTurns = mastermind->config.nbTurns;
+    u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+
+    // Upper border
+    console_cursor_set_position( pos.y, pos.x );
+    console_color_fg( ConsoleColorFG_WHITE );
+    int prefixSize = console_draw( L"┌" );
+    console_color_fg( ConsoleColorFG_GREEN );
+    prefixSize += console_draw( L" Summary " );
+    console_color_fg( ConsoleColorFG_WHITE );
+    for ( int i = 0; i < borderWidth - 1 - prefixSize; ++ i )
+    {
+        console_draw( L"─" );
+    }
+    console_draw( L"┐" );
+    pos.y += 1;
+
+    // Middle border
+    for ( int i = 0; i < nbTurns; i++ )
+    {
+        console_cursor_set_position( pos.y + i, pos.x );
+        console_draw( L"│" );
+        console_cursor_set_position( pos.y + i, pos.x + 2 * nbPegsPerTurn + 2 );
+        console_draw( L"-" );
+        console_cursor_set_position( pos.y + i, pos.x + borderWidth - 1 );
+        console_draw( L"│" );
+    }
+    pos.y += nbTurns;
+
+    utf16 title[] = L"MASTERMIND";
+    u16 nbSpacesEachSide = ( borderWidth - ARR_COUNT( title ) ) / 2;
+
+   	console_cursor_set_position( pos.y, pos.x );
+	console_draw( L"│" );
+    console_cursor_move_right_by( nbSpacesEachSide );
+	console_color_fg( ConsoleColorFG_YELLOW );
+	console_draw( L"MASTERMIND" );
+	console_color_fg( ConsoleColorFG_WHITE );
+    console_cursor_set_position( pos.y, pos.x + borderWidth - 1 );
+	console_draw( L"│", nbSpacesEachSide );
+
+    pos.y += 1;
+    console_cursor_set_position( pos.y, pos.x );
+	console_draw( L"│" );
+    console_cursor_move_right_by( borderWidth - 2 );
+	console_draw( L"│" );
+
+    pos.y += 1;
+    console_cursor_set_position( pos.y, pos.x );
+    console_draw( L"└" );
+    for ( int i = 0; i < borderWidth - 2; ++ i )
+    {
+        console_draw( L"─" );
+    }
+    console_draw( L"┘" );
+}
+
+
+void summary_draw_content( screenpos pos, struct MastermindV2 const *mastermind )
+{
+    u32 const nbTurns = mastermind->config.nbTurns;
+    u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+    
+    struct MastermindConfig const *config = &mastermind->config;
+    struct MastermindBoard const *board = &mastermind->board;
+    pos.y += 1; // to get from borders to first line
+    pos.x += 2; // to get from border + space to first peg
+
+    for ( int y = 0; y < config->nbTurns; ++y )
+    {
+        for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+        {
+			console_cursor_set_position( pos.y + y, pos.x + ( x * 2 ) );
+			board_draw_pegs( &board->pegSlots[y][x], false );
+        }
+
+        console_cursor_move_right_by( 3 );
+        for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+        {
+			board_draw_pegs( &board->pegSlots[y][x + config->nbCodePegPerTurn], false );
+        }
+    }
+
+    console_cursor_set_position( pos.y + config->nbTurns + 1, pos.x );
+
+    u16 feedbackSpace = config->nbCodePegPerTurn + ( config->nbCodePegPerTurn - 1 ) * 2; // peg + 2 spaces between them
+    u16 nbSpacesEachSide = ( borderWidth - feedbackSpace - 2 ) / 2; // - 2 because of the += 2 in the x at the beginning
+    console_cursor_move_right_by( nbSpacesEachSide - 1 );
+
+    for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
+    {
+		board_draw_pegs( &board->solution[x], mastermind->board.hideSolution );
+		console_cursor_move_right_by( 2 );
+    }
+}
+
+
+void summary_draw( screenpos const screenSize, struct MastermindV2 const *mastermind )
+{
+   u32 const nbTurns = mastermind->config.nbTurns;
+   u32 const nbPegsPerTurn = mastermind->config.nbCodePegPerTurn;
+    // 4 -> border + space each side, + 2 -> middle with - and space
+   u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+
+    // Upper border
+   screenpos upLeft = (screenpos){ .x = screenSize.x - borderWidth, .y = 2 };
+
+    summary_draw_borders( upLeft, mastermind );
+    summary_draw_content( upLeft, mastermind );
+}
+
+// /////////////////////////////////////////////////////////////////////
+void draw_entire_game( struct MastermindV2 *mastermind, screenpos const screenSize )
+{
+	vec2u16 upLeft = mastermind->board.upLeft;
+	u16 const nbTurns = mastermind->config.nbTurns;
+	u16 const pegsPerRow = mastermind->config.nbCodePegPerTurn;
+
+	draw_gameboard( upLeft, &mastermind->config );//pegsPerRow, nbTurns );
+
+	upLeft.x += 2;
+	upLeft.y += 1;
+
+	// Need to take actual data to set : 
+	// The colored pegs / placeholder
+	// ? at the end or solution if finished
+	// The feedback row up to current turn (excluded)
+	draw_gameboard_content( upLeft, &mastermind->config, &mastermind->board );
+    summary_draw( screenSize, mastermind );
+	mastermindv2_draw_selected_peg( mastermind );
+}
+// /////////////////////////////////////////////////////////////////////
+
+static inline
+struct PegSlot *get_slot_from_board( struct MastermindBoard *board )
+{
+    return &board->pegSlots[board->currentTurn][board->codePegIdx];
+}
+
+static inline
+struct MastermindBoard *get_board( struct MastermindV2 *mastermind )
+{
+    return &mastermind->board;
+}
+
+
+static
+void set_slot( struct PegSlot *slot, enum PegSlotType type, u32 value )
+{
+    slot->type = type;
+
+    switch( slot->type )
+    {
+        case PegSlotType_KEY_PEG:  slot->keyPeg = value;  break;
+        case PegSlotType_CODE_PEG: slot->codePeg = value; break;
+        case PegSlotType_EMPTY:    break;
+    }
+}
+
+
+static screenpos get_selection_position( struct MastermindBoard const *board )
+{
+    return (screenpos) {
+        .x = board->upLeft.x + 1 + board->currentTurn * 4,
+        .y = board->upLeft.y + 1 + board->codePegIdx
+    };
+}
+
+
+static void unselect_peg( struct MastermindBoard const *board )
+{
+    screenpos const pos = get_selection_position( board );
+	console_cursor_set_position( pos.y, pos.x );
+	console_draw( L" " );
+	console_cursor_set_position( pos.y, pos.x + 2 );
+	console_draw( L" " );
+}
+
+static void select_peg( struct MastermindBoard const *board )
+{
+    screenpos const pos = get_selection_position( board );
+	console_color_fg( ConsoleColorFG_WHITE );
+	console_cursor_set_position( pos.y, pos.x );
+	console_draw( L"◃" );
+	console_cursor_set_position( pos.y, pos.x + 2 );
+	console_draw( L"▹" );
+}
+
+
+
+void reset_config( struct MastermindConfig *config )
+{
+    *config = (struct MastermindConfig ) {
+        .nbCodePegPerTurn = 4,
+        .nbCodePegColors = 6,
+        .nbTurns = 12,
+        .allowDuplicateCodePeg = false
+    };
+};
+
+
+void reset_board( struct MastermindBoard *board )
+{
+    bool oldHideSolution = board->hideSolution;
+    *board = (struct MastermindBoard) {};
+    board->hideSolution = oldHideSolution;
+    board->upLeft = (screenpos) { .x = 10, .y = 7 };
+};
+
+
+bool mastermindv2_init( struct MastermindV2 *mastermind )
+{
+    reset_config( &mastermind->config );
+    reset_board( &mastermind->board );
+    mastermind->status = MastermindGameStatus_NOT_STARTED;
+
+    return true;
+}
+
+void mastermindv2_start_game( struct MastermindV2 *mastermind )
+{
+    if ( mastermind->status != MastermindGameStatus_NOT_STARTED )
+    {
+        reset_board( &mastermind->board );
+    }
+
+    struct MastermindConfig *config = &mastermind->config;
+
+    struct PegSlot *codemakerSlots = mastermind->board.pegSlots[config->nbTurns];
+
+    bool used[Mastermind_MAX_CODE_PEG_PER_TURN] = {};
+    for ( int i = 0; i < config->nbCodePegPerTurn; ++i )
+    {
+        struct PegSlot *const slot = &mastermind->board.solution[i];
+        slot->type = PegSlotType_CODE_PEG;
+        do
+		{
+			slot->keyPeg = rand() % config->nbCodePegColors; // TODO improve that generation line
+		} while ( !config->allowDuplicateCodePeg && used[slot->keyPeg] );
+
+		used[slot->keyPeg] = true;
+    }
+
+    mastermind->status = MastermindGameStatus_IN_PROGRESS;
+}
+
+
+void mastermindv2_next_peg_in_row( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    unselect_peg( board );
+
+    if ( board->codePegIdx + 1 == mastermind->config.nbCodePegPerTurn )
+    {
+        board->codePegIdx = 0;
+    }
+    else
+    {
+        board->codePegIdx += 1;
+    }
+
+    select_peg( board );
+}
+
+void mastermindv2_previous_peg_in_row( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    unselect_peg( board );
+
+    if ( board->codePegIdx == 0 )
+    {
+        board->codePegIdx = mastermind->config.nbCodePegPerTurn - 1;
+    }
+    else
+    {
+        board->codePegIdx -= 1;
+    }
+
+    select_peg( board );
+}
+
+void mastermindv2_code_peg_next_color( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    struct PegSlot *slot = get_slot_from_board( board );
+
+    if ( slot->type == PegSlotType_EMPTY )
+    {
+        slot->type = PegSlotType_CODE_PEG;
+        slot->codePeg = 0;
+        return;
+    }
+
+    assert(  slot->type == PegSlotType_CODE_PEG );
+
+    if ( slot->codePeg + 1 == mastermind->config.nbCodePegColors )
+    {
+        slot->type = PegSlotType_EMPTY;
+        slot->codePeg = 0;
+    }
+    else
+    {
+        slot->codePeg += 1;
+    }
+}
+
+void mastermindv2_code_peg_previous_color( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    struct PegSlot *slot = get_slot_from_board( board );
+
+    if ( slot->type == PegSlotType_EMPTY )
+    {
+        slot->type = PegSlotType_CODE_PEG;
+        slot->codePeg = mastermind->config.nbCodePegColors - 1;
+        return;
+    }
+
+    assert(  slot->type == PegSlotType_CODE_PEG );
+
+
+
+    if ( slot->codePeg == 0 )
+    {
+        slot->type = PegSlotType_EMPTY;
+        slot->codePeg = 0;
+    }
+    else
+    {
+        slot->codePeg -= 1;
+    }
+}
+
+
+void mastermindv2_remove_current_codepeg( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    struct PegSlot *slot = get_slot_from_board( board );
+
+    if ( slot->type != PegSlotType_EMPTY )
+    {
+        slot->type = PegSlotType_EMPTY;
+    }
+}
+
+bool mastermindv2_next_turn( struct MastermindV2 *mastermind )
+{
+    struct MastermindBoard *board = &mastermind->board;
+    struct PegSlot *currTurn = board->pegSlots[board->currentTurn];
+
+    for ( int i = 0; i < mastermind->config.nbCodePegPerTurn; ++i )
+    {
+        if ( currTurn[i].type != PegSlotType_CODE_PEG ) return false;
+    }
+
+    // Note: Investigate the behaviour when duplicates are authorized. 
 	// This code assume that we don't have any duplicates, and I believe that we'll need to handle that differently.
+    // Well it doesn't work well if W W R R and we have W and R, it will set 4 partially correct pegs instead of 2. 4 would be in dup allowed
 	usize correct = 0;
 	usize partial = 0;
-	for ( size_t i = 0; i < game->settings.pegsCodeLength; ++i )
+	for ( size_t i = 0; i < mastermind->config.nbCodePegPerTurn; ++i )
 	{
-		if ( game->codebreaker[i] == game->codemaker[i] )
+		if ( currTurn[i].codePeg == board->solution[i].codePeg )
 		{
 			correct += 1;
 			continue;
 		}
 
 		// TODO: That second for-loop seems... too much ? Need a better algo, this one is easy-not-pretty
-		for ( size_t j = 0; j < game->settings.pegsCodeLength; ++j )
+		for ( size_t j = 0; j < mastermind->config.nbCodePegPerTurn; ++j )
 		{
 			if ( i == j ) continue;
-			if ( game->codebreaker[i] == game->codemaker[j] )
+			if ( currTurn[i].codePeg == board->solution[j].codePeg )
 			{
 				partial += 1;
 				break;
@@ -163,129 +747,204 @@ void generate_feedback( struct Mastermind *const game )
 		}
 	}
 
-	usize curPos = 0;
-	while( correct-- > 0 ) { game->keyPegs[curPos++] = KEY_PEGS_CORRECT; }
-	while( partial-- > 0 ) { game->keyPegs[curPos++] = KEY_PEGS_PARTIAL; }
+    for ( int i = 0; i < mastermind->config.nbCodePegPerTurn; ++i )
+    {
+        currTurn[i + mastermind->config.nbCodePegPerTurn].type = PegSlotType_KEY_PEG;
+        if ( correct > 0 )
+        {
+            currTurn[i + mastermind->config.nbCodePegPerTurn].keyPeg = KeyPeg_CORRECT;
+            correct--;
+        }
+        else if ( partial > 0 )
+        {
+            currTurn[i + mastermind->config.nbCodePegPerTurn].keyPeg = KeyPeg_PARTIALLY_CORRECT;
+            partial--;
+        }
+        else
+        {
+            currTurn[i + mastermind->config.nbCodePegPerTurn].keyPeg = KeyPeg_INCORRECT;
+        }
+    }
+
+    unselect_peg( board );
+    board->currentTurn += 1;
+    board->codePegIdx = 0;
+    select_peg( board );
+    return true;
+}
+
+void mastermindv2_draw_selected_peg( struct MastermindV2 *mastermind )
+{
+    select_peg( &mastermind->board );
 }
 
 
-static void mastermind_display_rules( struct MastermindSettings const *const settings, struct TermBuffer *const termBuf )
+ // //////// TEMP, COPIED FROM MAIN /////////////////////////////////////////////
+
+ #include "console.h"
+
+static void draw_peg( struct PegSlot const *slot, bool hidden )
 {
-	termbuf_appendline( termBuf, "- You have %u turns to guess the code.", settings->turnsNumber );
-	if ( settings->allowDuplicatePegs )
+	if ( slot->type == PegSlotType_EMPTY )
 	{
-		termbuf_appendline( termBuf, "- The code composed of %u pegs can have duplicates.", settings->pegsCodeLength );
+		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		console_draw( L"%lc", L'◌' );
 	}
-	else
+	else if ( slot->type == PegSlotType_CODE_PEG )
 	{
-		termbuf_appendline( termBuf, "- The code will always have %u differents pegs.", settings->pegsCodeLength );
-	}
-
-	termbuf_appendline( termBuf, "%s", "- Available pegs:" );
-	for ( usize i = 0; i < settings->colorsNumber; ++i )
-	{
-		termbuf_appendline( termBuf, "%s", get_color_from_peg( i ) );
-	}
-	termbuf_appendline( termBuf, "%s", get_color_end() );
-	termbuf_appendline( termBuf, "- For each %s received, one peg has the right color and a correct position.", get_key_pegs_color( KEY_PEGS_CORRECT ) );
-	termbuf_appendline( termBuf, "- For each %s received, one peg has the right color.", get_key_pegs_color( KEY_PEGS_PARTIAL ) );
-}
-
-
-static void init_settings( struct MastermindSettings *const settings )
-{
-	assert( settings );
-
-	// TODO: Ask the player instead
-
-	settings->pegsCodeLength = 4;
-	settings->colorsNumber = 6;
-	settings->turnsNumber = 12;
-	settings->allowDuplicatePegs = false;
-
-	// TODO: Settings validation
-}
-
-
-bool mastermind_init( struct Mastermind *const mastermind, bool const resetSettings )
-{
-	assert( mastermind );
-
-	if ( resetSettings )
-	{
-		init_settings( &mastermind->settings );
-	}
-	memset( mastermind->codemaker, 0, sizeof( mastermind->codemaker ) );
-	memset( mastermind->codebreaker, 0, sizeof( mastermind->codebreaker ) );
-	memset( mastermind->keyPegs, 0, sizeof( mastermind->keyPegs ) );
-	mastermind->currentTurn = 1;
-	mastermind->status = GAME_STATUS_NOT_STARTED;
-
-	return true;
-}
-
-
-void mastermind_destroy( struct Mastermind *const mastermind )
-{
-	assert( mastermind );
-
-	// No dynamic allocation (yet?), nothing to do.
-}
-
-
-void mastermind_game_start( struct Mastermind *const mastermind, struct GameMenu *const menu, struct TermBuffer *const termBuf )
-{
-	mastermind->status = GAME_STATUS_ONGOING;
-
-	struct MastermindSettings const *const settings = &mastermind->settings;
-
-	termbuf_appendline( termBuf, "%s", "=== Rules ===" );
-	mastermind_display_rules( settings, termBuf );
-
-	termbuf_display( termBuf );
-
-	board_generate( mastermind );
-
-	size_t const nbTurnDigits = settings->turnsNumber < 10 ? 1 : 2;
-	while ( mastermind->status == GAME_STATUS_ONGOING )
-	{
-		int const prefixSize = printf( "(Turn %*u / %*u) ", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
-		get_user_input( settings, mastermind->codebreaker, settings->pegsCodeLength );
-		generate_feedback( mastermind );
-
-		// term_clear_last_line();
-
-		printf( "%*c", prefixSize, ' ' );
-		// printf( "(Turn %*u / %*u) ", nbTurnDigits, mastermind->currentTurn, nbTurnDigits, settings->turnsNumber );
-		board_display( mastermind->codebreaker, settings->pegsCodeLength );
-		printf( " - " );
-		feedback_display( mastermind->keyPegs, settings->pegsCodeLength );
-		printf( "\n" );
-
-		if ( memcmp( mastermind->codemaker, mastermind->codebreaker, settings->pegsCodeLength ) == 0 ) 
+		if ( hidden )
 		{
-			mastermind->status = GAME_STATUS_VICTORY;
-			continue;
+			console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+			console_draw( L"%lc", L'?' );
 		}
-		else if ( mastermind->currentTurn == settings->turnsNumber )
+		else
 		{
-			mastermind->status = GAME_STATUS_DEFEAT;
-			continue;
+			console_color_fg( slot->codePeg + 91 ); // + 91 to match console colors, temp hack
+			console_draw( L"%lc", L'⬤' );
 		}
-
-		mastermind->currentTurn++;
 	}
-
-	printf( "---------- END ----------\n" );
-
-	if ( mastermind->status == GAME_STATUS_VICTORY )
+	else if ( slot->type == PegSlotType_KEY_PEG )
 	{
-		printf( "Congratulation, you won in %i turn(s) !!\n", mastermind->currentTurn );
-	}
-	else
-	{
-		printf( "You ran out of attempts... The code was: " );
-		board_display( mastermind->codemaker, settings->pegsCodeLength );
-		printf( "\nYou will be better next time !\n" );
+		console_color_fg( slot->keyPeg ); // + 91 to match console colors, temp hack
+		console_draw( L"%lc", slot->keyPeg == KeyPeg_INCORRECT ? L'◌' : L'●' );
 	}
 }
+
+// ////////////////////////////////////
+
+enum CodePegColorUpdate
+{
+    CodePegColorUpdate_Next = 1,
+    CodePegColorUpdate_Prev = -1
+};
+
+static void codepeg_color_update( struct MastermindV2 *mastermind, enum CodePegColorUpdate const update )
+{
+    struct PegSlot *const slot = get_slot_from_board( get_board( mastermind ) );
+    u32 const nbColors = mastermind->config.nbCodePegColors;
+    u32 const min = 0;
+    u32 const max = nbColors - 1;
+
+    if ( slot->type == PegSlotType_EMPTY )
+    {
+        set_slot( slot, PegSlotType_CODE_PEG, update == CodePegColorUpdate_Next ? min : max );
+    }
+    else if ( ( update == CodePegColorUpdate_Prev && slot->codePeg == min )
+           || ( update == CodePegColorUpdate_Next && slot->codePeg == max )
+        )
+    {
+        set_slot( slot, PegSlotType_EMPTY, 0 );
+    }
+    else
+    {
+        slot->codePeg += update;
+    }
+
+    // Now that the peg has been updated, we need to redraw it in the console 
+    screenpos pos = get_selection_position( get_board( mastermind ) );
+    console_cursor_set_position( pos.y, pos.x + 1 ); // +1 to mvoe it from the left side to the center where the peg is
+    draw_peg( slot, false );
+}
+
+void mastermind_codepeg_color_prev( struct MastermindV2 *mastermind )
+{
+    codepeg_color_update( mastermind, CodePegColorUpdate_Prev );
+}
+
+void mastermind_codepeg_color_next( struct MastermindV2 *mastermind )
+{
+    codepeg_color_update( mastermind, CodePegColorUpdate_Next );
+}
+
+
+void mastermind_board_prev_codepeg( struct MastermindV2 *mastermind )
+{
+
+}
+
+void mastermind_board_next_codepeg( struct MastermindV2 *mastermind )
+{
+
+}
+
+
+bool mastermind_try_consume_input( struct MastermindV2 *mastermind, enum KeyInput input )
+{
+    if ( mastermind->status == MastermindGameStatus_PAUSED && input == KeyInput_P )
+    {
+        mastermind->status = MastermindGameStatus_IN_PROGRESS;
+        console_cursor_set_position( 2, 1 );
+        console_draw( L"            ");
+        return true;
+    }
+    else if ( mastermind->status != MastermindGameStatus_IN_PROGRESS )
+    {
+        // If the game isn't currently running, do not 
+        return false;
+    }
+    // We need to prevent having same keys on 2 differents actions on the entire game
+
+    switch ( input )
+    {
+		case KeyInput_P:
+        {
+			mastermind->status = MastermindGameStatus_PAUSED;
+            console_cursor_set_position( 2, 1 );
+            console_draw( L"-- Paused --");
+            return true;
+        }
+		case KeyInput_ARROW_LEFT:
+        {
+			mastermind_codepeg_color_prev( mastermind );
+            return true;
+        }
+		case KeyInput_ARROW_RIGHT:
+        {
+			mastermind_codepeg_color_next( mastermind );
+            return true;
+        }
+        case KeyInput_H:
+        {
+            mastermind->board.hideSolution = !mastermind->board.hideSolution;
+            board_draw_solution( &mastermind->config, &mastermind->board );
+            return true;
+        }
+        case KeyInput_D:
+        {
+            mastermindv2_remove_current_codepeg( mastermind );
+            screenpos pos = get_selection_position( &mastermind->board );
+            console_cursor_set_position( pos.y, pos.x + 1 );
+            board_draw_pegs( get_slot_from_board( &mastermind->board ), false );
+            return true;
+        }
+        case KeyInput_ARROW_DOWN:
+        {
+			mastermindv2_next_peg_in_row( mastermind );
+            return true;
+        }
+        case KeyInput_ARROW_UP:
+        {
+			mastermindv2_previous_peg_in_row( mastermind );
+            return true;
+        }
+        case KeyInput_ENTER:
+        {
+            mastermindv2_next_turn( mastermind );
+            board_draw_last_turn_feedback( &mastermind->config, &mastermind->board );
+            return true;
+        }
+        case KeyInput_R:
+		{
+            unselect_peg( &mastermind->board );
+			mastermindv2_start_game( mastermind );
+            screenpos upLeft = mastermind->board.upLeft;
+            upLeft.x += 2;
+            upLeft.y += 1;
+			draw_gameboard_content( upLeft, &mastermind->config, &mastermind->board );
+            select_peg( &mastermind->board );
+            return true;
+        }
+    }
+
+    return false;
+}*/

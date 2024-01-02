@@ -4,6 +4,7 @@
 #include "core_unions.h"
 
 #include "widgets/widget.h"
+#include "mastermind.h"
 #include "console.h"
 #include "mouse.h"
 #include "rect.h"
@@ -54,6 +55,7 @@ typedef void ( *WidgetClearCallback )( struct Widget *widget );
 typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
 typedef void ( *WidgetMouseClickCallback )( struct Widget *widget, screenpos pos, enum MouseButton button );
 typedef void ( *WidgetResizeCallback )( struct Widget *widget, vec2u16 oldSize, vec2u16 newSize );
+typedef void ( *WidgetGameUpdateCallback )( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type );
 
 struct WidgetCallbacks
 {
@@ -63,7 +65,7 @@ struct WidgetCallbacks
     WidgetMouseMoveCallback  mouseMoveCb;
 	WidgetMouseClickCallback mouseClickCb;
 	WidgetResizeCallback	 resizeCb;
-    // [...] 
+    WidgetGameUpdateCallback gameUpdateCb;
 };
 
 struct Widget

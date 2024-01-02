@@ -319,7 +319,7 @@ void console_refresh( void )
 	// current size, and so only print what's visible naturally, without having each widget to do the job themselves.
     if ( s_bufPos > 0 )
     {
-        wprintf( s_screenBuffer );
-        s_bufPos = 0;
+		wprintf( s_screenBuffer );
+		s_bufPos = 0;
     }
 }

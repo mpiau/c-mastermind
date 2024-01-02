@@ -3,7 +3,6 @@
 
 #include "widgets/widget_border.h"
 #include "widgets/widget_utils.h"
-#include "widgets/widget_game.h"
 #include "widgets/widget_board.h"
 #include "widgets/widget_board_buttons.h"
 #include "widgets/widget_board_summary.h"
@@ -88,13 +87,14 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-        if ( !widget ) continue;
+        if ( widget == NULL ) continue;
 
-		if ( widget->callbacks.resizeCb )
+		if ( widget->callbacks.resizeCb != NULL )
 		{
 			widget->callbacks.resizeCb( widget, oldSize, newSize );
 			continue;
 		}
+		continue;
 
 		enum WidgetTruncatedStatus oldStatus = widget->box.truncatedStatus;
 		widget_utils_calculate_truncation( &widget->box, newSize );
@@ -114,7 +114,7 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
 
 		if ( oldStatus == WidgetTruncatedStatus_NONE && newStatus != WidgetTruncatedStatus_NONE )
 		{
-			if ( widget->id != WidgetId_GAME && !widget_is_out_of_bounds( &widget->box ) ) clear_content( &widget->box );
+			if ( !widget_is_out_of_bounds( &widget->box ) ) clear_content( &widget->box );
 		}
 		else if ( oldStatus != WidgetTruncatedStatus_NONE && newStatus == WidgetTruncatedStatus_NONE )
 		{
@@ -127,16 +127,27 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
     }
 }
 
+static void on_game_update_callback( struct Mastermind const *mastermind, enum GameUpdateType const updateType )
+{
+    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *widget = s_widgets[id];
+        if ( widget && widget->callbacks.gameUpdateCb )
+        {
+            widget->callbacks.gameUpdateCb( widget, mastermind, updateType );
+        }
+    }
+}
+
 
 bool widget_global_init( void )
 {
-    s_widgets[WidgetId_GAME] = widget_game_create();
     s_widgets[WidgetId_FRAMERATE] = widget_framerate_create();
 	s_widgets[WidgetId_SCREEN_SIZE] = widget_screen_size_create();
 	s_widgets[WidgetId_BOARD_BUTTONS] = widget_board_buttons_create();
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
-	//s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
+	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
 	// boardSummary
     // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
@@ -145,6 +156,7 @@ bool widget_global_init( void )
     mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
     mouse_register_on_mouse_click_callback( on_mouse_click_callback );
     console_screen_register_on_resize_callback( on_screen_resize_callback );
+	mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
     return true;
 }
@@ -183,28 +195,30 @@ void widget_frame( void )
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
-		if ( !widget ) continue;
+		if ( widget == NULL ) continue;
 
-        if ( widget->callbacks.frameCb )
+        if ( widget->callbacks.frameCb != NULL )
         {
             widget->callbacks.frameCb( widget );
 		}
 
 		// Exception just to test it
-		if ( ( widget->id == WidgetId_SCREEN_SIZE || widget->id == WidgetId_BOARD_BUTTONS ) && widget->redrawNeeded )
+		if ( widget->redrawNeeded )
 		{
-			widget->callbacks.redrawCb( widget );
+			if ( widget->callbacks.redrawCb != NULL )
+			{
+				widget->callbacks.redrawCb( widget );
+			}
 			widget->redrawNeeded = false;
-			continue;
 		}
 
-		if ( widget->redrawNeeded && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
+/*		if ( widget->redrawNeeded && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
 		{
 			if ( widget->callbacks.redrawCb  )
 			{
 				widget->callbacks.redrawCb( widget );
 			}
 			widget->redrawNeeded = false;
-		}
+		}*/
    }
 }

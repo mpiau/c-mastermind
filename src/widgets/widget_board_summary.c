@@ -26,12 +26,15 @@ static void draw_peg( screenpos const ul, enum ConsoleColorFG const color, bool 
 
 static void redraw_callback( struct Widget *widget )
 {
-    u32 const nbTurns = 15;
+    u32 const nbTurns = 16;
     u32 const nbPegsPerTurn = 6;
+	u16 const currTurn = 5;
     // 4 -> border + space each side, + 2 -> middle with - and space
     u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
 
-	screenpos pos = widget->box.contentUpLeft;    
+	screenpos pos = widget->box.contentUpLeft;
+
+	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
     for ( int y = 0; y < nbTurns; ++y )
     {
@@ -41,6 +44,7 @@ static void redraw_callback( struct Widget *widget )
 			console_draw( L" %lc", UTF16C_BigFilledCircle );
         }
 		console_draw( L" - " );
+		if ( y + 1 == currTurn ) { console_draw( L"\x1B[2m" ); }
         for ( int x = 0; x < nbPegsPerTurn; ++x )
         {
 			console_draw( L"%lc", UTF16C_SmallDottedCircle );
@@ -49,12 +53,12 @@ static void redraw_callback( struct Widget *widget )
 
 	pos.y += nbTurns;
 	console_cursor_set_position( pos.y, pos.x );
-	console_draw( L"MASTERMIND" );
+	console_draw( L"     MASTERMIND" );
 	pos.y += 1;
     for ( int x = 0; x < nbPegsPerTurn; ++x )
     {
 		console_cursor_set_position( pos.y, pos.x + ( x * 2 ) );
-		console_draw( L" ?", UTF16C_BigFilledCircle );
+		console_draw( L" ?" );
     }
 	pos.y += 2;
 	console_cursor_set_position( pos.y, pos.x );
@@ -78,28 +82,35 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
+static void on_game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
+{
+	// TODO
+}
+
+
 struct Widget *widget_board_summary_create( void )
 {
     struct WidgetBoardSummary *const boardSummary = malloc( sizeof( struct WidgetBoardSummary ) );
     if ( !boardSummary ) return NULL;
+	memset( boardSummary, 0, sizeof( *boardSummary ) );
 
 	struct Widget *const widget = &boardSummary->header;
 
     widget->id = WidgetId_BOARD_SUMMARY;
 	widget->enabled = true;
+	widget->redrawNeeded = true;
 
-	assert( widget_exists( WidgetId_TIMER ) );
-	struct WidgetBox const *timerBox = &widget_optget( WidgetId_TIMER )->box;
-
-    screenpos const borderUpLeft = (screenpos) { .x = timerBox->borderUpLeft.x, .y = timerBox->borderBottomRight.y + 1 };
+    screenpos const borderUpLeft = (screenpos) { .x = 95, .y = 3 };
     screenpos const contentSize  = (vec2u16)   { .x = 22, .y = 22 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
-	widget_utils_set_title( &widget->box, L"Board Summary", ConsoleColorFG_YELLOW );
+	widget_utils_set_title( &widget->box, L"Game Summary", ConsoleColorFG_YELLOW );
 
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
-//    callbacks->frameCb = frame_callback;
+	callbacks->resizeCb = NULL;
+	callbacks->frameCb = NULL;
     callbacks->redrawCb = redraw_callback;
+	callbacks->gameUpdateCb = on_game_update_callback;
 
 	return (struct Widget *)boardSummary;
 }

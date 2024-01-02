@@ -26,6 +26,8 @@ enum ButtonId
 	ButtonId_RESET,
 	ButtonId_HISTORY_UP,
 	ButtonId_HISTORY_DOWN,
+	ButtonId_GameButtonsBegin = ButtonId_PREVIOUS,
+	ButtonId_GameButtonsEnd = ButtonId_HISTORY_DOWN,
 
 	ButtonId_Count,
 
@@ -33,12 +35,20 @@ enum ButtonId
 	ButtonId_Invalid = ButtonId_Count
 };
 
+enum ButtonStatus
+{
+	ButtonStatus_ENABLED,	// The user can interact with it, and colors and shown
+	ButtonStatus_DISABLED,  // The user can't interact with it, and displayed greyed out.
+	ButtonStatus_HIDDEN	    // The button isn't displayed on the screen at all.
+};
+
 struct Button
 {
 	struct Rect box;
 	utf16 const *text;
+	enum ButtonStatus status;
+	enum KeyInput bindedKey;
 };
-
 
 struct WidgetBoardButtons
 {
@@ -49,7 +59,7 @@ struct WidgetBoardButtons
 };
 
 
-static void button_get_hovered_color( enum ButtonId id, enum ConsoleColorFG *outTextColor, enum ConsoleColorFG *outKeyColor )
+static void button_get_hovered_color( enum ButtonId const id, enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
 {
 	switch( id )
 	{
@@ -57,6 +67,8 @@ static void button_get_hovered_color( enum ButtonId id, enum ConsoleColorFG *out
 			*outTextColor = ConsoleColorFG_GREEN;
 			*outKeyColor = ConsoleColorFG_BRIGHT_GREEN;
 			break;
+
+		case ButtonId_ABANDON_GAME:
 		case ButtonId_RESET:
 			*outTextColor = ConsoleColorFG_RED;
 			*outKeyColor = ConsoleColorFG_BRIGHT_RED;
@@ -69,13 +81,15 @@ static void button_get_hovered_color( enum ButtonId id, enum ConsoleColorFG *out
 	}
 }
 
-static void button_get_default_color( enum ButtonId id, enum ConsoleColorFG *outTextColor, enum ConsoleColorFG *outKeyColor )
+static void button_get_default_color( enum ButtonId const id, enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
 {
 	switch( id )
 	{
 		case ButtonId_VALIDATE:
 			*outKeyColor = ConsoleColorFG_GREEN;
 			break;
+
+		case ButtonId_ABANDON_GAME:
 		case ButtonId_RESET:
 			*outKeyColor = ConsoleColorFG_RED;
 			break;
@@ -88,33 +102,81 @@ static void button_get_default_color( enum ButtonId id, enum ConsoleColorFG *out
 	*outTextColor = ConsoleColorFG_BRIGHT_BLACK;
 }
 
-static void button_get_disabled_color( enum ConsoleColorFG *outTextColor, enum ConsoleColorFG *outKeyColor )
+static void button_get_disabled_color( enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
 {
 	*outTextColor = ConsoleColorFG_BRIGHT_BLACK;
 	*outKeyColor = ConsoleColorFG_BRIGHT_BLACK;
 }
 
 
-static void mouse_move_callback( struct Widget *widget, screenpos oldPos, screenpos newPos )
+static void game_buttons_update_status( struct Widget *header, enum ButtonStatus const status )
 {
-	struct WidgetBoardButtons *buttons = (struct WidgetBoardButtons *)widget;
+	struct WidgetBoardButtons *widget = (struct WidgetBoardButtons *)header;
+	screenpos const mousePosition = mouse_get_position();
+
+	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
+	{
+		struct Button *button = &widget->buttons[idx];
+		button->status = status;
+		if ( status == ButtonStatus_ENABLED && rect_is_inside( &button->box, mousePosition ) )
+		{
+			widget->hoveredButton = idx;
+		}
+	}
+}
+
+
+static void mouse_move_callback( struct Widget *const widget, screenpos const oldPos, screenpos const newPos )
+{
+	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
-		if ( rect_is_inside( &buttons->buttons[idx].box, newPos ) )
+		if ( boardButtons->buttons[idx].status == ButtonStatus_ENABLED && rect_is_inside( &boardButtons->buttons[idx].box, newPos ) )
 		{
-			if ( buttons->hoveredButton != idx )
+			if ( boardButtons->hoveredButton != idx )
 			{
-				buttons->hoveredButton = idx;
+				boardButtons->hoveredButton = idx;
 				widget->redrawNeeded = true;
 			}
 			return;
 		}
 	}
 
-	if ( buttons->hoveredButton != ButtonId_Invalid )
+	if ( boardButtons->hoveredButton != ButtonId_Invalid )
 	{
-		buttons->hoveredButton = ButtonId_Invalid;
+		boardButtons->hoveredButton = ButtonId_Invalid;
+		widget->redrawNeeded = true;
+	}
+}
+
+
+static void game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
+{
+	if ( type != GameUpdateType_GAME_STATUS ) return;
+
+	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
+
+	if ( mastermind->gameStatus == GameStatus_IN_PROGRESS )
+	{
+		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
+		abandonButton->status = ButtonStatus_ENABLED;
+		if ( rect_is_inside( &abandonButton->box, mouse_get_position() ) )
+		{
+			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
+		}
+		game_buttons_update_status( widget, ButtonStatus_ENABLED );
+		widget->redrawNeeded = true;
+	}
+	else
+	{
+		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
+		abandonButton->status = ButtonStatus_DISABLED;
+		if ( boardButtons->hoveredButton == ButtonId_ABANDON_GAME )
+		{
+			boardButtons->hoveredButton = ButtonId_Invalid;
+		}
+		game_buttons_update_status( widget, ButtonStatus_HIDDEN );
 		widget->redrawNeeded = true;
 	}
 }
@@ -122,68 +184,20 @@ static void mouse_move_callback( struct Widget *widget, screenpos oldPos, screen
 
 static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enum MouseButton mouseButton )
 {
-	if ( mouseButton != MouseButton_LeftClick ) return; // Only accept LeftClick here
-
 	struct WidgetBoardButtons *buttons = (struct WidgetBoardButtons *)widget;
-	if ( buttons->hoveredButton == ButtonId_Invalid ) return;
 
-	switch( buttons->hoveredButton )
+	if ( mouseButton == MouseButton_LeftClick && buttons->hoveredButton != ButtonId_Invalid )
 	{
-		case ButtonId_NEW_GAME:
-			gameloop_emit_key( KeyInput_N );
-			break;
-		case ButtonId_ABANDON_GAME:
-			gameloop_emit_key( KeyInput_A );
-			break;
-		case ButtonId_GAME_RULES:
-			gameloop_emit_key( KeyInput_G );
-			break;
-		case ButtonId_SETTINGS:
-			gameloop_emit_key( KeyInput_S );
-			break;
-		case ButtonId_QUIT:
-			gameloop_emit_key( KeyInput_Q );
-			break;
-		case ButtonId_PREVIOUS:
-			gameloop_emit_key( KeyInput_ARROW_LEFT );
-			break;
-		case ButtonId_NEXT:
-			gameloop_emit_key( KeyInput_ARROW_RIGHT );
-			break;
-		case ButtonId_BOARD:
-			gameloop_emit_key( KeyInput_ARROW_UP );
-			break;
-		case ButtonId_PEGS:
-			gameloop_emit_key( KeyInput_ARROW_DOWN );
-			break;
-		case ButtonId_PLACE_SELECT:
-			gameloop_emit_key( KeyInput_P );
-			break;
-		case ButtonId_ERASE_UNSELECT:
-			gameloop_emit_key( KeyInput_E );
-			break;
-		case ButtonId_VALIDATE:
-			gameloop_emit_key( KeyInput_V );
-			break;
-		case ButtonId_RESET:
-			gameloop_emit_key( KeyInput_R );
-			break;
-		case ButtonId_HISTORY_UP:
-			gameloop_emit_key( KeyInput_U );
-			break;
-		case ButtonId_HISTORY_DOWN:
-			gameloop_emit_key( KeyInput_D );
-			break;
+		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );
+		// After a successfull click, reset the hovered parameter.
+		// This way, the button won't be highlighted anymore after a click, which seems better in a UX perspective
+		// buttons->hoveredButton = ButtonId_Invalid;
+		// widget->redrawNeeded = true;
+
+		// Edit: Well it was good until I tested clicking multiple times on the same button without moving the mouse.
+		// Once disabled, there is no feedback for the user.
+		// TODO: Either we put the button in black bright on click and then reapply the color, or not remove the color at all
 	}
-
-	// After a successfull click, reset the hovered parameter.
-	// This way, the button won't be highlighted anymore after a click, which seems better in a UX perspective
-	// buttons->hoveredButton = ButtonId_Invalid;
-	// widget->redrawNeeded = true;
-
-	// Well it was good until I tested clicking multiple times on the same button without moving the mouse.
-	// Once disabled, there is no feedback for the user.
-	// TODO: Either we put the button in black bright on click and then reapply the color, or not remove the color at all
 }
 
 
@@ -197,111 +211,98 @@ static void redraw_callback( struct Widget *widget )
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
 		struct Button *button = &boardButtons->buttons[idx];
+
 		screenpos const ul = rect_get_corner( &button->box, RectCorner_UL );
 		bool const isHovered = ( boardButtons->hoveredButton == idx );
 
-		isHovered ? button_get_hovered_color( idx, &textColor, &keyColor ) : button_get_default_color( idx, &textColor, &keyColor );
-
 		console_cursor_setpos( ul );
+		if ( button->status == ButtonStatus_ENABLED )
+		{
+			isHovered ? button_get_hovered_color( idx, &textColor, &keyColor ) : button_get_default_color( idx, &textColor, &keyColor );
 
-		console_color_fg( textColor );
-		console_draw( L"[" );
+			console_draw( L"\x1b[0m" );
+			console_color_fg( textColor );
+			console_draw( L"[" );
 
-		console_color_fg( keyColor );
-		console_draw( L"%lc", button->text[0] );
+			console_color_fg( keyColor );
+			console_draw( L"%lc", button->text[0] );
 
-		console_color_fg( textColor );
-		console_draw( L"%S]", &button->text[1] );
+			console_color_fg( textColor );
+			console_draw( L"%S]", &button->text[1] );
+		}
+		else if ( button->status == ButtonStatus_DISABLED )
+		{
+			button_get_disabled_color( &textColor, &keyColor );
+			console_draw( L"\x1b[2m" );
+			console_color_fg( textColor );
+			console_draw( L"[%S]", button->text );
+		}
+		else
+		{
+			console_draw( L"%*lc", wcslen( button->text ) + 2, L' ' ); // + 2 for '[' and ']'
+		}
 	}
 }
 
+
+static inline struct Button button_make( screenpos const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
+{
+	assert( text != NULL );
+
+	return (struct Button) {
+		.box = rect_make( ul, size ),
+		.text = text,
+		.status = status,
+		.bindedKey = bindedKey
+	};
+}
+
+
+static void init_board_buttons_widget_part( struct WidgetBoardButtons *widget )
+{
+	widget->hoveredButton = ButtonId_Invalid;
+
+	struct Button *buttons = widget->buttons;
+	// Upper row
+	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
+	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
+	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
+	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
+	buttons[ButtonId_QUIT]         = button_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
+	// Bottom row
+	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
+	buttons[ButtonId_NEXT]           = button_make( SCREENPOS( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
+	buttons[ButtonId_BOARD]          = button_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
+	buttons[ButtonId_PEGS]           = button_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
+	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
+	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
+	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
+	buttons[ButtonId_RESET]          = button_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
+	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
+	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
+}
 
 struct Widget *widget_board_buttons_create( void )
 {
     struct WidgetBoardButtons *const boardButtons = malloc( sizeof( struct WidgetBoardButtons ) );
     if ( !boardButtons ) return NULL;
+	memset( boardButtons, 0, sizeof( *boardButtons ) );
 
 	struct Widget *const widget = &boardButtons->header;
     widget->id = WidgetId_BOARD_BUTTONS;
 	widget->enabled = true;
 	widget->redrawNeeded = true;
 
-	// Still useful ?
-	widget->rectBox = rect_make( SCREENPOS( 69, 1 ), VEC2U16( 50, 1 ) );
-
     struct WidgetCallbacks *const callbacks = &widget->callbacks;
     callbacks->redrawCb = redraw_callback;
 	callbacks->mouseMoveCb = mouse_move_callback;
 	callbacks->mouseClickCb = mouse_click_callback;
+	callbacks->gameUpdateCb = game_update_callback;
+	callbacks->resizeCb = NULL;
+	callbacks->frameCb = NULL;
 
 	// Specific data
-
-	// Upper row
-
-	struct Button *button = &boardButtons->buttons[ButtonId_NEW_GAME];
-	button->box = rect_make( SCREENPOS( 55, 1 ), VEC2U16( 10, 1 ) );
-	button->text = L"New Game";
-	
-	button = &boardButtons->buttons[ButtonId_ABANDON_GAME];
-	button->box = rect_make( SCREENPOS( 68, 1 ), VEC2U16( 15, 1 ) );
-	button->text = L"Abandon Game";
-
-	button = &boardButtons->buttons[ButtonId_GAME_RULES];
-	button->box = rect_make( SCREENPOS( 86, 1 ), VEC2U16( 12, 1 ) );
-	button->text = L"Game Rules";
-
-	button = &boardButtons->buttons[ButtonId_SETTINGS];
-	button->box = rect_make( SCREENPOS( 101, 1 ), VEC2U16( 10, 1 ) );
-	button->text = L"Settings";
-
-	button = &boardButtons->buttons[ButtonId_QUIT];
-	button->box = rect_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ) );
-	button->text = L"Quit";
-
-	// Bottom row
-
-//	L"[←Prev][→Next] [↑Board][↓Pegs] [↳Place/Select][Erase/Unselect] [Confirm Turn][Reset Turn] [Up History][Down History]"
-	button = &boardButtons->buttons[ButtonId_PREVIOUS];
-	button->box = rect_make( SCREENPOS( 3, 30 ), VEC2U16( 7, 1 ) );
-	button->text = L"←Prev";
-
-	button = &boardButtons->buttons[ButtonId_NEXT];
-	button->box = rect_make( SCREENPOS( 11, 30 ), VEC2U16( 7, 1 ) );
-	button->text = L"→Next";
-
-	button = &boardButtons->buttons[ButtonId_BOARD];
-	button->box = rect_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ) );
-	button->text = L"↑Board";
-
-	button = &boardButtons->buttons[ButtonId_PEGS];
-	button->box = rect_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ) );
-	button->text = L"↓Pegs";
-
-	button = &boardButtons->buttons[ButtonId_PLACE_SELECT];
-	button->box = rect_make( SCREENPOS( 35, 30 ), VEC2U16( 15, 1 ) );
-	button->text = L"↳Place/Select";
-
-	button = &boardButtons->buttons[ButtonId_ERASE_UNSELECT];
-	button->box = rect_make( SCREENPOS( 50, 30 ), VEC2U16( 16, 1 ) );
-	button->text = L"Erase/Unselect";
-
-	button = &boardButtons->buttons[ButtonId_VALIDATE];
-	button->box = rect_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ) );
-	button->text = L"Confirm Turn";
-
-	button = &boardButtons->buttons[ButtonId_RESET];
-	button->box = rect_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ) );
-	button->text = L"Reset Turn";
-
-	button = &boardButtons->buttons[ButtonId_HISTORY_UP];
-	button->box = rect_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ) );
-	button->text = L"Up History";
-
-	button = &boardButtons->buttons[ButtonId_HISTORY_DOWN];
-	button->box = rect_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ) );
-	button->text = L"Down History";
-	
-	boardButtons->hoveredButton = ButtonId_Invalid;
+	init_board_buttons_widget_part( boardButtons );
 
 	return (struct Widget *)boardButtons;
 }

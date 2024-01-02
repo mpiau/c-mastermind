@@ -13,7 +13,7 @@ struct WidgetBoard
 enum // Constants
 {
 	PEG_WIDTH = 6,
-	PEG_INTERSPACE = 3,
+	PEG_INTERSPACE = 2,
 	PIN_WIDTH = 4,
 	PIN_INTERSPACE = 1,
 	ROW_HEIGHT = 6,
@@ -21,7 +21,7 @@ enum // Constants
 
 void clear_callback( struct Widget *widget )
 {
-	widget_utils_clear_content( &widget->box );
+//	widget_utils_clear_content( &widget->box );
 }
 
 
@@ -52,27 +52,23 @@ static void draw_row_board( screenpos const ul, u16 const nbPegs, u16 const nbPi
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 
-	u16 const nbPegSpaces = nbPegs * 9 - 3; // 9 = pegs(6) + interspace(3) | -3 because one less interspace than nb pegs
-	u16 const nbPinSpaces = ( ( nbPins + 1 ) / 2 ) * 5 - 1; // pin(4) + interspace(1) | -1 because one less interspace
+	u16 const nbPegSpaces = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
+	u16 const nbPinSpaces = ( ( nbPins + 1 ) / 2 ) * ( PIN_WIDTH + PIN_INTERSPACE ) - PIN_INTERSPACE;
 
 	console_cursor_set_position( ul.y, ul.x );
-	console_draw( L"#################" );
+	console_draw( L"################" );
 	for ( u16 x = 0; x < nbPegSpaces + nbPinSpaces; ++x ) console_draw( L"#" );
 
 	console_cursor_set_position( ul.y + 1, ul.x );
-	console_draw( L"### %*lc #####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
+	console_draw( L"### %*lc ####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
 	console_cursor_set_position( ul.y + 2, ul.x );
-	console_draw( L"##  %*lc  ###   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
+	console_draw( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
 	console_cursor_set_position( ul.y + 3, ul.x );
-	console_draw( L"##  %*lc  ###   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
+	console_draw( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
 	console_cursor_set_position( ul.y + 4, ul.x );
-	console_draw( L"##  %*lc  ###   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
+	console_draw( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
 	console_cursor_set_position( ul.y + 5, ul.x );
-	console_draw( L"### %*lc #####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-
-/*	console_cursor_set_position( ul.y + 6, ul.x );
-	console_draw( L"#################" );
-	for ( u16 x = 0; x < nbPegSpaces + nbPinSpaces; ++x ) console_draw( L"#" );*/
+	console_draw( L"### %*lc ####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
 }
 
 
@@ -80,7 +76,7 @@ static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn 
 {
 	console_color_fg( ConsoleColorFG_WHITE );
 
-	console_cursor_set_position( ul.y + 3, ul.x + 10 + ( nbPegs * 9 ) - 3 );
+	console_cursor_set_position( ul.y + 3, ul.x + 9 + ( nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) ) - PEG_INTERSPACE );
 	console_draw( L"%02u", turn );
 }
 
@@ -96,7 +92,7 @@ static void draw_row_pegs( screenpos const ul, struct PegV2 const *pegs, u32 con
 	for ( u32 pegIdx = 0; pegIdx < nbPegs; ++pegIdx )
 	{
 		screenpos const pegUL = (screenpos) {
-			.x = ul.x + 4 + ( pegIdx * 9 ),
+			.x = ul.x + 4 + ( pegIdx * ( PEG_WIDTH + PEG_INTERSPACE ) ),
 			.y = ul.y + 2
 		};
 		draw_peg( pegUL, pegs[pegIdx].color, pegs[pegIdx].isEmpty );
@@ -109,7 +105,7 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct PegV2 co
 	if ( pins == NULL ) return;
 	bool const oddNbPins = nbPins % 2 != 0; // Need to add a last empty pin manually
 
-	u16 const tmp = ul.x + 12 + nbPegs * 9 - 3;
+	u16 const tmp = ul.x + 11 + nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
 	draw_pin( (screenpos){ .x = tmp, .y = ul.y + 1}, pins[0].color, pins[0].isEmpty );
 }
 
@@ -130,11 +126,14 @@ static void draw_row( screenpos const ul /* + game content to take pegs from */ 
 	pins[3] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
 	pins[4] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
 	pins[5] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	draw_row_board( ul, ARR_COUNT( pegs ), ARR_COUNT( pins ) );
 
-	draw_row_pegs( ul, pegs, ARR_COUNT( pegs ) );
-	draw_row_pins( ul, ARR_COUNT( pegs ), pins, ARR_COUNT( pins ) );
-	draw_row_turn( ul, ARR_COUNT( pegs ), 12 );
+	usize pegSize = 6;
+	usize pinSize = 6;
+	draw_row_board( ul, pegSize, pinSize );
+
+	draw_row_pegs( ul, pegs, pegSize );
+	draw_row_pins( ul, pegSize, pins, pinSize );
+	draw_row_turn( ul, pegSize, 12 );
 }
 
 
@@ -145,19 +144,17 @@ static void draw_header_board( screenpos const ul )
 	// TODO needs to adjust depending of the number of pegs
 
 	console_cursor_set_position( ul.y, ul.x );
-	console_draw( L"   ##############################################   " );
+	console_draw( L"   #################################################   " );
 	console_cursor_set_position( ul.y + 1, ul.x );
-	console_draw( L" ####                                          #### " );
+	console_draw( L" ####                                             #### " );
 	console_cursor_set_position( ul.y + 2, ul.x );
-	console_draw( L" ##                                              ## " );
+	console_draw( L" ##                                                 ## " );
 	console_cursor_set_position( ul.y + 3, ul.x );
-	console_draw( L"###                                              ###" );
+	console_draw( L"###                                                 ###" );
 	console_cursor_set_position( ul.y + 4, ul.x );
-	console_draw( L"#####                                          #####" );
+	console_draw( L"#####                                             #####" );
 	console_cursor_set_position( ul.y + 5, ul.x );
-	console_draw( L"####################################################" );
-	console_cursor_set_position( ul.y + 6, ul.x );
-	console_draw( L"####################################################" );
+	console_draw( L"#######################################################" );
 }
 
 
@@ -168,8 +165,9 @@ static void draw_header_title( screenpos const ul, u16 const nbPegs )
 
 static void redraw_callback( struct Widget *widget )
 {
-	int x = widget->box.contentUpLeft.x + 2;
-	int y = widget->box.contentUpLeft.y + 1;
+	screenpos const ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
+	int x = ul.x + 2;
+	int y = ul.y + 1;
 
 //	draw_header_board( (screenpos){ x, y } );
 //	draw_header_title( (screenpos){ x, y }, 3 );
@@ -188,45 +186,18 @@ static void redraw_callback( struct Widget *widget )
 	console_draw( L"####################################################" );
 	console_draw( L"####################################################" );
 	draw_row( (screenpos){ .x = x, .y = y } );*/
-/*	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-	console_cursor_set_position( y++, x );
-	console_draw( L"###                                   #####  %S,db. %S,db.  %S#####", 
-		L"\x1b[1;31m", L"\x1b[1;31m", L"\x1b[0;94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S,d||b.   %S,d88b.   %S,:!!:.   %S,d88b.  %S###   %S`YP' %S`YP'   %S####",
-		L"\x1b[1;31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[31m", L"\x1b[31m", L"\x1b[94m"
-	 );
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S888888   %S888888   %S8::::8   %S888888  %S### %S01%S            ####",
-		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[37m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"##  %S`Y||P'   %S`Y88P'   %S`:;;:'   %S`Y88P'  %S###   %S,db. %S.::.%S   ####", 
-		L"\x1b[31m", L"\x1b[32m", L"\x1b[90m", L"\x1b[33m", L"\x1b[94m",
-		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"###                                   #####  %S`YP' %S'::'  %S#####",
-		L"\x1b[37m", L"\x1b[90m", L"\x1b[94m"
-	);
-	console_cursor_set_position( y++, x );
-	console_draw( L"#############################################################" );
-*/
-	draw_row( (screenpos){ .x = x, .y = y } );
+
+	draw_header_board( SCREENPOS( x, y ) );
 	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT } );
 	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT * 2 } );
+	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT * 3 } );
 
-	y = y + ROW_HEIGHT * 3;
+	y = y + ROW_HEIGHT * 4;
 	x = x - 2;
-	console_cursor_set_position( y, widget->box.contentUpLeft.x + 2 );
+	console_cursor_set_position( y, ul.x + 2 );
 	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
-	console_draw( L"##################################################################################" );
-//	for ( u16 x = 0; x < nbPegSpaces + nbPinSpaces; ++x ) console_draw( L"#" );
-
+	console_draw( L"############################################################################" );
+/*
 	y += 1;
 
 	console_cursor_set_position( y + 1, widget->box.contentUpLeft.x );
@@ -244,7 +215,7 @@ static void redraw_callback( struct Widget *widget )
 	draw_peg( (screenpos){ .x = x + 4 + 32, .y = y + 1 }, ConsoleColorFG_WHITE, false );
 	draw_peg( (screenpos){ .x = x + 5 + 40, .y = y + 1 }, ConsoleColorFG_BRIGHT_CYAN, false );
 	draw_peg( (screenpos){ .x = x + 6 + 48, .y = y + 1 }, ConsoleColorFG_BRIGHT_BLUE, false );
-	draw_peg( (screenpos){ .x = x + 7 + 56, .y = y + 1 }, ConsoleColorFG_BRIGHT_YELLOW, false );
+	draw_peg( (screenpos){ .x = x + 7 + 56, .y = y + 1 }, ConsoleColorFG_BRIGHT_YELLOW, false );*/
 }
 
 
@@ -263,21 +234,26 @@ struct Widget *widget_board_create( void )
 {
     struct WidgetBoard *const board = malloc( sizeof( struct WidgetBoard ) );
     if ( !board ) return NULL;
+	memset( board, 0, sizeof( *board ) );
 
 	struct Widget *const widget = &board->header;
 
     widget->id = WidgetId_BOARD;
 	widget->enabled = true;
+	widget->redrawNeeded = true;
 
-    screenpos const borderUpLeft = (screenpos) { .x = 2, .y = 3 };
+	widget->rectBox = rect_make( SCREENPOS( 2, 2 ), VEC2U16( 86, 25 ) );
+
+/*    screenpos const borderUpLeft = (screenpos) { .x = 2, .y = 2 };
     vec2u16 const contentSize  = (vec2u16)   { .x = 86, .y = 25 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
-	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
+	widget->box.borderOption = WidgetBorderOption_INVISIBLE;//ALWAYS_VISIBLE;
 	widget_utils_set_title( &widget->box, L"Mastermind", ConsoleColorFG_BRIGHT_GREEN );
-
+*/
 	widget->callbacks.redrawCb = redraw_callback;
 	widget->callbacks.frameCb = frame_callback;
 	widget->callbacks.clearCb = clear_callback;
+	widget->callbacks.resizeCb = NULL;
 
 	return (struct Widget *)board;
 }

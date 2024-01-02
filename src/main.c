@@ -1,7 +1,5 @@
 // Mastermind game in C
-#include "game_menus.h"
-#include "mastermind_v2.h"
-#include "terminal.h"
+#include "mastermind.h"
 #include "console.h"
 #include "console_screen.h"
 #include "characters_list.h"
@@ -13,6 +11,7 @@
 #include "widgets/widget_utils.h"
 #include "mouse.h"
 #include "gameloop.h"
+#include "settings.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -22,6 +21,8 @@
 #include <math.h>
 
 #include <windows.h>
+
+static bool s_mainLoop = true;
 
 /*
 	// PEGS DISPLAY 
@@ -41,7 +42,7 @@
 	console_draw( L" -- " );
 */
 
-char const *get_game_name( void )
+/*char const *get_game_name( void )
 {
 	 // I used https://edukits.co/text-art/ for the ASCII generation.
 	 // I needed to add some backslashes afterwards to not break the output with printf.
@@ -64,7 +65,7 @@ char const *get_game_name( void )
 	}
 
 	return buffer;
-}
+}*/
 
 
 // https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences Useful
@@ -107,10 +108,6 @@ void draw_title( vec2u16 const screenSize )
 }
 */
 
-// TEMP
-static bool s_mainLoop = true;
-static struct MastermindV2 s_mastermind = {};
-
 
 static void gameloop_consume_key_input( enum KeyInput const input )
 {
@@ -123,30 +120,11 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 		return;
 	}
 
-	// widgets_consume_input
+	// Widgets consume inputs ? Like KeyInput S -> Display Settings menu
 
-	if ( mastermind_try_consume_input( &s_mastermind, input ) )
+	if ( mastermind_consume_input( input ) )
 	{
 		return;
-	}
-
-	// Just to simplify testing
-	struct Widget *widget = widget_optget( WidgetId_FRAMERATE );
-	if ( input == KeyInput_NUMPAD_4 ) {
-		widget = widget_optget( WidgetId_COUNTDOWN );
-		widget_countdown_start( widget );
-	}
-	else if ( input == KeyInput_NUMPAD_5 ) {
-		widget = widget_optget( WidgetId_COUNTDOWN );
-		widget_countdown_pause( widget );
-	}
-	else if ( input == KeyInput_NUMPAD_6 ) {
-		widget = widget_optget( WidgetId_COUNTDOWN );
-		widget_countdown_resume( widget );
-	}
-	else if ( input == KeyInput_NUMPAD_7 ) {
-		widget = widget_optget( WidgetId_COUNTDOWN );
-		widget_countdown_reset( widget );
 	}
 }
 
@@ -176,8 +154,6 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 		}
 		case KEY_EVENT:
 		{
-//			console_draw( L"Key input: %2u", recordedInput->Event.KeyEvent.wVirtualKeyCode );
-
 			if ( !recordedInput->Event.KeyEvent.bKeyDown ) return;
 
 			enum KeyInput input;
@@ -248,6 +224,7 @@ int main( void )
 		return 2;
 	}
 
+	settings_global_init();
 	mouse_init();
 	if ( !widget_global_init() )
 	{
@@ -255,10 +232,10 @@ int main( void )
 	}
 
 
-	mastermindv2_init( &s_mastermind );
-	mastermindv2_start_game( &s_mastermind );
+//	mastermindv2_init( &s_mastermind );
+//	mastermindv2_start_game( &s_mastermind );
 
-	widget_timer_start( widget_optget( WidgetId_TIMER ) );
+	// widget_timer_start( widget_optget( WidgetId_TIMER ) );
 	
 	// TODO Improve, shouldn't be a static
 	while ( s_mainLoop )
@@ -271,6 +248,7 @@ int main( void )
 
 		// TEMP - To move somewhere else
 		console_cursor_set_position( 1, 35 );
+		console_color_reset();
 		screenpos const mousePos = mouse_get_position();
 		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
 
