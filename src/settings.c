@@ -20,8 +20,8 @@ bool settings_global_init( void )
     s_settings.gameExperience = GameExperience_NORMAL;
 
     // Changing it times to times in order to spot potential bugs in the display.
-    s_settings.gameNbPegsPerTurn = 5;
-    s_settings.gameNbTurns = 14;
+    s_settings.gameNbPegsPerTurn = 6;
+    s_settings.gameNbTurns = 8;
 }
 
 

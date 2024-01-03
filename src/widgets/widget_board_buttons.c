@@ -153,11 +153,9 @@ static void mouse_move_callback( struct Widget *const widget, screenpos const ol
 
 static void game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
-	if ( type != GameUpdateType_GAME_STATUS ) return;
-
 	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
 
-	if ( mastermind_is_game_finished( mastermind ) )
+	if ( type == GameUpdateType_GAME_FINISHED )
 	{
 		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
 		abandonButton->status = ButtonStatus_DISABLED;
@@ -168,7 +166,7 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 		game_buttons_update_status( widget, ButtonStatus_HIDDEN );
 		widget->redrawNeeded = true;
 	}
-	else
+	else if ( type == GameUpdateType_GAME_NEW )
 	{
 		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
 		abandonButton->status = ButtonStatus_ENABLED;

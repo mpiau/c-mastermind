@@ -84,7 +84,6 @@ static void redraw_callback( struct Widget *widget )
 
 static void on_game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
-	// TODO
 }
 
 

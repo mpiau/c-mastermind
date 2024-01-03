@@ -83,9 +83,11 @@ struct Mastermind;
 
 enum GameUpdateType
 {
-    GameUpdateType_GAME_STATUS,
+    GameUpdateType_GAME_NEW,
+    GameUpdateType_GAME_FINISHED,
     GameUpdateType_TURN_RESET,
     GameUpdateType_NEXT_TURN,
+    GameUpdateType_SELECTION_BAR_MOVED,
     // [...]
 };
 
@@ -101,11 +103,14 @@ struct Mastermind const *mastermind_get_instance( void );
 u8   mastermind_get_total_nb_turns( struct Mastermind const *mastermind );
 u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind );
 u8   mastermind_get_current_turn( struct Mastermind const *mastermind );
+u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
 bool mastermind_is_game_finished( struct Mastermind const *mastermind );
 bool mastermind_is_game_lost( struct Mastermind const *mastermind );
 bool mastermind_is_game_won( struct Mastermind const *mastermind );
 struct Peg const *mastermind_get_pegs_at_turn( struct Mastermind const *mastermind, u8 turn );
 struct Pin const *mastermind_get_pins_at_turn( struct Mastermind const *mastermind, u8 turn );
+struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind );
+
 
 enum ConsoleColorFG peg_get_color( enum PegId id, bool selected );
 enum ConsoleColorFG pin_get_color( enum PinId id );

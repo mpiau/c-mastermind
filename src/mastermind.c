@@ -18,6 +18,7 @@ struct Mastermind
 
     // Game logic
     u8 currentTurn;
+    u8 selectionBarIdx;
     enum PegId selectedPeg;
     enum GameStatus gameStatus;
 };
@@ -35,19 +36,6 @@ static void emit_game_update( enum GameUpdateType const type )
         s_callbacks[idx]( &s_mastermind, type );
     }
 }
-
-
-static bool abandon_game( void )
-{
-    if ( s_mastermind.gameStatus == GameStatus_IN_PROGRESS )
-    {
-        s_mastermind.gameStatus = GameStatus_LOST;
-        emit_game_update( GameUpdateType_GAME_STATUS );
-        return true;
-    }
-    return false;
-}
-
 
 static void reset_pegs_row( struct Peg *const pegs )
 {
@@ -71,7 +59,7 @@ static void generate_new_solution( struct Peg *const pegs )
 {
     // Note: For the moment, we aren't supporting having duplicated pegs in the same row.
     // So this generation is explicitly checking to have unique pegs in the generated solution.
-    bool pegsUsed[Mastermind_MAX_PEGS_PER_TURN] = {};
+    bool pegsUsed[Mastermind_NB_COLORS] = {};
 
     for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
     {
@@ -82,6 +70,38 @@ static void generate_new_solution( struct Peg *const pegs )
 
 		pegsUsed[pegs[idx].id] = true;
     }
+}
+
+
+static void hide_solution()
+{
+    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    {
+            s_mastermind.solution[idx].hidden = true;
+    }
+}
+
+
+static void show_solution()
+{
+    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    {
+            s_mastermind.solution[idx].hidden = false;
+    }
+}
+
+
+
+static bool abandon_game( void )
+{
+    if ( s_mastermind.gameStatus == GameStatus_IN_PROGRESS )
+    {
+        s_mastermind.gameStatus = GameStatus_LOST;
+        show_solution();
+        emit_game_update( GameUpdateType_GAME_FINISHED );
+        return true;
+    }
+    return false;
 }
 
 
@@ -99,13 +119,15 @@ static bool new_game( u8 const nbTurns, u8 const nbPegsPerTurn, enum GameExperie
         reset_pins_row( s_mastermind.pins[idx] );
     }
     generate_new_solution( s_mastermind.solution );
+    hide_solution();
 
     // Game logic
     s_mastermind.currentTurn = 1;
     s_mastermind.selectedPeg = PegId_Empty;
+    s_mastermind.selectionBarIdx = 0;
     s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
 
-    emit_game_update( GameUpdateType_GAME_STATUS );
+    emit_game_update( GameUpdateType_GAME_NEW );
     return true;
 }
 
@@ -139,7 +161,25 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             // Then generate feedback for the turn and either increment turn, or Win/Lost condition depending of the result
             
             // emit_game_update( GameUpdateType_NEXT_TURN ); for turn validation
-            // emit_game_update( GameUpdateType_GAME_STATUS ); for win-lost situation
+            // emit_game_update( GameUpdateType_GAME_FINISHED ); for win-lost situation
+            return true;
+        }
+        case KeyInput_ARROW_LEFT:
+        {
+            if ( s_mastermind.selectionBarIdx > 0 )
+            {
+                s_mastermind.selectionBarIdx -= 1;
+                emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
+            }
+            return true;
+        }
+        case KeyInput_ARROW_RIGHT:
+        {
+            if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPegsPerTurn )
+            {
+                s_mastermind.selectionBarIdx += 1;
+                emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
+            }
             return true;
         }
     }
@@ -173,6 +213,11 @@ u8 mastermind_get_current_turn( struct Mastermind const *mastermind )
     return mastermind->currentTurn;
 }
 
+u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind )
+{
+    return mastermind->selectionBarIdx;
+}
+
 bool mastermind_is_game_finished( struct Mastermind const *mastermind )
 {
     return mastermind_is_game_lost( mastermind ) || mastermind_is_game_won( mastermind );
@@ -203,6 +248,11 @@ struct Pin const *mastermind_get_pins_at_turn( struct Mastermind const *mastermi
 {
     assert( turn > 0 && turn <= mastermind->nbTurns );
     return mastermind->pins[turn - 1];
+}
+
+struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind )
+{
+    return mastermind->solution;
 }
 
 // ////// PEGS FUNCTIONS
