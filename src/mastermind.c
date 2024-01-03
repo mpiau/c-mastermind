@@ -4,6 +4,25 @@
 #include "keyboard_inputs.h"
 #include "settings.h"
 
+struct Mastermind
+{
+    // Game settings. Can't be changed without creating a new game
+    u8 nbTurns;
+    u8 nbPegsPerTurn;
+    enum GameExperience gameExperience;
+
+    // Game data
+    struct Peg pegs[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
+    struct Pin pins[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
+    struct Peg solution[Mastermind_MAX_PEGS_PER_TURN];
+
+    // Game logic
+    u8 currentTurn;
+    enum PegId selectedPeg;
+    enum GameStatus gameStatus;
+};
+
+
 static struct Mastermind s_mastermind = {};
 static MastermindCallback s_callbacks[Mastermind_MAX_CALLBACKS] = {};
 static u8 s_callbackCount = 0;
@@ -34,7 +53,7 @@ static void reset_pegs_row( struct Peg *const pegs )
 {
     for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
     {
-        pegs[idx].id = PegId_Invalid;
+        pegs[idx].id = PegId_Empty;
         pegs[idx].hidden = false;
     }
 }
@@ -43,7 +62,7 @@ static void reset_pins_row( struct Pin *const pins )
 {
     for ( int idx = 0; idx < Mastermind_MAX_PINS_PER_TURN; ++idx )
     {
-        pins[idx].id = PinId_Invalid;
+        pins[idx].id = PinId_INCORRECT;
         pins[idx].hidden = false;
     }
 }
@@ -83,7 +102,7 @@ static bool new_game( u8 const nbTurns, u8 const nbPegsPerTurn, enum GameExperie
 
     // Game logic
     s_mastermind.currentTurn = 1;
-    s_mastermind.selectedPin = PinId_Invalid;
+    s_mastermind.selectedPeg = PegId_Empty;
     s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
 
     emit_game_update( GameUpdateType_GAME_STATUS );
@@ -91,7 +110,7 @@ static bool new_game( u8 const nbTurns, u8 const nbPegsPerTurn, enum GameExperie
 }
 
 
-bool mastermind_consume_input( enum KeyInput const input )
+bool mastermind_try_consume_input( enum KeyInput const input )
 {
     switch( input )
     {
@@ -139,25 +158,88 @@ bool mastermind_register_update_callback( MastermindCallback const callback )
 }
 
 
-u8 mastermind_get_current_turn( void )
+u8 mastermind_get_total_nb_turns( struct Mastermind const *mastermind )
 {
-    return s_mastermind.currentTurn;
+    return mastermind->nbTurns;
 }
 
-bool mastermind_is_game_finished( void )
+u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind )
 {
-    return mastermind_is_game_lost() || mastermind_is_game_won();
+    return mastermind->nbPegsPerTurn;
 }
 
-bool mastermind_is_game_lost( void )
+u8 mastermind_get_current_turn( struct Mastermind const *mastermind )
 {
-    return s_mastermind.gameStatus == GameStatus_LOST;
+    return mastermind->currentTurn;
 }
 
-bool mastermind_is_game_won( void )
+bool mastermind_is_game_finished( struct Mastermind const *mastermind )
 {
-    return s_mastermind.gameStatus == GameStatus_WON;
+    return mastermind_is_game_lost( mastermind ) || mastermind_is_game_won( mastermind );
 }
+
+bool mastermind_is_game_lost( struct Mastermind const *mastermind )
+{
+    return mastermind->gameStatus == GameStatus_LOST;
+}
+
+bool mastermind_is_game_won( struct Mastermind const *mastermind )
+{
+    return mastermind->gameStatus == GameStatus_WON;
+}
+
+struct Mastermind const *mastermind_get_instance( void )
+{
+    return &s_mastermind;
+}
+
+struct Peg const *mastermind_get_pegs_at_turn( struct Mastermind const *mastermind, u8 const turn )
+{
+    assert( turn > 0 && turn <= mastermind->nbTurns );
+    return mastermind->pegs[turn - 1];
+}
+
+struct Pin const *mastermind_get_pins_at_turn( struct Mastermind const *mastermind, u8 const turn )
+{
+    assert( turn > 0 && turn <= mastermind->nbTurns );
+    return mastermind->pins[turn - 1];
+}
+
+// ////// PEGS FUNCTIONS
+
+enum ConsoleColorFG peg_get_color( enum PegId const id, bool const selected )
+{
+	switch ( id )
+	{
+		case PegId_RED:     return ( selected ? ConsoleColorFG_BRIGHT_RED     : ConsoleColorFG_RED     );
+		case PegId_GREEN:   return ( selected ? ConsoleColorFG_BRIGHT_GREEN   : ConsoleColorFG_GREEN   );
+		case PegId_YELLOW:  return ( selected ? ConsoleColorFG_BRIGHT_YELLOW  : ConsoleColorFG_YELLOW  );
+		case PegId_CYAN:    return ( selected ? ConsoleColorFG_BRIGHT_CYAN    : ConsoleColorFG_CYAN    );
+		case PegId_MAGENTA: return ( selected ? ConsoleColorFG_BRIGHT_MAGENTA : ConsoleColorFG_MAGENTA );
+		case PegId_BLUE:    return ( selected ? ConsoleColorFG_BRIGHT_BLUE    : ConsoleColorFG_BLUE    );
+		case PegId_WHITE:   return ( selected ? ConsoleColorFG_BRIGHT_WHITE   : ConsoleColorFG_WHITE   );
+         // Perhaps put the \x1b[2m to be darker, this way we won't use white here, but the bright black
+		case PegId_BLACK:   return ( selected ? ConsoleColorFG_WHITE          : ConsoleColorFG_BRIGHT_BLACK );
+		case PegId_Empty:   return ( selected ? ConsoleColorFG_BRIGHT_BLACK   : ConsoleColorFG_BRIGHT_BLACK );
+		default: assert( false );
+	}
+}
+
+
+// //// PINS FUNCTIONS
+
+enum ConsoleColorFG pin_get_color( enum PinId const id )
+{
+	switch ( id )
+	{
+		case PinId_CORRECT:			  return ConsoleColorFG_RED;
+		case PinId_PARTIALLY_CORRECT: return ConsoleColorFG_WHITE;
+		case PinId_INCORRECT:         return ConsoleColorFG_BRIGHT_BLACK;
+		default: assert( false );
+	}
+}
+
+
 
 /*
 // DRAW GAME /////////////////////////////////////////////////////////////////////

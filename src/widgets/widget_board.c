@@ -7,6 +7,8 @@
 struct WidgetBoard
 {
 	struct Widget header;
+
+	u8 lastDisplayedTurn;
 };
 
 
@@ -19,32 +21,44 @@ enum // Constants
 	ROW_HEIGHT = 6,
 };
 
-void clear_callback( struct Widget *widget )
+
+static void draw_peg( screenpos const ul, enum PegId const id, bool const hidden )
 {
-//	widget_utils_clear_content( &widget->box );
+	bool const isEmpty = ( id == PegId_Empty );
+
+	if ( hidden )
+	{
+		console_draw( L"\x1B[2m" );
+		console_color_fg( ConsoleColorBG_BRIGHT_BLACK );
+		console_draw( L",d||b." );
+		console_cursor_set_position( ul.y + 1, ul.x );
+		console_draw( L"O ?? O" );
+		console_cursor_set_position( ul.y + 2, ul.x );
+		console_draw( L"`Y||P'" );
+		console_color_reset();
+	}
+	else
+	{
+		console_color_fg( peg_get_color( id, false /* TODO be relevant to the board state */ ) );
+		console_cursor_set_position( ul.y, ul.x );
+		console_draw( isEmpty ? L",:'':." : L",d||b." );
+		console_cursor_set_position( ul.y + 1, ul.x );
+		console_draw( isEmpty ? L":    :" : L"OOOOOO" );
+		console_cursor_set_position( ul.y + 2, ul.x );
+		console_draw( isEmpty ? L"`:,,:'" : L"`Y||P'" );
+	}
 }
 
-
-static void draw_peg( screenpos const ul, enum ConsoleColorFG const color, bool const emptySpace )
+static void draw_pin( screenpos const ul, enum PinId const id )
 {
-	console_color_fg( color );
+	bool const isEmpty = ( id == PinId_INCORRECT );
+
+	console_color_fg( pin_get_color( id ) );
 
 	console_cursor_set_position( ul.y, ul.x );
-	console_draw( emptySpace ? L",:'':." : L",d||b." );
+	console_draw( isEmpty ? L".''." : L",db." );
 	console_cursor_set_position( ul.y + 1, ul.x );
-	console_draw( emptySpace ? L":    :" : L"OOOOOO" );//, 2, emptySpace ? L"" : L"01" );
-	console_cursor_set_position( ul.y + 2, ul.x );
-	console_draw( emptySpace ? L"`:,,:'" : L"`Y||P'" );
-}
-
-static void draw_pin( screenpos ul, enum ConsoleColorFG color, bool const emptySpace )
-{
-	console_color_fg( color );
-
-	console_cursor_set_position( ul.y, ul.x );
-	console_draw( emptySpace ? L".''." : L",db." );
-	console_cursor_set_position( ul.y + 1, ul.x );
-	console_draw( emptySpace ? L"`,,'" : L"`YP'" );
+	console_draw( isEmpty ? L"`,,'" : L"`YP'" );
 }
 
 
@@ -81,13 +95,7 @@ static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn 
 }
 
 
-struct PegV2
-{
-	enum ConsoleColorFG color;
-	bool isEmpty;
-};
-
-static void draw_row_pegs( screenpos const ul, struct PegV2 const *pegs, u32 const nbPegs )
+static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const nbPegs )
 {
 	for ( u32 pegIdx = 0; pegIdx < nbPegs; ++pegIdx )
 	{
@@ -95,45 +103,50 @@ static void draw_row_pegs( screenpos const ul, struct PegV2 const *pegs, u32 con
 			.x = ul.x + 4 + ( pegIdx * ( PEG_WIDTH + PEG_INTERSPACE ) ),
 			.y = ul.y + 2
 		};
-		draw_peg( pegUL, pegs[pegIdx].color, pegs[pegIdx].isEmpty );
+		draw_peg( pegUL, pegs[pegIdx].id, pegs[pegIdx].hidden );
 	}
 }
 
 
-static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct PegV2 const *pins, u32 const nbPins )
+static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin const *pins, u32 const nbPins )
 {
-	if ( pins == NULL ) return;
 	bool const oddNbPins = nbPins % 2 != 0; // Need to add a last empty pin manually
 
-	u16 const tmp = ul.x + 11 + nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
-	draw_pin( (screenpos){ .x = tmp, .y = ul.y + 1}, pins[0].color, pins[0].isEmpty );
+	int const ulX = ul.x + 11 + nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
+	int ulY = ul.y + 1;
+
+	// first row
+	u8 const firstRowLimit = ( nbPins + 1 ) / 2;
+	for ( int idx = 0; idx < firstRowLimit; ++idx )
+	{
+		draw_pin( SCREENPOS( ulX + 5 * idx, ulY ), pins[idx].id );
+	}
+
+	ulY += 3;
+
+	// second row, except the last for odds
+	for ( int idx = firstRowLimit; idx < nbPins; ++idx )
+	{
+		draw_pin( SCREENPOS( ulX + 5 * ( idx - firstRowLimit ), ulY ), pins[idx].id );
+	}
+
+	if ( oddNbPins )
+	{
+		draw_pin( SCREENPOS( ulX + 5 * ( nbPins - firstRowLimit ), ulY ), PinId_INCORRECT );
+	}
 }
 
 
-static void draw_row( screenpos const ul /* + game content to take pegs from */ )
+static void draw_row( screenpos const ul, struct Mastermind const *mastermind, u8 turnToDisplay )
 {
-	struct PegV2 pegs[6] = {};
-	pegs[0] = (struct PegV2) { .color = ConsoleColorFG_MAGENTA, .isEmpty = false };
-	pegs[1] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_RED, .isEmpty = false };
- 	pegs[2] = (struct PegV2) { .color = ConsoleColorFG_YELLOW, .isEmpty = false };
-	pegs[3] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_GREEN, .isEmpty = false };
-	pegs[4] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	pegs[5] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	struct PegV2 pins[6] = {};
-	pins[0] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_RED, .isEmpty = false };
-	pins[1] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_WHITE, .isEmpty = false };
-	pins[2] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	pins[3] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	pins[4] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
-	pins[5] = (struct PegV2) { .color = ConsoleColorFG_BRIGHT_BLACK, .isEmpty = true };
+	u8 nbPegs = mastermind_get_nb_pegs_per_turn( mastermind );
+	struct Peg const *pegs = mastermind_get_pegs_at_turn( mastermind, turnToDisplay );
+	struct Pin const *pins = mastermind_get_pins_at_turn( mastermind, turnToDisplay );
 
-	usize pegSize = 6;
-	usize pinSize = 6;
-	draw_row_board( ul, pegSize, pinSize );
-
-	draw_row_pegs( ul, pegs, pegSize );
-	draw_row_pins( ul, pegSize, pins, pinSize );
-	draw_row_turn( ul, pegSize, 12 );
+	draw_row_board( ul, nbPegs, nbPegs );
+	draw_row_pegs( ul, pegs, nbPegs );
+	draw_row_pins( ul, nbPegs, pins, nbPegs );
+	draw_row_turn( ul, nbPegs, turnToDisplay );
 }
 
 
@@ -165,7 +178,10 @@ static void draw_header_title( screenpos const ul, u16 const nbPegs )
 
 static void redraw_callback( struct Widget *widget )
 {
+	struct Mastermind const *mastermind = mastermind_get_instance();
+	struct WidgetBoard *board = (struct WidgetBoard *)widget;
 	screenpos const ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
+
 	int x = ul.x + 2;
 	int y = ul.y + 1;
 
@@ -187,10 +203,14 @@ static void redraw_callback( struct Widget *widget )
 	console_draw( L"####################################################" );
 	draw_row( (screenpos){ .x = x, .y = y } );*/
 
-	draw_header_board( SCREENPOS( x, y ) );
-	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT } );
-	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT * 2 } );
-	draw_row( (screenpos){ .x = x, .y = y + ROW_HEIGHT * 3 } );
+	if ( board->lastDisplayedTurn == 3 ) draw_header_board( SCREENPOS( x, y ) );
+	else draw_row( SCREENPOS( x, y ), mastermind, board->lastDisplayedTurn - 3 );
+
+	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), mastermind, board->lastDisplayedTurn - 2 );
+	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), mastermind, board->lastDisplayedTurn - 1 );
+
+	if ( board->lastDisplayedTurn == mastermind_get_total_nb_turns( mastermind ) + 1 ) draw_header_board( SCREENPOS( x, y + ROW_HEIGHT * 3 ) );
+	else draw_row( SCREENPOS( x, y + ROW_HEIGHT * 3 ), mastermind, board->lastDisplayedTurn );
 
 	y = y + ROW_HEIGHT * 4;
 	x = x - 2;
@@ -219,16 +239,47 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
-// Shouldn't need a frame callback as it depends on user input only
-static void frame_callback( struct Widget *widget )
+static void on_game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
-	static bool h = false;
-	if ( !h )
-	{
-		redraw_callback( widget );
-		h = true;
-	}
+	widget->enabled = true;
+	widget->redrawNeeded = true;
 }
+
+
+static bool on_input_received_callback( struct Widget *widget, enum KeyInput input )
+{
+	struct WidgetBoard *board = (struct WidgetBoard *)widget;
+
+	// TODO:
+	// How do we disable the history buttons of the button widget if we can't go up anymore ? Same question for the down
+
+	switch( input )
+	{
+		case KeyInput_D:
+		{
+			u8 const nbTurns = mastermind_get_total_nb_turns( mastermind_get_instance() );
+			if ( board->lastDisplayedTurn < nbTurns + 1 )
+			{
+				board->lastDisplayedTurn += 1;
+				widget->redrawNeeded = true;
+			}
+			return true;
+		}
+		
+		case KeyInput_U:
+		{
+			if ( board->lastDisplayedTurn > 3 )
+			{
+				board->lastDisplayedTurn -= 1;
+				widget->redrawNeeded = true;
+			}
+			return true;
+		}
+	
+	}
+	return false;
+}
+
 
 struct Widget *widget_board_create( void )
 {
@@ -239,21 +290,19 @@ struct Widget *widget_board_create( void )
 	struct Widget *const widget = &board->header;
 
     widget->id = WidgetId_BOARD;
-	widget->enabled = true;
-	widget->redrawNeeded = true;
+	widget->enabled = false;
+	widget->redrawNeeded = false;
 
 	widget->rectBox = rect_make( SCREENPOS( 2, 2 ), VEC2U16( 86, 25 ) );
 
-/*    screenpos const borderUpLeft = (screenpos) { .x = 2, .y = 2 };
-    vec2u16 const contentSize  = (vec2u16)   { .x = 86, .y = 25 };
-	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
-	widget->box.borderOption = WidgetBorderOption_INVISIBLE;//ALWAYS_VISIBLE;
-	widget_utils_set_title( &widget->box, L"Mastermind", ConsoleColorFG_BRIGHT_GREEN );
-*/
 	widget->callbacks.redrawCb = redraw_callback;
-	widget->callbacks.frameCb = frame_callback;
-	widget->callbacks.clearCb = clear_callback;
+	widget->callbacks.gameUpdateCb = on_game_update_callback;
+	widget->callbacks.inputReceivedCb = on_input_received_callback;
+	widget->callbacks.clearCb = NULL;
+	widget->callbacks.frameCb = NULL;
 	widget->callbacks.resizeCb = NULL;
+
+	board->lastDisplayedTurn = 3; // Title + 1st turn + 2nd turn
 
 	return (struct Widget *)board;
 }

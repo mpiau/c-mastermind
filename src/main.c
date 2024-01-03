@@ -111,8 +111,8 @@ void draw_title( vec2u16 const screenSize )
 
 static void gameloop_consume_key_input( enum KeyInput const input )
 {
-	console_cursor_set_position( 20, 1 );
-	console_draw( L"Key input: %2u", input );
+	console_cursor_set_position( 1, 16 );
+	console_draw( L"Input: %2u", input );
 
 	if ( input == KeyInput_ESCAPE || input == KeyInput_Q )
 	{
@@ -120,9 +120,12 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 		return;
 	}
 
-	// Widgets consume inputs ? Like KeyInput S -> Display Settings menu
+	if ( widget_try_consume_input( input ) )
+	{
+		return;
+	}
 
-	if ( mastermind_consume_input( input ) )
+	if ( mastermind_try_consume_input( input ) )
 	{
 		return;
 	}

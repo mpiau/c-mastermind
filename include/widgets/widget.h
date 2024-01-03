@@ -21,6 +21,7 @@ enum WidgetId
 
 // Forward declaration
 struct Widget;
+enum KeyInput;
 
 bool widget_global_init( void );
 void widget_global_uninit( void );
@@ -30,5 +31,6 @@ bool widget_exists( enum WidgetId id );
 struct Widget *widget_optget( enum WidgetId id ); // return NULL if doesn't exist
 
 void widget_frame( void );
+bool widget_try_consume_input( enum KeyInput input );
 
 

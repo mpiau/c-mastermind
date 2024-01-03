@@ -18,8 +18,10 @@ bool settings_global_init( void )
 {
     s_settings.cappedFramerate = 60; // -> Instead of having a getter, it will directly set it by calling the FPSCounter.
     s_settings.gameExperience = GameExperience_NORMAL;
-    s_settings.gameNbPegsPerTurn = 4;
-    s_settings.gameNbTurns = 12;
+
+    // Changing it times to times in order to spot potential bugs in the display.
+    s_settings.gameNbPegsPerTurn = 5;
+    s_settings.gameNbTurns = 14;
 }
 
 

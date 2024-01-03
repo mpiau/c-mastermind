@@ -29,7 +29,6 @@ enum PinId
     PinId_INCORRECT,         // both incorrect
 
     PinId_Count,
-    PinId_Invalid = PinId_Count
 };
 
 enum PegId
@@ -41,10 +40,10 @@ enum PegId
     PegId_MAGENTA,
     PegId_BLUE,
     PegId_WHITE,
-    PedId_BLACK,
+    PegId_BLACK,
 
     PegId_Count,
-    PegId_Invalid = PegId_Count
+    PegId_Empty = PegId_Count
 };
 static_assert( PegId_Count >= Mastermind_NB_COLORS );
 
@@ -75,24 +74,7 @@ struct Pin
     bool hidden;
 };
 
-
-struct Mastermind
-{
-    // Game settings. Can't be changed without creating a new game
-    u8 nbTurns;
-    u8 nbPegsPerTurn;
-    enum GameExperience gameExperience;
-
-    // Game data
-    struct Peg pegs[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
-    struct Pin pins[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
-    struct Peg solution[Mastermind_MAX_PEGS_PER_TURN];
-
-    // Game logic
-    u8 currentTurn;
-    enum PinId selectedPin;
-    enum GameStatus gameStatus;
-};
+struct Mastermind;
 
 
 // Game update are sent by callback
@@ -102,23 +84,31 @@ struct Mastermind
 enum GameUpdateType
 {
     GameUpdateType_GAME_STATUS,
-    GameUpdateType_SELECTION_MOVED,
     GameUpdateType_TURN_RESET,
-    GameUpdateType_NEXT_TURN
+    GameUpdateType_NEXT_TURN,
     // [...]
 };
 
 typedef void ( * MastermindCallback )( struct Mastermind const *mastermind, enum GameUpdateType updateType );
 
-bool mastermind_consume_input( enum KeyInput input );
+bool mastermind_try_consume_input( enum KeyInput input );
 bool mastermind_register_update_callback( MastermindCallback const callback );
 
 // getters 
 
-u8 mastermind_get_current_turn( void );
-bool mastermind_is_game_finished( void );
-bool mastermind_is_game_lost( void );
-bool mastermind_is_game_won( void );
+struct Mastermind const *mastermind_get_instance( void );
+
+u8   mastermind_get_total_nb_turns( struct Mastermind const *mastermind );
+u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind );
+u8   mastermind_get_current_turn( struct Mastermind const *mastermind );
+bool mastermind_is_game_finished( struct Mastermind const *mastermind );
+bool mastermind_is_game_lost( struct Mastermind const *mastermind );
+bool mastermind_is_game_won( struct Mastermind const *mastermind );
+struct Peg const *mastermind_get_pegs_at_turn( struct Mastermind const *mastermind, u8 turn );
+struct Pin const *mastermind_get_pins_at_turn( struct Mastermind const *mastermind, u8 turn );
+
+enum ConsoleColorFG peg_get_color( enum PegId id, bool selected );
+enum ConsoleColorFG pin_get_color( enum PinId id );
 
 /*
 bool mastermindv2_init( struct MastermindV2 *mastermind );

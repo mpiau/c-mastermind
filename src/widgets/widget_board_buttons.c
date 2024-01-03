@@ -157,18 +157,7 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 
 	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
 
-	if ( mastermind->gameStatus == GameStatus_IN_PROGRESS )
-	{
-		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
-		abandonButton->status = ButtonStatus_ENABLED;
-		if ( rect_is_inside( &abandonButton->box, mouse_get_position() ) )
-		{
-			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
-		}
-		game_buttons_update_status( widget, ButtonStatus_ENABLED );
-		widget->redrawNeeded = true;
-	}
-	else
+	if ( mastermind_is_game_finished( mastermind ) )
 	{
 		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
 		abandonButton->status = ButtonStatus_DISABLED;
@@ -177,6 +166,17 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 			boardButtons->hoveredButton = ButtonId_Invalid;
 		}
 		game_buttons_update_status( widget, ButtonStatus_HIDDEN );
+		widget->redrawNeeded = true;
+	}
+	else
+	{
+		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
+		abandonButton->status = ButtonStatus_ENABLED;
+		if ( rect_is_inside( &abandonButton->box, mouse_get_position() ) )
+		{
+			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
+		}
+		game_buttons_update_status( widget, ButtonStatus_ENABLED );
 		widget->redrawNeeded = true;
 	}
 }

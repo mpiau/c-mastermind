@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include "console.h"
+#include "gameloop.h"
 
 
 enum // Constants
@@ -64,20 +65,25 @@ void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent )
 	// the move condition in it.
 	mouse_moved( *(vec2u16 *)&mouseEvent->dwMousePosition );
 
-	/*switch( mouseEvent->dwEventFlags )
-	{
-		case MOUSE_MOVED:
-			return;
+    if ( mouseEvent->dwEventFlags == MOUSE_WHEELED )
+    {
+        // Note: 
+        // Just for testing. We should need to emit a Scroll keyinput, and the board would need to check that the mouse is hovering the board.
+        // But it allow me to test the scroll with the main board for the moment so it's nice for testing
 
-		case MOUSE_HWHEELED:
-		case MOUSE_WHEELED:
-		case DOUBLE_CLICK:
-			return;
-	}*/
+        // Comparaison based on the Windows documentation :
+        // If the high word of the dwButtonState member contains a positive value, the wheel was rotated forward, away from the user.
+        // Otherwise, the wheel was rotated backward, toward the user.
+        if ( (short)HIWORD( mouseEvent->dwButtonState ) > 0 )
+            gameloop_emit_key( KeyInput_U );
+        else
+            gameloop_emit_key( KeyInput_D );
+        return;
+    }
 
 	if ( mouseEvent->dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED )
 	{
-		call_click_callback( MouseButton_LeftClick );
+		call_click_callback( MouseButton_LeftClick ); // Or perhaps translate that to a click with the KeyInput instead ?
 	}
 	else if ( mouseEvent->dwButtonState == RIGHTMOST_BUTTON_PRESSED )
 	{

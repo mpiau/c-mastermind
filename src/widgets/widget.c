@@ -92,10 +92,8 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
 		if ( widget->callbacks.resizeCb != NULL )
 		{
 			widget->callbacks.resizeCb( widget, oldSize, newSize );
-			continue;
 		}
-		continue;
-
+/*
 		enum WidgetTruncatedStatus oldStatus = widget->box.truncatedStatus;
 		widget_utils_calculate_truncation( &widget->box, newSize );
 		enum WidgetTruncatedStatus newStatus = widget->box.truncatedStatus;
@@ -123,7 +121,7 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
 			{
 				clear_borders( &widget->box );
 			}
-		}
+		}*/
     }
 }
 
@@ -132,6 +130,7 @@ static void on_game_update_callback( struct Mastermind const *mastermind, enum G
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
+
         if ( widget && widget->callbacks.gameUpdateCb )
         {
             widget->callbacks.gameUpdateCb( widget, mastermind, updateType );
@@ -188,13 +187,11 @@ struct Widget *widget_optget( enum WidgetId id )
 
 // /////////////////////////////////////////////////////////
 
-
 void widget_frame( void )
 {
-    // Need to define an order of frame, because some popups can be put on top of the others
     for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
     {
-        struct Widget *widget = s_widgets[id];
+        struct Widget *const widget = s_widgets[id];
 		if ( widget == NULL ) continue;
 
         if ( widget->callbacks.frameCb != NULL )
@@ -202,7 +199,6 @@ void widget_frame( void )
             widget->callbacks.frameCb( widget );
 		}
 
-		// Exception just to test it
 		if ( widget->redrawNeeded )
 		{
 			if ( widget->callbacks.redrawCb != NULL )
@@ -211,14 +207,22 @@ void widget_frame( void )
 			}
 			widget->redrawNeeded = false;
 		}
-
-/*		if ( widget->redrawNeeded && !widget_is_out_of_bounds( &widget->box ) && !widget_is_truncated( &widget->box ) )
-		{
-			if ( widget->callbacks.redrawCb  )
-			{
-				widget->callbacks.redrawCb( widget );
-			}
-			widget->redrawNeeded = false;
-		}*/
    }
+}
+
+
+bool widget_try_consume_input( enum KeyInput const input )
+{
+	for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    {
+        struct Widget *const widget = s_widgets[id];
+		if ( widget == NULL ) continue;
+        if ( widget->callbacks.inputReceivedCb == NULL ) continue;
+
+		if ( widget->callbacks.inputReceivedCb( widget, input ) )
+		{
+			return true;
+		}
+	}
+	return false;
 }
