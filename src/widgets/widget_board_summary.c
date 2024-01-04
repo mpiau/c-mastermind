@@ -26,7 +26,7 @@ static void draw_peg( screenpos const ul, enum ConsoleColorFG const color, bool 
 
 static void redraw_callback( struct Widget *widget )
 {
-    u32 const nbTurns = 16;
+    u32 const nbTurns = 14;
     u32 const nbPegsPerTurn = 6;
 	u16 const currTurn = 5;
     // 4 -> border + space each side, + 2 -> middle with - and space
@@ -60,12 +60,8 @@ static void redraw_callback( struct Widget *widget )
 		console_cursor_set_position( pos.y, pos.x + ( x * 2 ) );
 		console_draw( L" ?" );
     }
-	pos.y += 2;
-	console_cursor_set_position( pos.y, pos.x );
-	console_draw( L"SELECTED PEG" );
-	pos.y += 1;
-	pos.x += 7;
-	draw_peg( pos, ConsoleColorFG_BRIGHT_MAGENTA, false );
+
+	console_color_reset();
 	
 
 /*    console_cursor_set_position( pos.y + config->nbTurns + 1, pos.x );

@@ -15,6 +15,7 @@ enum WidgetId
     WidgetId_COUNTDOWN,
     WidgetId_TIMER,
     WidgetId_BOARD_SUMMARY,
+    WidgetId_PEG_SELECTION,
 
     WidgetId_Count,
 };

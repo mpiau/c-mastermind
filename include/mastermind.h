@@ -104,6 +104,7 @@ u8   mastermind_get_total_nb_turns( struct Mastermind const *mastermind );
 u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind );
 u8   mastermind_get_current_turn( struct Mastermind const *mastermind );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
+enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );
 bool mastermind_is_game_finished( struct Mastermind const *mastermind );
 bool mastermind_is_game_lost( struct Mastermind const *mastermind );
 bool mastermind_is_game_won( struct Mastermind const *mastermind );

@@ -10,6 +10,7 @@
 #include "widgets/widget_framerate.h"
 #include "widgets/widget_screen_size.h"
 #include "widgets/widget_countdown.h"
+#include "widgets/widget_peg_selection.h"
 
 #include "console_screen.h"
 
@@ -147,6 +148,7 @@ bool widget_global_init( void )
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
 	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
+	s_widgets[WidgetId_PEG_SELECTION] = widget_peg_selection_create();
 	// boardSummary
     // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]

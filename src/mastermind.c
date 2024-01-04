@@ -218,6 +218,11 @@ u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind )
     return mastermind->selectionBarIdx;
 }
 
+enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind )
+{
+    return mastermind->selectedPeg;
+}
+
 bool mastermind_is_game_finished( struct Mastermind const *mastermind )
 {
     return mastermind_is_game_lost( mastermind ) || mastermind_is_game_won( mastermind );

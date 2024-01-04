@@ -26,7 +26,7 @@ enum // Constants
 	PIN_INTERSPACE = 1,
 	ROW_HEIGHT = 6,
 
-	TOTAL_BOARD_SIZE = 84,
+	TOTAL_BOARD_SIZE = 80,
 };
 
 
@@ -102,9 +102,20 @@ static void draw_row_board( screenpos const ul, u16 const nbPegs, u16 const nbPi
 }
 
 
-static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn )
+static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
 {
-	console_color_fg( ConsoleColorFG_WHITE );
+	if ( turn == playerTurn )
+	{
+		console_color_fg( ConsoleColorFG_YELLOW );
+	}
+	else if ( turn < playerTurn )
+	{
+		console_color_fg( ConsoleColorFG_WHITE );
+	}
+	else
+	{
+		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+	}
 
 	console_cursor_set_position( ul.y + 3, ul.x + 9 + ( nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) ) - PEG_INTERSPACE );
 	console_draw( L"%02u", turn );
@@ -125,7 +136,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 		console_setpos( pegUL );
 		if ( currentTurnDisplayed && mastermind_get_selection_bar_index( mastermind_get_instance() ) == pegIdx )
 		{
-			console_color_fg( ConsoleColorFG_CYAN );
+			console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 			draw_character_n_times( L'-', PEG_WIDTH );
 		}
 		else
@@ -176,8 +187,11 @@ static void draw_row( screenpos const ul, struct Mastermind const *mastermind, u
 
 	draw_row_board( ul, nbPegs, nbPegs );
 	draw_row_pegs( SCREENPOS( ul.x + 4, ul.y + 2 ), pegs, nbPegs, isCurrentTurnDisplayed );
-	draw_row_pins( ul, nbPegs, pins, nbPegs );
-	draw_row_turn( ul, nbPegs, turnToDisplay );
+	if ( playerTurn > turnToDisplay )
+	{
+		draw_row_pins( ul, nbPegs, pins, nbPegs );
+	}
+	draw_row_turn( ul, nbPegs, turnToDisplay, playerTurn );
 }
 
 
@@ -350,25 +364,6 @@ static void redraw_callback( struct Widget *widget )
 		console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 		draw_character_n_times( L'#', board->totalBoardWidth );
 	}
-/*
-	y += 1;
-
-	console_cursor_set_position( y + 1, widget->box.contentUpLeft.x );
-	console_color_fg( ConsoleColorFG_WHITE );
-	console_draw( L"──────────────────────────────────────────────────────────────────────────────────────" );
-
-	y += 1;
-
-	x += 8;
-
-	draw_peg( (screenpos){ .x = x, .y = y + 1 }, ConsoleColorFG_MAGENTA, false );
-	draw_peg( (screenpos){ .x = x + 1 + 8, .y = y + 1 }, ConsoleColorFG_BRIGHT_RED, false );
-	draw_peg( (screenpos){ .x = x + 2 + 16, .y = y + 1 }, ConsoleColorFG_YELLOW, false );
-	draw_peg( (screenpos){ .x = x + 3 + 24, .y = y + 1 }, ConsoleColorFG_BRIGHT_GREEN, false );
-	draw_peg( (screenpos){ .x = x + 4 + 32, .y = y + 1 }, ConsoleColorFG_WHITE, false );
-	draw_peg( (screenpos){ .x = x + 5 + 40, .y = y + 1 }, ConsoleColorFG_BRIGHT_CYAN, false );
-	draw_peg( (screenpos){ .x = x + 6 + 48, .y = y + 1 }, ConsoleColorFG_BRIGHT_BLUE, false );
-	draw_peg( (screenpos){ .x = x + 7 + 56, .y = y + 1 }, ConsoleColorFG_BRIGHT_YELLOW, false );*/
 }
 
 
@@ -387,7 +382,7 @@ static void on_game_update_callback( struct Widget *widget, struct Mastermind co
 	}
 	else if ( type == GameUpdateType_SELECTION_BAR_MOVED )
 	{
-		// TODO: Only remove the old selection bar, and display the new one
+		// TODO: Only remove the old selection bar, and display the new one instead of redrawing the whole board.
 		widget->redrawNeeded = true;
 	}
 }
@@ -399,6 +394,9 @@ static bool on_input_received_callback( struct Widget *widget, enum KeyInput inp
 
 	// TODO:
 	// How do we disable the history buttons of the button widget if we can't go up anymore ? Same question for the down
+	// Perhaps we could enlarge the GameUpdateType Scope to give the possibility to a widget to send an event as well ?
+	// Because here we don't have any relation with the game, it's a widget that needs to change its behaviour because of
+	// another widget, a.k.a disable the history button depending on where we are.
 
 	switch( input )
 	{
