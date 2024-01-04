@@ -14,7 +14,7 @@ enum WidgetId
     WidgetId_BOARD,
     WidgetId_COUNTDOWN,
     WidgetId_TIMER,
-    WidgetId_BOARD_SUMMARY,
+    WidgetId_SUMMARY,
     WidgetId_PEG_SELECTION,
 
     WidgetId_Count,
@@ -34,4 +34,5 @@ struct Widget *widget_optget( enum WidgetId id ); // return NULL if doesn't exis
 void widget_frame( void );
 bool widget_try_consume_input( enum KeyInput input );
 
+void widget_set_header( struct Widget *widget, enum WidgetId id, bool enabled );
 

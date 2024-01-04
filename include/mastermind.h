@@ -9,7 +9,7 @@
 enum // Constants
 {
     Mastermind_MIN_TURNS = 8,
-    Mastermind_MAX_TURNS = 16,
+    Mastermind_MAX_TURNS = 20,
 
     Mastermind_MIN_PEGS_PER_TURN = 4,
     Mastermind_MAX_PEGS_PER_TURN = 6,
@@ -100,9 +100,9 @@ bool mastermind_register_update_callback( MastermindCallback const callback );
 
 struct Mastermind const *mastermind_get_instance( void );
 
-u8   mastermind_get_total_nb_turns( struct Mastermind const *mastermind );
+usize mastermind_get_total_turns( void );
 u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind );
-u8   mastermind_get_current_turn( struct Mastermind const *mastermind );
+u8   mastermind_get_player_turn( struct Mastermind const *mastermind );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
 enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );
 bool mastermind_is_game_finished( struct Mastermind const *mastermind );
@@ -115,27 +115,3 @@ struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind )
 
 enum ConsoleColorFG peg_get_color( enum PegId id, bool selected );
 enum ConsoleColorFG pin_get_color( enum PinId id );
-
-/*
-bool mastermindv2_init( struct MastermindV2 *mastermind );
-void mastermindv2_start_game( struct MastermindV2 *mastermind );
-
-void mastermindv2_next_peg_in_row( struct MastermindV2 *mastermind );
-void mastermindv2_previous_peg_in_row( struct MastermindV2 *mastermind );
-
-void mastermindv2_remove_current_codepeg( struct MastermindV2 *mastermind );
-bool mastermindv2_next_turn( struct MastermindV2 *mastermind );
-
-void mastermindv2_draw_selected_peg( struct MastermindV2 *mastermind );
-
-
-// Next version ///////////////////////////////////////////
-
-void mastermind_codepeg_color_prev( struct MastermindV2 *mastermind );
-void mastermind_codepeg_color_next( struct MastermindV2 *mastermind );
-
-enum KeyInput;
-bool mastermind_try_consume_input( struct MastermindV2 *mastermind, enum KeyInput input );
-
-void draw_entire_game( struct MastermindV2 *mastermind, screenpos screenSize );
-*/

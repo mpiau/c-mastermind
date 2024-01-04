@@ -34,7 +34,7 @@ utf16 get_horiz_utf16( enum WidgetTruncatedStatus const truncateStatus )
 }
 
 
-u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const isTruncated, enum ConsoleColorFG color )
+static u16 draw_optional_border_title( utf16 const *const optTitle, u16 const maxSize, bool const isTruncated, enum ConsoleColorFG color )
 {
     if ( !optTitle || optTitle[0] == L'\0' ) return 0;
 	if ( maxSize <= 2 ) return 0; // don't bother to display anything

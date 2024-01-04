@@ -198,9 +198,9 @@ bool mastermind_register_update_callback( MastermindCallback const callback )
 }
 
 
-u8 mastermind_get_total_nb_turns( struct Mastermind const *mastermind )
+usize mastermind_get_total_turns( void )
 {
-    return mastermind->nbTurns;
+    return s_mastermind.nbTurns;
 }
 
 u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind )
@@ -208,7 +208,7 @@ u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind )
     return mastermind->nbPegsPerTurn;
 }
 
-u8 mastermind_get_current_turn( struct Mastermind const *mastermind )
+u8 mastermind_get_player_turn( struct Mastermind const *mastermind )
 {
     return mastermind->currentTurn;
 }

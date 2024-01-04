@@ -3,109 +3,209 @@
 #include "widgets/widget_definition.h"
 #include "widgets/widget_utils.h"
 #include "characters_list.h"
+#include "mastermind.h"
+#include "game.h"
 
-
-struct WidgetBoardSummary
+struct ComponentSummary
 {
-	struct Widget header;
+	struct Widget header; /* TODO ComponentHeader instead of Widget */
+
+	// Component Specific Data
+	struct Rect box;
+	screenpos firstPegsRowUL;
+	screenpos firstTurnRowUL;
+	screenpos firstPinsRowUL;
+	screenpos solutionRowUL;
 };
 
+#define CAST_TO_COMPONENT( _header ) ( struct ComponentSummary * )( _header )
 
-static void draw_peg( screenpos const ul, enum ConsoleColorFG const color, bool const emptySpace )
+
+static void draw_peg( struct Peg const *peg )
 {
-	console_color_fg( color );
+	console_color_fg( peg->hidden ? ConsoleColorFG_BRIGHT_BLACK : peg_get_color( peg->id, false ) );
 
-	console_cursor_set_position( ul.y, ul.x );
-	console_draw( emptySpace ? L",:'':." : L",d||b." );
-	console_cursor_set_position( ul.y + 1, ul.x );
-	console_draw( emptySpace ? L":    :" : L"OOOOOO" );//, 2, emptySpace ? L"" : L"01" );
-	console_cursor_set_position( ul.y + 2, ul.x );
-	console_draw( emptySpace ? L"`:,,:'" : L"`Y||P'" );
+	utf16 const character = peg->hidden ? UTF16C_QuestionMark : ( peg->id == PegId_Empty ? UTF16C_SmallDottedCircle : UTF16C_BigFilledCircle );
+	console_draw( L"%lc", character );
+}
+
+static void draw_pin( struct Pin const *pin, bool visible )
+{
+	if ( !visible )
+	{
+		console_draw( L" " );
+		return;
+	}
+
+	console_color_fg( pin_get_color( pin->id ) );
+	utf16 const character = pin->id == PinId_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle;
+	console_draw( L"%lc", character );
+}
+
+
+static void draw_pegs_row( screenpos const ul, usize const turn )
+{
+	struct Peg const *pegs = mastermind_get_pegs_at_turn( mastermind_get_instance(), turn );
+	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind_get_instance() );
+	console_cursor_setpos( ul );
+
+	for ( usize idx = 0; idx < nbPegsPerTurn; ++idx )
+	{
+		draw_peg( &pegs[idx] );
+		console_draw( L" " );
+	}
+}
+
+
+static void draw_turn( screenpos const ul, usize const turn )
+{
+	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
+	bool const isGameFinished = mastermind_is_game_finished( mastermind_get_instance() );
+
+	console_cursor_setpos( ul );
+	if ( !isGameFinished && turn <= playerTurn )
+	{
+		if (turn == playerTurn )
+		{
+			console_color_fg( ConsoleColorFG_YELLOW );
+		}
+		else
+		{
+			console_color_fg( ConsoleColorFG_WHITE );
+		}
+	}
+	else
+	{
+		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+	}
+
+	console_draw( L"%02u", turn );
+}
+
+
+static void draw_pins_row( screenpos const ul, usize const turn )
+{
+	struct Pin const *pins = mastermind_get_pins_at_turn( mastermind_get_instance(), turn );
+	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind_get_instance() );
+	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
+	bool const visible = mastermind_is_game_finished( mastermind_get_instance() ) || turn < playerTurn;
+
+	console_cursor_setpos( ul );
+
+	for ( usize idx = 0; idx < nbPegsPerTurn; ++idx )
+	{
+		draw_pin( &pins[idx], visible );
+	}
 }
 
 
 static void redraw_callback( struct Widget *widget )
 {
-    u32 const nbTurns = 14;
-    u32 const nbPegsPerTurn = 6;
-	u16 const currTurn = 5;
-    // 4 -> border + space each side, + 2 -> middle with - and space
-    u32 const borderWidth = 4 + 3 * nbPegsPerTurn + 2;
+	struct ComponentSummary const *component = CAST_TO_COMPONENT( widget );
 
-	screenpos pos = widget->box.contentUpLeft;
+	rect_draw_borders( &component->box, L"Summary" );
+
+	struct Mastermind const *mastermind = mastermind_get_instance();
+    u32 const nbTurns = mastermind_get_total_turns();
+    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind );
+	u16 const currTurn = mastermind_get_player_turn( mastermind );
+	bool const isGameFinished = mastermind_is_game_finished( mastermind );
+
+	screenpos const ul = rect_get_corner( &component->box, RectCorner_UL );
+	usize const width = component->box.size.w;
 
 	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
     for ( int y = 0; y < nbTurns; ++y )
     {
-        for ( int x = 0; x < nbPegsPerTurn; ++x )
-        {
-			console_cursor_set_position( pos.y + y, pos.x + ( x * 2 ) );
-			console_draw( L" %lc", UTF16C_BigFilledCircle );
-        }
-		console_draw( L" - " );
-		if ( y + 1 == currTurn ) { console_draw( L"\x1B[2m" ); }
-        for ( int x = 0; x < nbPegsPerTurn; ++x )
-        {
-			console_draw( L"%lc", UTF16C_SmallDottedCircle );
-        }
-    }
+		screenpos const pegsPos = SCREENPOS( component->firstPegsRowUL.x, component->firstPegsRowUL.y + y );
+		draw_pegs_row( pegsPos, y + 1 );
 
-	pos.y += nbTurns;
-	console_cursor_set_position( pos.y, pos.x );
-	console_draw( L"     MASTERMIND" );
-	pos.y += 1;
-    for ( int x = 0; x < nbPegsPerTurn; ++x )
+		screenpos const turnPos = SCREENPOS( component->firstTurnRowUL.x, component->firstTurnRowUL.y + y );
+		draw_turn( turnPos, y + 1 );
+
+		if ( !isGameFinished && y + 1 == currTurn ) { console_draw( L"\x1B[2m" ); }
+
+		screenpos const pinsPos = SCREENPOS( component->firstPinsRowUL.x, component->firstPinsRowUL.y + y );
+		draw_pins_row( pinsPos, y + 1 );
+    }
+	console_color_reset();
+
+	struct Peg const *solution = mastermind_get_solution( mastermind );
+	console_cursor_setpos( component->solutionRowUL );
+    for ( usize x = 0; x < nbPegsPerTurn; ++x )
     {
-		console_cursor_set_position( pos.y, pos.x + ( x * 2 ) );
-		console_draw( L" ?" );
+		draw_peg( &solution[x] );
+		console_draw( L" " );
     }
 
 	console_color_reset();
-	
+}
 
-/*    console_cursor_set_position( pos.y + config->nbTurns + 1, pos.x );
+// TODO Move it in another file if the usage is approved.
+static inline screenpos screenpos_add( screenpos const lhs, screenpos const rhs )
+{
+	return SCREENPOS( lhs.x + rhs.x, lhs.y + rhs.y );
+}
 
-    u16 feedbackSpace = config->nbCodePegPerTurn + ( config->nbCodePegPerTurn - 1 ) * 2; // peg + 2 spaces between them
-    u16 nbSpacesEachSide = ( borderWidth - feedbackSpace - 2 ) / 2; // - 2 because of the += 2 in the x at the beginning
-    console_cursor_move_right_by( nbSpacesEachSide - 1 );
 
-    for ( int x = 0; x < config->nbCodePegPerTurn; ++x )
-    {
-		board_draw_pegs( &board->solution[x], mastermind->board.hideSolution );
-		console_cursor_move_right_by( 2 );
-    }*/
+static void set_component_data( struct ComponentSummary *const component )
+{
+	struct Mastermind const *mastermind = mastermind_get_instance();
+    u32 const nbTurns = mastermind_get_total_turns();
+    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind );
+
+	vec2u16 const boxSize = (vec2u16) {
+		.x = 4 /*borders + space each side*/ + ( nbPegsPerTurn * 2 ) - 1 /*pegs*/ + 4 /*turn display*/ + nbPegsPerTurn /*pins*/,
+		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/
+	};
+	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
+	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - 1 - boxSize.w, 6 );
+
+	usize const spacesBeforeSolution = ( boxSize.w - ( ( nbPegsPerTurn * 2 ) - 1 ) ) / 2;
+
+	component->box = rect_make( boxUL, boxSize );
+	component->firstPegsRowUL = SCREENPOS( boxUL.x + 2, boxUL.y + 1 );
+	component->firstTurnRowUL = screenpos_add( component->firstPegsRowUL, SCREENPOS( ( nbPegsPerTurn * 2 ), 0 ) );
+	component->firstPinsRowUL = screenpos_add( component->firstTurnRowUL, SCREENPOS( 3, 0 ) );
+	component->solutionRowUL = SCREENPOS(  boxUL.x + spacesBeforeSolution, boxUL.y + ( boxSize.y - 2 ) );
 }
 
 
 static void on_game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
+	if ( type == GameUpdateType_GAME_NEW )
+	{
+		set_component_data( CAST_TO_COMPONENT( widget ) );
+		widget->redrawNeeded = true;
+		widget->enabled = true;
+	}
+	else if ( type == GameUpdateType_GAME_FINISHED )
+	{
+		widget->redrawNeeded = true;
+	}
+
+	// TODO to catch:
+	// Reset turn
+	// Next turn
+	// Peg removed/added to the board
 }
 
 
 struct Widget *widget_board_summary_create( void )
 {
-    struct WidgetBoardSummary *const boardSummary = malloc( sizeof( struct WidgetBoardSummary ) );
-    if ( !boardSummary ) return NULL;
-	memset( boardSummary, 0, sizeof( *boardSummary ) );
+    struct ComponentSummary *const component = calloc( 1, sizeof( struct ComponentSummary ) );
+    if ( !component )
+	{
+		// Allocation problem, that's pretty bad. In the future, we could have a memoryPool that handle heap alloc.
+		return NULL;
+	}
 
-	struct Widget *const widget = &boardSummary->header;
+	widget_set_header( &component->header, WidgetId_SUMMARY, false );
 
-    widget->id = WidgetId_BOARD_SUMMARY;
-	widget->enabled = true;
-	widget->redrawNeeded = true;
-
-    screenpos const borderUpLeft = (screenpos) { .x = 95, .y = 3 };
-    screenpos const contentSize  = (vec2u16)   { .x = 22, .y = 22 };
-	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
-	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
-	widget_utils_set_title( &widget->box, L"Game Summary", ConsoleColorFG_YELLOW );
-
-    struct WidgetCallbacks *const callbacks = &widget->callbacks;
-	callbacks->resizeCb = NULL;
-	callbacks->frameCb = NULL;
+    struct WidgetCallbacks *const callbacks = &component->header.callbacks;
     callbacks->redrawCb = redraw_callback;
 	callbacks->gameUpdateCb = on_game_update_callback;
 
-	return (struct Widget *)boardSummary;
+	return (struct Widget *)component;
 }

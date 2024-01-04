@@ -147,7 +147,7 @@ bool widget_global_init( void )
 	s_widgets[WidgetId_BOARD_BUTTONS] = widget_board_buttons_create();
 	s_widgets[WidgetId_BOARD] = widget_board_create();
     s_widgets[WidgetId_TIMER] = widget_timer_create();
-	s_widgets[WidgetId_BOARD_SUMMARY] = widget_board_summary_create();
+	s_widgets[WidgetId_SUMMARY] = widget_board_summary_create();
 	s_widgets[WidgetId_PEG_SELECTION] = widget_peg_selection_create();
 	// boardSummary
     // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
@@ -227,4 +227,12 @@ bool widget_try_consume_input( enum KeyInput const input )
 		}
 	}
 	return false;
+}
+
+
+void widget_set_header( struct Widget *const widget, enum WidgetId const id, bool const enabled )
+{
+	widget->id = id;
+	widget->enabled = enabled;
+	widget->redrawNeeded = enabled;
 }

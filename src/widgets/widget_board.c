@@ -181,9 +181,8 @@ static void draw_row( screenpos const ul, struct Mastermind const *mastermind, u
 	u8 const nbPegs = mastermind_get_nb_pegs_per_turn( mastermind );
 	struct Peg const *pegs = mastermind_get_pegs_at_turn( mastermind, turnToDisplay );
 	struct Pin const *pins = mastermind_get_pins_at_turn( mastermind, turnToDisplay );
-	u8 const playerTurn = mastermind_get_current_turn( mastermind );
+	u8 const playerTurn = mastermind_get_player_turn( mastermind );
 	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
-
 
 	draw_row_board( ul, nbPegs, nbPegs );
 	draw_row_pegs( SCREENPOS( ul.x + 4, ul.y + 2 ), pegs, nbPegs, isCurrentTurnDisplayed );
@@ -350,7 +349,7 @@ static void redraw_callback( struct Widget *widget )
 	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), mastermind, board->lastDisplayedTurn - 2 );
 	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), mastermind, board->lastDisplayedTurn - 1 );
 
-	if ( board->lastDisplayedTurn == mastermind_get_total_nb_turns( mastermind ) + 1 )
+	if ( board->lastDisplayedTurn == mastermind_get_total_turns() + 1 )
 	{
 		console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 		console_cursor_set_position( y + ROW_HEIGHT * 3, x );
@@ -378,6 +377,7 @@ static void on_game_update_callback( struct Widget *widget, struct Mastermind co
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
 	{
+		((struct WidgetBoard *)widget)->lastDisplayedTurn = mastermind_get_total_turns() + 1;
 		widget->redrawNeeded = true;
 	}
 	else if ( type == GameUpdateType_SELECTION_BAR_MOVED )
@@ -402,7 +402,7 @@ static bool on_input_received_callback( struct Widget *widget, enum KeyInput inp
 	{
 		case KeyInput_D:
 		{
-			u8 const nbTurns = mastermind_get_total_nb_turns( mastermind_get_instance() );
+			u8 const nbTurns = mastermind_get_total_turns();
 			if ( board->lastDisplayedTurn < nbTurns + 1 )
 			{
 				board->lastDisplayedTurn += 1;

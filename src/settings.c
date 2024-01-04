@@ -21,7 +21,7 @@ bool settings_global_init( void )
 
     // Changing it times to times in order to spot potential bugs in the display.
     s_settings.gameNbPegsPerTurn = 6;
-    s_settings.gameNbTurns = 8;
+    s_settings.gameNbTurns = 20;
 }
 
 

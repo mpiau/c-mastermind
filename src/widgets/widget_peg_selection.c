@@ -159,8 +159,8 @@ struct Widget *widget_peg_selection_create( void )
 
     struct Widget *const widget = &pegSelection->header;
     widget->id = WidgetId_PEG_SELECTION;
-    widget->enabled = true;
-	widget->redrawNeeded = true;
+    widget->enabled = false;
+	widget->redrawNeeded = false;
 
 	widget->rectBox = rect_make( SCREENPOS( 87, 21 ), VEC2U16( 32, 7 ) );
 

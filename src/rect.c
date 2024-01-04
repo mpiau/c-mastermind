@@ -1,5 +1,8 @@
 #include "rect.h"
 
+#include "console.h"
+#include <stdio.h>
+
 struct Rect rect_make( screenpos const ul, vec2u16 const size )
 {
 	assert( size.h > 0 && size.w > 0 );
@@ -73,4 +76,54 @@ bool rect_is_inside( struct Rect const *lhs, screenpos const pos )
 
 	return ( pos.x >= lhsUL.x && pos.x <= lhsBR.x )
 		&& ( pos.y >= lhsUL.y && pos.y <= lhsBR.y );
+}
+
+
+static usize draw_optional_border_title( utf16 const *const optTitle, usize const maxSize )
+{
+    if ( !optTitle || optTitle[0] == L'\0' || maxSize <= 2 ) return 0;
+
+    utf16 title[maxSize];
+    snwprintf( title, maxSize, L" %S ", optTitle );
+
+    console_color_fg( ConsoleColorFG_WHITE );
+    usize const titleSize = console_draw( title );
+    console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+
+    return titleSize;
+}
+
+
+void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
+{
+    console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+	
+	screenpos const ul = rect_get_corner( rect, RectCorner_UL );
+	usize const widthNoCorners = rect->size.w - 2;
+
+	// First line
+    console_setpos( ul );
+    console_draw( L"┌" );
+	usize const titleSize = draw_optional_border_title( optTitle, widthNoCorners );
+
+    for ( usize x = 0; x < ( widthNoCorners - titleSize ); ++x )
+	{
+		console_draw( L"─" );
+	}
+    console_draw( L"┐" );
+
+	// Vertical middle lines
+    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    {
+        console_cursor_set_position( ul.y + y, ul.x );
+        console_draw( L"│" );
+        console_cursor_move_right_by( widthNoCorners );
+        console_draw( L"│" );
+    }
+
+	// Last line
+    console_cursor_set_position( ul.y + rect->size.h - 1, ul.x );
+    console_draw( L"└" );
+    for ( usize x = 0; x < widthNoCorners; ++x ) console_draw( L"─" );
+    console_draw( L"┘" );
 }
