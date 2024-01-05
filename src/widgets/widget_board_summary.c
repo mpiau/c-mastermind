@@ -45,14 +45,12 @@ static void draw_pin( struct Pin const *pin, bool visible )
 
 static void draw_pegs_row( screenpos const ul, usize const turn )
 {
-	struct Peg const *pegs = mastermind_get_pegs_at_turn( mastermind_get_instance(), turn );
-	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind_get_instance() );
-	console_cursor_setpos( ul );
+	struct Peg const *pegs = mastermind_get_pegs_at_turn( turn );
+	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
 
 	for ( usize idx = 0; idx < nbPegsPerTurn; ++idx )
 	{
-		draw_peg( &pegs[idx] );
-		console_draw( L" " );
+		peg_draw_single_character( &pegs[idx], ul.x + ( idx * 2 ), ul.y );
 	}
 }
 
@@ -60,7 +58,7 @@ static void draw_pegs_row( screenpos const ul, usize const turn )
 static void draw_turn( screenpos const ul, usize const turn )
 {
 	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
-	bool const isGameFinished = mastermind_is_game_finished( mastermind_get_instance() );
+	bool const isGameFinished = mastermind_is_game_finished();
 
 	console_cursor_setpos( ul );
 	if ( !isGameFinished && turn <= playerTurn )
@@ -85,10 +83,10 @@ static void draw_turn( screenpos const ul, usize const turn )
 
 static void draw_pins_row( screenpos const ul, usize const turn )
 {
-	struct Pin const *pins = mastermind_get_pins_at_turn( mastermind_get_instance(), turn );
-	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind_get_instance() );
+	struct Pin const *pins = mastermind_get_pins_at_turn( turn );
+	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
 	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
-	bool const visible = mastermind_is_game_finished( mastermind_get_instance() ) || turn < playerTurn;
+	bool const visible = mastermind_is_game_finished() || turn < playerTurn;
 
 	console_cursor_setpos( ul );
 
@@ -107,9 +105,9 @@ static void redraw_callback( struct Widget *widget )
 
 	struct Mastermind const *mastermind = mastermind_get_instance();
     u32 const nbTurns = mastermind_get_total_turns();
-    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind );
+    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
 	u16 const currTurn = mastermind_get_player_turn( mastermind );
-	bool const isGameFinished = mastermind_is_game_finished( mastermind );
+	bool const isGameFinished = mastermind_is_game_finished();
 
 	screenpos const ul = rect_get_corner( &component->box, RectCorner_UL );
 	usize const width = component->box.size.w;
@@ -132,11 +130,10 @@ static void redraw_callback( struct Widget *widget )
 	console_color_reset();
 
 	struct Peg const *solution = mastermind_get_solution( mastermind );
-	console_cursor_setpos( component->solutionRowUL );
+	screenpos const solutionPos = component->solutionRowUL;
     for ( usize x = 0; x < nbPegsPerTurn; ++x )
     {
-		draw_peg( &solution[x] );
-		console_draw( L" " );
+		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y );
     }
 
 	console_color_reset();
@@ -151,9 +148,8 @@ static inline screenpos screenpos_add( screenpos const lhs, screenpos const rhs 
 
 static void set_component_data( struct ComponentSummary *const component )
 {
-	struct Mastermind const *mastermind = mastermind_get_instance();
     u32 const nbTurns = mastermind_get_total_turns();
-    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn( mastermind );
+    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
 
 	vec2u16 const boxSize = (vec2u16) {
 		.x = 4 /*borders + space each side*/ + ( nbPegsPerTurn * 2 ) - 1 /*pegs*/ + 4 /*turn display*/ + nbPegsPerTurn /*pins*/,
@@ -184,15 +180,22 @@ static void on_game_update_callback( struct Widget *widget, struct Mastermind co
 	{
 		widget->redrawNeeded = true;
 	}
+	else if ( type == GameUpdateType_NEXT_TURN )
+	{
+		widget->redrawNeeded = true;
+	}
+	else if ( type == GameUpdateType_PEG_ADDED )
+	{
+		widget->redrawNeeded = true;
+	}
 
 	// TODO to catch:
 	// Reset turn
-	// Next turn
-	// Peg removed/added to the board
+	// Peg removed from the board
 }
 
 
-struct Widget *widget_board_summary_create( void )
+struct Widget *component_summary_create( void )
 {
     struct ComponentSummary *const component = calloc( 1, sizeof( struct ComponentSummary ) );
     if ( !component )

@@ -6,6 +6,8 @@
 #include "keyboard_inputs.h"
 #include "console.h"
 
+#include "game/peg.h"
+
 enum // Constants
 {
     Mastermind_MIN_TURNS = 8,
@@ -31,22 +33,6 @@ enum PinId
     PinId_Count,
 };
 
-enum PegId
-{
-    PegId_RED,
-    PegId_GREEN,
-    PegId_YELLOW,
-    PegId_CYAN,
-    PegId_MAGENTA,
-    PegId_BLUE,
-    PegId_WHITE,
-    PegId_BLACK,
-
-    PegId_Count,
-    PegId_Empty = PegId_Count
-};
-static_assert( PegId_Count >= Mastermind_NB_COLORS );
-
 enum GameStatus
 {
     GameStatus_IN_PROGRESS,
@@ -62,17 +48,14 @@ enum GameExperience
     GameExperience_NO_HISTORY,      // Do not show any peg played in the previous turns
 };
 
-struct Peg
-{
-    enum PegId id;
-    bool hidden;
-};
-
 struct Pin
 {
     enum PinId id;
     bool hidden;
 };
+
+
+static_assert( PegId_Count >= Mastermind_NB_COLORS );
 
 struct Mastermind;
 
@@ -88,6 +71,8 @@ enum GameUpdateType
     GameUpdateType_TURN_RESET,
     GameUpdateType_NEXT_TURN,
     GameUpdateType_SELECTION_BAR_MOVED,
+    GameUpdateType_PEG_ADDED,
+    GameUpdateType_PEG_REMOVED,
     // [...]
 };
 
@@ -101,15 +86,15 @@ bool mastermind_register_update_callback( MastermindCallback const callback );
 struct Mastermind const *mastermind_get_instance( void );
 
 usize mastermind_get_total_turns( void );
-u8   mastermind_get_nb_pegs_per_turn( struct Mastermind const *mastermind );
+usize mastermind_get_nb_pegs_per_turn( void );
 u8   mastermind_get_player_turn( struct Mastermind const *mastermind );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
 enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );
-bool mastermind_is_game_finished( struct Mastermind const *mastermind );
-bool mastermind_is_game_lost( struct Mastermind const *mastermind );
-bool mastermind_is_game_won( struct Mastermind const *mastermind );
-struct Peg const *mastermind_get_pegs_at_turn( struct Mastermind const *mastermind, u8 turn );
-struct Pin const *mastermind_get_pins_at_turn( struct Mastermind const *mastermind, u8 turn );
+bool mastermind_is_game_finished( void );
+bool mastermind_is_game_lost( void );
+bool mastermind_is_game_won( void );
+struct Peg const *mastermind_get_pegs_at_turn( usize turn );
+struct Pin const *mastermind_get_pins_at_turn( usize turn );
 struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind );
 
 

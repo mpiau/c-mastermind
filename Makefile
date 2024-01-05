@@ -19,6 +19,7 @@ SRC += src/mouse.c
 SRC += src/time_units.c
 SRC += src/rect.c
 SRC += src/settings.c
+SRC += src/game/peg.c
 
 
 CFLAGS += -Iinclude

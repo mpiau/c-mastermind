@@ -5,4 +5,4 @@
 
 struct Widget;
 
-struct Widget *widget_board_summary_create( void );
+struct Widget *component_summary_create( void );

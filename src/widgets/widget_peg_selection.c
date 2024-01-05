@@ -105,6 +105,9 @@ static void redraw_callback( struct Widget *widget )
 
 static bool input_received_callback( struct Widget *widget, enum KeyInput const input )
 {
+    // TEMP, need the keyInput to test something
+    return false;
+
     struct WidgetPegSelection *pegSelect = (struct WidgetPegSelection *)widget;
 
     switch ( input )
