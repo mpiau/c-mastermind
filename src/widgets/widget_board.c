@@ -176,12 +176,12 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 }
 
 
-static void draw_row( screenpos const ul, struct Mastermind const *mastermind, u8 turnToDisplay )
+static void draw_row( screenpos const ul, u8 turnToDisplay )
 {
 	u8 const nbPegs = mastermind_get_nb_pegs_per_turn();
 	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
 	struct Pin const *pins = mastermind_get_pins_at_turn( turnToDisplay );
-	u8 const playerTurn = mastermind_get_player_turn( mastermind );
+	u8 const playerTurn = mastermind_get_player_turn();
 	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
 
 	draw_row_board( ul, nbPegs, nbPegs );
@@ -261,7 +261,7 @@ static void draw_solution_pegs( screenpos const ul, struct WidgetBoard const *bo
 	usize const spacesBetween = ( board->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the board though, hence the decalage.
 	screenpos const ulSolution = SCREENPOS( ul.x + spacesBetween, ul.y + 1 );
 
-	struct Peg const *solution = mastermind_get_solution( mastermind_get_instance() );
+	struct Peg const *solution = mastermind_get_solution();
 	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pegs_per_turn(), false );
 }
 
@@ -330,7 +330,6 @@ static void calculate_board_display( struct Widget *widget, struct Mastermind co
 
 static void redraw_callback( struct Widget *widget )
 {
-	struct Mastermind const *mastermind = mastermind_get_instance();
 	struct WidgetBoard *board = (struct WidgetBoard *)widget;
 	screenpos const ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
 
@@ -343,11 +342,11 @@ static void redraw_callback( struct Widget *widget )
 	}
 	else
 	{
-		draw_row( SCREENPOS( x, y ), mastermind, board->lastDisplayedTurn - 3 );
+		draw_row( SCREENPOS( x, y ), board->lastDisplayedTurn - 3 );
 	}
 
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), mastermind, board->lastDisplayedTurn - 2 );
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), mastermind, board->lastDisplayedTurn - 1 );
+	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), board->lastDisplayedTurn - 2 );
+	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), board->lastDisplayedTurn - 1 );
 
 	if ( board->lastDisplayedTurn == mastermind_get_total_turns() + 1 )
 	{
@@ -358,7 +357,7 @@ static void redraw_callback( struct Widget *widget )
 	}
 	else
 	{
-		draw_row( SCREENPOS( x, y + ROW_HEIGHT * 3 ), mastermind, board->lastDisplayedTurn );
+		draw_row( SCREENPOS( x, y + ROW_HEIGHT * 3 ), board->lastDisplayedTurn );
 		console_cursor_set_position( y + ROW_HEIGHT * 4, x );
 		console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 		draw_character_n_times( L'#', board->totalBoardWidth );
@@ -400,18 +399,17 @@ static bool on_input_received_callback( struct Widget *widget, enum KeyInput inp
 
 	switch( input )
 	{
-		case KeyInput_D:
+		case KeyInput_ARROW_DOWN:
 		{
-			u8 const nbTurns = mastermind_get_total_turns();
+			usize const nbTurns = mastermind_get_total_turns();
 			if ( board->lastDisplayedTurn < nbTurns + 1 )
 			{
 				board->lastDisplayedTurn += 1;
 				widget->redrawNeeded = true;
 			}
 			return true;
-		}
-		
-		case KeyInput_U:
+		}		
+		case KeyInput_ARROW_UP:
 		{
 			if ( board->lastDisplayedTurn > 3 )
 			{

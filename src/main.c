@@ -234,13 +234,6 @@ int main( void )
 		return 3;
 	}
 
-
-//	mastermindv2_init( &s_mastermind );
-//	mastermindv2_start_game( &s_mastermind );
-
-	// widget_timer_start( widget_optget( WidgetId_TIMER ) );
-	
-	// TODO Improve, shouldn't be a static
 	while ( s_mainLoop )
 	{
 		consume_user_inputs( console_input_handle() );

@@ -127,3 +127,14 @@ void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
     for ( usize x = 0; x < widthNoCorners; ++x ) console_draw( L"─" );
     console_draw( L"┘" );
 }
+
+
+void rect_clear( struct Rect const *rect )
+{
+	screenpos const ul = rect_get_corner( rect, RectCorner_UL );
+    for ( usize y = 0; y < rect->size.h; ++y )
+    {
+        console_cursor_set_position( ul.y + y, ul.x );
+		console_draw( L"%*lc", rect->size.w, L' ' );
+    }
+}

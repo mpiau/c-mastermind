@@ -29,3 +29,4 @@ bool rect_check_collision( struct Rect const *lhs, struct Rect const *rhs );
 bool rect_is_inside( struct Rect const *rect, screenpos pos );
 
 void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle );
+void rect_clear( struct Rect const *rect );

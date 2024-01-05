@@ -75,9 +75,9 @@ void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent )
         // If the high word of the dwButtonState member contains a positive value, the wheel was rotated forward, away from the user.
         // Otherwise, the wheel was rotated backward, toward the user.
         if ( (short)HIWORD( mouseEvent->dwButtonState ) > 0 )
-            gameloop_emit_key( KeyInput_U );
+            gameloop_emit_key( KeyInput_ARROW_UP );
         else
-            gameloop_emit_key( KeyInput_D );
+            gameloop_emit_key( KeyInput_ARROW_DOWN );
         return;
     }
 

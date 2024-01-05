@@ -6,31 +6,19 @@
 #include "keyboard_inputs.h"
 #include "console.h"
 
-#include "game/peg.h"
+#include "game/piece.h"
 
 enum // Constants
 {
     Mastermind_MIN_TURNS = 8,
     Mastermind_MAX_TURNS = 20,
 
-    Mastermind_MIN_PEGS_PER_TURN = 4,
-    Mastermind_MAX_PEGS_PER_TURN = 6,
+    Mastermind_MIN_PIECES_PER_TURN = 4,
+    Mastermind_MAX_PIECES_PER_TURN = 6,
 
-    Mastermind_MIN_PINS_PER_TURN = Mastermind_MIN_PEGS_PER_TURN,
-    Mastermind_MAX_PINS_PER_TURN = Mastermind_MAX_PEGS_PER_TURN,
-
-    Mastermind_NB_COLORS = 8,
+    Mastermind_NB_COLORS = PegId_Count, // 4 to 8 ? We would need to handle duplicate pegs. (could be an option as well)
 
     Mastermind_MAX_CALLBACKS = 4
-};
-
-enum PinId
-{
-    PinId_CORRECT,           // Correct color + correct position
-    PinId_PARTIALLY_CORRECT, // Correct color + incorrect position
-    PinId_INCORRECT,         // both incorrect
-
-    PinId_Count,
 };
 
 enum GameStatus
@@ -48,14 +36,6 @@ enum GameExperience
     GameExperience_NO_HISTORY,      // Do not show any peg played in the previous turns
 };
 
-struct Pin
-{
-    enum PinId id;
-    bool hidden;
-};
-
-
-static_assert( PegId_Count >= Mastermind_NB_COLORS );
 
 struct Mastermind;
 
@@ -87,7 +67,7 @@ struct Mastermind const *mastermind_get_instance( void );
 
 usize mastermind_get_total_turns( void );
 usize mastermind_get_nb_pegs_per_turn( void );
-u8   mastermind_get_player_turn( struct Mastermind const *mastermind );
+usize mastermind_get_player_turn( void );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
 enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );
 bool mastermind_is_game_finished( void );
@@ -95,8 +75,7 @@ bool mastermind_is_game_lost( void );
 bool mastermind_is_game_won( void );
 struct Peg const *mastermind_get_pegs_at_turn( usize turn );
 struct Pin const *mastermind_get_pins_at_turn( usize turn );
-struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind );
+struct Peg const *mastermind_get_solution( void );
 
 
 enum ConsoleColorFG peg_get_color( enum PegId id, bool selected );
-enum ConsoleColorFG pin_get_color( enum PinId id );

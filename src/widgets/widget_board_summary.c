@@ -57,7 +57,7 @@ static void draw_pegs_row( screenpos const ul, usize const turn )
 
 static void draw_turn( screenpos const ul, usize const turn )
 {
-	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
+	usize const playerTurn = mastermind_get_player_turn();
 	bool const isGameFinished = mastermind_is_game_finished();
 
 	console_cursor_setpos( ul );
@@ -85,7 +85,7 @@ static void draw_pins_row( screenpos const ul, usize const turn )
 {
 	struct Pin const *pins = mastermind_get_pins_at_turn( turn );
 	usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
-	usize const playerTurn = mastermind_get_player_turn( mastermind_get_instance() );
+	usize const playerTurn = mastermind_get_player_turn();
 	bool const visible = mastermind_is_game_finished() || turn < playerTurn;
 
 	console_cursor_setpos( ul );
@@ -104,9 +104,9 @@ static void redraw_callback( struct Widget *widget )
 	rect_draw_borders( &component->box, L"Summary" );
 
 	struct Mastermind const *mastermind = mastermind_get_instance();
-    u32 const nbTurns = mastermind_get_total_turns();
-    u32 const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
-	u16 const currTurn = mastermind_get_player_turn( mastermind );
+    usize const nbTurns = mastermind_get_total_turns();
+    usize const nbPegsPerTurn = mastermind_get_nb_pegs_per_turn();
+	usize const currTurn = mastermind_get_player_turn();
 	bool const isGameFinished = mastermind_is_game_finished();
 
 	screenpos const ul = rect_get_corner( &component->box, RectCorner_UL );
@@ -129,7 +129,7 @@ static void redraw_callback( struct Widget *widget )
     }
 	console_color_reset();
 
-	struct Peg const *solution = mastermind_get_solution( mastermind );
+	struct Peg const *solution = mastermind_get_solution();
 	screenpos const solutionPos = component->solutionRowUL;
     for ( usize x = 0; x < nbPegsPerTurn; ++x )
     {

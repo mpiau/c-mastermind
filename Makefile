@@ -9,7 +9,6 @@ SRC += src/widgets/widget_board.c
 SRC += src/widgets/widget_board_summary.c
 SRC += src/widgets/widget.c
 SRC += src/widgets/widget_utils.c
-SRC += src/widgets/widget_border.c
 SRC += src/widgets/widget_countdown.c
 SRC += src/widgets/widget_board_buttons.c
 SRC += src/widgets/widget_peg_selection.c
@@ -19,7 +18,7 @@ SRC += src/mouse.c
 SRC += src/time_units.c
 SRC += src/rect.c
 SRC += src/settings.c
-SRC += src/game/peg.c
+SRC += src/game/piece.c
 
 
 CFLAGS += -Iinclude

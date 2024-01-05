@@ -3,11 +3,11 @@
 struct Settings
 {
     // General Settings
-    u64 cappedFramerate;
+    usize cappedFramerate;
 
     // Relative to Mastermind
-    u8 gameNbTurns;
-    u8 gameNbPegsPerTurn;
+    usize gameNbTurns;
+    usize gameNbPiecesPerTurn;
     enum GameExperience gameExperience;
     bool colorBlindMode;
 };
@@ -18,26 +18,65 @@ struct Settings s_settings = {};
 bool settings_global_init( void )
 {
     s_settings.cappedFramerate = 60; // -> Instead of having a getter, it will directly set it by calling the FPSCounter.
-    s_settings.gameExperience = GameExperience_NORMAL;
 
     // Changing it times to times in order to spot potential bugs in the display.
-    s_settings.gameNbPegsPerTurn = 4;
-    s_settings.gameNbTurns = 8;
-    s_settings.colorBlindMode = false;
+    bool result = true;
+
+    result &= settings_set_nb_turns( 8 );
+    result &= settings_set_nb_pieces_per_turn( 4 );
+    result &= settings_set_game_experience( GameExperience_NORMAL );
+    result &= settings_set_color_blind_mode( false );
+
+    assert( result );
+    return result;
 }
 
 
-u8 settings_get_number_turns( void )
+bool settings_set_nb_turns( usize const nbTurns )
+{
+    if ( nbTurns < Mastermind_MIN_TURNS || nbTurns > Mastermind_MAX_TURNS )
+    {
+        return false;
+    }
+
+    s_settings.gameNbTurns = nbTurns;
+    return true;
+}
+
+bool settings_set_nb_pieces_per_turn( usize const nbPieces )
+{
+    if ( nbPieces < Mastermind_MIN_PIECES_PER_TURN || nbPieces > Mastermind_MAX_PIECES_PER_TURN )
+    {
+        return false;
+    }
+
+    s_settings.gameNbPiecesPerTurn = nbPieces;
+    return true;
+}
+
+bool settings_set_game_experience( enum GameExperience gameExperience )
+{
+    s_settings.gameExperience = gameExperience;
+    return true;
+}
+
+bool settings_set_color_blind_mode( bool enabled )
+{
+    s_settings.colorBlindMode = enabled;
+    return true;
+}
+
+// 
+
+usize settings_get_nb_turns( void )
 {
     return s_settings.gameNbTurns;
 }
 
-
-u8 settings_get_pegs_per_turn( void )
+usize settings_get_nb_pieces_per_turn( void )
 {
-    return s_settings.gameNbPegsPerTurn;
+    return s_settings.gameNbPiecesPerTurn;
 }
-
 
 enum GameExperience settings_get_game_experience( void )
 {

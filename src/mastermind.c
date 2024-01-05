@@ -12,9 +12,9 @@ struct Mastermind
     enum GameExperience gameExperience;
 
     // Game data
-    struct Peg pegs[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
-    struct Pin pins[Mastermind_MAX_TURNS][Mastermind_MAX_PEGS_PER_TURN];
-    struct Peg solution[Mastermind_MAX_PEGS_PER_TURN];
+    struct Peg pegs[Mastermind_MAX_TURNS][Mastermind_MAX_PIECES_PER_TURN];
+    struct Pin pins[Mastermind_MAX_TURNS][Mastermind_MAX_PIECES_PER_TURN];
+    struct Peg solution[Mastermind_MAX_PIECES_PER_TURN];
 
     // Game logic
     u8 currentTurn;
@@ -39,7 +39,7 @@ static void emit_game_update( enum GameUpdateType const type )
 
 static void reset_pegs_row( struct Peg *const pegs )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
     {
         pegs[idx].id = PegId_Empty;
         pegs[idx].hidden = false;
@@ -48,10 +48,9 @@ static void reset_pegs_row( struct Peg *const pegs )
 
 static void reset_pins_row( struct Pin *const pins )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PINS_PER_TURN; ++idx )
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
     {
         pins[idx].id = PinId_INCORRECT;
-        pins[idx].hidden = false;
     }
 }
 
@@ -61,7 +60,7 @@ static void generate_new_solution( struct Peg *const pegs )
     // So this generation is explicitly checking to have unique pegs in the generated solution.
     bool pegsUsed[Mastermind_NB_COLORS] = {};
 
-    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
     {
         do
 		{
@@ -75,7 +74,7 @@ static void generate_new_solution( struct Peg *const pegs )
 
 static void hide_solution( void )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
     {
         s_mastermind.solution[idx].hidden = true;
     }
@@ -84,7 +83,7 @@ static void hide_solution( void )
 
 static void show_solution( void )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PEGS_PER_TURN; ++idx )
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
     {
         s_mastermind.solution[idx].hidden = false;
     }
@@ -115,7 +114,7 @@ static bool is_current_turn_valid( void )
 static void generate_feedback_on_current_turn( void )
 {
     struct Peg const *pegsTurn = mastermind_get_pegs_at_turn( s_mastermind.currentTurn );
-    struct Peg const *solution = mastermind_get_solution( &s_mastermind );
+    struct Peg const *solution = mastermind_get_solution();
 
     bool alreadyUsed[s_mastermind.nbPegsPerTurn];
     memset( alreadyUsed, 0, sizeof( alreadyUsed ) );
@@ -146,7 +145,7 @@ static void generate_feedback_on_current_turn( void )
     }
 
     // Next step, fill the feedback with the corresponding pins
-    struct Pin *pinsTurn = mastermind_get_pins_at_turn( s_mastermind.currentTurn );
+    struct Pin *pinsTurn = s_mastermind.pins[s_mastermind.currentTurn - 1];
     usize pinIdx = 0;
 
     while ( nbCorrect-- > 0 ) { pinsTurn[pinIdx++].id = PinId_CORRECT; }
@@ -216,8 +215,8 @@ bool mastermind_try_consume_input( enum KeyInput const input )
     {
         case KeyInput_N:
         {
-            u8 const nbTurns = settings_get_number_turns();
-            u8 const nbPegsPerTurn = settings_get_pegs_per_turn();
+            u8 const nbTurns = settings_get_nb_turns();
+            u8 const nbPegsPerTurn = settings_get_nb_pieces_per_turn();
             enum GameExperience gameExperience = settings_get_game_experience();
             new_game( nbTurns, nbPegsPerTurn, gameExperience );
             return true;
@@ -233,7 +232,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             emit_game_update( GameUpdateType_TURN_RESET );
             return true;
         }
-        case KeyInput_V:
+        case KeyInput_ENTER/*KeyInput_V*/:
         {
             if ( !is_current_turn_valid() ) return true;
 
@@ -281,21 +280,27 @@ bool mastermind_try_consume_input( enum KeyInput const input )
         case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
         {
             s_mastermind.selectedPeg = ( input - KeyInput_NUMPAD_0 );
-            return true;
-        }
-        case KeyInput_0 ... KeyInput_8:
-        {
-            s_mastermind.selectedPeg = ( input - KeyInput_0 );
-            return true;
-        }
-
-        case KeyInput_ENTER:
-        {
             s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].id = s_mastermind.selectedPeg;
             s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].hidden = false;
             emit_game_update( GameUpdateType_PEG_ADDED );
             return true;
         }
+        case KeyInput_0 ... KeyInput_8:
+        {
+            s_mastermind.selectedPeg = ( input - KeyInput_0 );
+            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].id = s_mastermind.selectedPeg;
+            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].hidden = false;
+            emit_game_update( GameUpdateType_PEG_ADDED );
+            return true;
+        }
+
+/*        case KeyInput_ENTER:
+        {
+            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].id = s_mastermind.selectedPeg;
+            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx].hidden = false;
+            emit_game_update( GameUpdateType_PEG_ADDED );
+            return true;
+        }*/
     }
     return false;
 }
@@ -322,9 +327,9 @@ usize mastermind_get_nb_pegs_per_turn( void )
     return s_mastermind.nbPegsPerTurn;
 }
 
-u8 mastermind_get_player_turn( struct Mastermind const *mastermind )
+usize mastermind_get_player_turn( void )
 {
-    return mastermind->currentTurn;
+    return s_mastermind.currentTurn;
 }
 
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind )
@@ -369,9 +374,9 @@ struct Pin const *mastermind_get_pins_at_turn( usize const turn )
     return s_mastermind.pins[turn - 1];
 }
 
-struct Peg const *mastermind_get_solution( struct Mastermind const *mastermind )
+struct Peg const *mastermind_get_solution( void )
 {
-    return mastermind->solution;
+    return s_mastermind.solution;
 }
 
 // ////// PEGS FUNCTIONS
@@ -390,20 +395,6 @@ enum ConsoleColorFG peg_get_color( enum PegId const id, bool const selected )
          // Perhaps put the \x1b[2m to be darker, this way we won't use white here, but the bright black
 		case PegId_BLACK:   return ( selected ? ConsoleColorFG_WHITE          : ConsoleColorFG_BRIGHT_BLACK );
 		case PegId_Empty:   return ( selected ? ConsoleColorFG_BRIGHT_BLACK   : ConsoleColorFG_BRIGHT_BLACK );
-		default: assert( false );
-	}
-}
-
-
-// //// PINS FUNCTIONS
-
-enum ConsoleColorFG pin_get_color( enum PinId const id )
-{
-	switch ( id )
-	{
-		case PinId_CORRECT:			  return ConsoleColorFG_RED;
-		case PinId_PARTIALLY_CORRECT: return ConsoleColorFG_WHITE;
-		case PinId_INCORRECT:         return ConsoleColorFG_BRIGHT_BLACK;
 		default: assert( false );
 	}
 }

@@ -2,7 +2,6 @@
 
 #include "console.h"
 #include "console_screen.h"
-#include "widgets/widget_border.h"
 #include <stdio.h>
 
 enum
@@ -57,7 +56,7 @@ static u16 draw_optional_border_title( utf16 const *const optTitle, u16 const ma
 
 void widget_utils_draw_borders( struct WidgetBox const *box )
 {
-	if ( widget_is_out_of_bounds( box ) ) return;
+//	if ( widget_is_out_of_bounds( box ) ) return;
 
     screenpos borderUL = box->borderUpLeft;
 

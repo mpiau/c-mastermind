@@ -1,4 +1,4 @@
-#include "game/peg.h"
+#include "game/piece.h"
 
 #include "console.h"
 #include "settings.h"
@@ -86,4 +86,19 @@ void peg_draw_single_character( struct Peg const *peg, usize const posX, usize c
     console_cursor_set_position( posY, posX );
 
     console_draw( L"%lc", peg->hidden ? UTF16C_QuestionMark : get_character_from_id( peg->id ) );
+}
+
+
+
+
+
+enum ConsoleColorFG pin_get_color( enum PinId const id )
+{
+	switch ( id )
+	{
+		case PinId_CORRECT:			  return ConsoleColorFG_RED;
+		case PinId_PARTIALLY_CORRECT: return ConsoleColorFG_WHITE;
+		case PinId_INCORRECT:         return ConsoleColorFG_BRIGHT_BLACK;
+		default: assert( false );
+	}
 }

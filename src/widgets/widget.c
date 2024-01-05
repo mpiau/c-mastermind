@@ -1,7 +1,6 @@
 #include "widgets/widget.h"
 #include "widgets/widget_definition.h"
 
-#include "widgets/widget_border.h"
 #include "widgets/widget_utils.h"
 #include "widgets/widget_board.h"
 #include "widgets/widget_board_buttons.h"
@@ -19,7 +18,7 @@
 static struct Widget *s_widgets[WidgetId_Count] = {};
 
 
-static void clear_rect( screenpos const upleft, vec2u16 const size, bool const borderOnly )
+/*static void clear_rect( screenpos const upleft, vec2u16 const size, bool const borderOnly )
 {
 	for ( u16 y = 0; y < size.y; ++y )
 	{
@@ -37,9 +36,9 @@ static void clear_rect( screenpos const upleft, vec2u16 const size, bool const b
 		}
 
 	}
-}
+}*/
 
-
+/*
 static void clear_content( struct WidgetBox const *box )
 {
 	clear_rect( box->contentUpLeft, widget_content_get_size( box ), false );
@@ -53,7 +52,7 @@ static void clear_borders( struct WidgetBox const *box )
 static void clear_widget( struct WidgetBox const *box )
 {
 	clear_rect( box->borderUpLeft, widget_border_get_size( box ), false );
-}
+}*/
 
 
 // Array with the list of ID for the priority frame / priority input
@@ -94,35 +93,6 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
 		{
 			widget->callbacks.resizeCb( widget, oldSize, newSize );
 		}
-/*
-		enum WidgetTruncatedStatus oldStatus = widget->box.truncatedStatus;
-		widget_utils_calculate_truncation( &widget->box, newSize );
-		enum WidgetTruncatedStatus newStatus = widget->box.truncatedStatus;
-
-		// TODO, this function should only mark as redrawNeeded
-		// A function could be called on redrawNeeded that will check for borders + content
-
-		if ( newStatus == WidgetTruncatedStatus_NONE && widget->box.borderOption == WidgetBorderOption_ALWAYS_VISIBLE )
-		{
-            widget_utils_draw_borders( &widget->box );
-        }
-		else if ( newStatus != WidgetTruncatedStatus_NONE && widget->box.borderOption != WidgetBorderOption_INVISIBLE )
-		{
-            widget_utils_draw_borders( &widget->box );
-        }
-
-		if ( oldStatus == WidgetTruncatedStatus_NONE && newStatus != WidgetTruncatedStatus_NONE )
-		{
-			if ( !widget_is_out_of_bounds( &widget->box ) ) clear_content( &widget->box );
-		}
-		else if ( oldStatus != WidgetTruncatedStatus_NONE && newStatus == WidgetTruncatedStatus_NONE )
-		{
-			widget->redrawNeeded = true;
-			if ( widget->box.borderOption == WidgetBorderOption_VISIBLE_ON_TRUNCATE )
-			{
-				clear_borders( &widget->box );
-			}
-		}*/
     }
 }
 

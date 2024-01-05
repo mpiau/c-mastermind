@@ -6,8 +6,12 @@
 
 bool settings_global_init( void );
 
+bool settings_set_nb_turns( usize nbTurns );
+bool settings_set_nb_pieces_per_turn( usize nbPieces );
+bool settings_set_game_experience( enum GameExperience gameExperience );
+bool settings_set_color_blind_mode( bool enabled );
 
-u8 settings_get_number_turns( void );
-u8 settings_get_pegs_per_turn( void );
+usize settings_get_nb_turns( void );
+usize settings_get_nb_pieces_per_turn( void );
 enum GameExperience settings_get_game_experience( void );
 bool settings_is_color_blind_mode_enabled( void );
