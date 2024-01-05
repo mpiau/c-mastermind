@@ -8,7 +8,7 @@ struct Mastermind
 {
     // Game settings. Can't be changed without creating a new game
     u8 nbTurns;
-    u8 nbPegsPerTurn;
+    u8 nbPiecesPerTurn;
     enum GameExperience gameExperience;
 
     // Game data
@@ -96,7 +96,7 @@ static bool is_current_turn_valid( void )
     memset( alreadyUsed, 0, sizeof( alreadyUsed ) );
 
     struct Peg const *pegsTurn = mastermind_get_pegs_at_turn( s_mastermind.currentTurn );
-    for ( usize idx = 0; idx < s_mastermind.nbPegsPerTurn; ++idx )
+    for ( usize idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         enum PegId const id = pegsTurn[idx].id;
         if ( id == PegId_Empty || alreadyUsed[id] )
@@ -116,14 +116,14 @@ static void generate_feedback_on_current_turn( void )
     struct Peg const *pegsTurn = mastermind_get_pegs_at_turn( s_mastermind.currentTurn );
     struct Peg const *solution = mastermind_get_solution();
 
-    bool alreadyUsed[s_mastermind.nbPegsPerTurn];
+    bool alreadyUsed[s_mastermind.nbPiecesPerTurn];
     memset( alreadyUsed, 0, sizeof( alreadyUsed ) );
 
     // First step, detect the number of CORRECT/PARTIALLY_CORRECT
     int nbCorrect = 0;
     int nbPartial = 0;
 
-    for ( usize idx = 0; idx < s_mastermind.nbPegsPerTurn; ++idx )
+    for ( usize idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         if ( !alreadyUsed[idx] && solution[idx].id == pegsTurn[idx].id )
         {
@@ -132,7 +132,7 @@ static void generate_feedback_on_current_turn( void )
             continue;
         }
 
-        for ( usize partialIdx = 0; partialIdx < s_mastermind.nbPegsPerTurn; ++partialIdx )
+        for ( usize partialIdx = 0; partialIdx < s_mastermind.nbPiecesPerTurn; ++partialIdx )
         {
             if ( partialIdx == idx || alreadyUsed[partialIdx] ) continue;
             if ( solution[idx].id == pegsTurn[partialIdx].id )
@@ -156,7 +156,7 @@ static void generate_feedback_on_current_turn( void )
 static bool is_current_turn_match_solution( void )
 {
     struct Pin const *pinsTurn = mastermind_get_pins_at_turn( s_mastermind.currentTurn );
-    for ( usize idx = 0; idx < s_mastermind.nbPegsPerTurn; ++idx )
+    for ( usize idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         enum PinId const id = pinsTurn[idx].id;
         if ( id != PinId_CORRECT )
@@ -182,11 +182,11 @@ static bool abandon_game( void )
 }
 
 
-static bool new_game( u8 const nbTurns, u8 const nbPegsPerTurn, enum GameExperience const gameExperience )
+static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExperience const gameExperience )
 {
     // Settings
     s_mastermind.nbTurns = nbTurns;
-    s_mastermind.nbPegsPerTurn = nbPegsPerTurn;
+    s_mastermind.nbPiecesPerTurn = nbPiecesPerTurn;
     s_mastermind.gameExperience = gameExperience;
 
     // Game data
@@ -216,9 +216,9 @@ bool mastermind_try_consume_input( enum KeyInput const input )
         case KeyInput_N:
         {
             u8 const nbTurns = settings_get_nb_turns();
-            u8 const nbPegsPerTurn = settings_get_nb_pieces_per_turn();
+            u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
             enum GameExperience gameExperience = settings_get_game_experience();
-            new_game( nbTurns, nbPegsPerTurn, gameExperience );
+            new_game( nbTurns, nbPiecesPerTurn, gameExperience );
             return true;
         }
         case KeyInput_A:
@@ -269,7 +269,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
         }
         case KeyInput_ARROW_RIGHT:
         {
-            if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPegsPerTurn )
+            if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPiecesPerTurn )
             {
                 s_mastermind.selectionBarIdx += 1;
                 emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
@@ -322,9 +322,9 @@ usize mastermind_get_total_turns( void )
     return s_mastermind.nbTurns;
 }
 
-usize mastermind_get_nb_pegs_per_turn( void )
+usize mastermind_get_nb_pieces_per_turn( void )
 {
-    return s_mastermind.nbPegsPerTurn;
+    return s_mastermind.nbPiecesPerTurn;
 }
 
 usize mastermind_get_player_turn( void )

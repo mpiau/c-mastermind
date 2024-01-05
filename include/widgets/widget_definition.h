@@ -74,7 +74,7 @@ struct WidgetCallbacks
 
 struct Widget
 {
-    enum WidgetId	 	   id;
+    enum ComponentId id;
 	struct Rect            rectBox;
     struct WidgetBox 	   box;
     struct WidgetCallbacks callbacks;

@@ -1,4 +1,4 @@
-#include "widgets/widget_board_buttons.h"
+#include "components/component_game_buttons.h"
 
 #include "widgets/widget_definition.h"
 #include "widgets/widget_utils.h"
@@ -50,7 +50,7 @@ struct Button
 	enum KeyInput bindedKey;
 };
 
-struct WidgetBoardButtons
+struct ComponentGameButtons
 {
 	struct Widget header;
 
@@ -111,7 +111,7 @@ static void button_get_disabled_color( enum ConsoleColorFG *const outTextColor, 
 
 static void game_buttons_update_status( struct Widget *header, enum ButtonStatus const status )
 {
-	struct WidgetBoardButtons *widget = (struct WidgetBoardButtons *)header;
+	struct ComponentGameButtons *widget = (struct ComponentGameButtons *)header;
 	screenpos const mousePosition = mouse_get_position();
 
 	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
@@ -128,7 +128,7 @@ static void game_buttons_update_status( struct Widget *header, enum ButtonStatus
 
 static void mouse_move_callback( struct Widget *const widget, screenpos const oldPos, screenpos const newPos )
 {
-	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
+	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
@@ -153,7 +153,7 @@ static void mouse_move_callback( struct Widget *const widget, screenpos const ol
 
 static void game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
-	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
+	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
 	if ( type == GameUpdateType_GAME_FINISHED )
 	{
@@ -182,7 +182,7 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 
 static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enum MouseButton mouseButton )
 {
-	struct WidgetBoardButtons *buttons = (struct WidgetBoardButtons *)widget;
+	struct ComponentGameButtons *buttons = (struct ComponentGameButtons *)widget;
 
 	if ( mouseButton == MouseButton_LeftClick && buttons->hoveredButton != ButtonId_Invalid )
 	{
@@ -191,7 +191,6 @@ static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enu
 		// This way, the button won't be highlighted anymore after a click, which seems better in a UX perspective
 		// buttons->hoveredButton = ButtonId_Invalid;
 		// widget->redrawNeeded = true;
-
 		// Edit: Well it was good until I tested clicking multiple times on the same button without moving the mouse.
 		// Once disabled, there is no feedback for the user.
 		// TODO: Either we put the button in black bright on click and then reapply the color, or not remove the color at all
@@ -201,7 +200,7 @@ static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enu
 
 static void redraw_callback( struct Widget *widget )
 {
-	struct WidgetBoardButtons *boardButtons = (struct WidgetBoardButtons *)widget;
+	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
 	enum ConsoleColorFG textColor;
 	enum ConsoleColorFG keyColor;
@@ -256,11 +255,11 @@ static inline struct Button button_make( screenpos const ul, vec2u16 const size,
 }
 
 
-static void init_board_buttons_widget_part( struct WidgetBoardButtons *widget )
+static void init_component_data( struct ComponentGameButtons *comp )
 {
-	widget->hoveredButton = ButtonId_Invalid;
+	comp->hoveredButton = ButtonId_Invalid;
 
-	struct Button *buttons = widget->buttons;
+	struct Button *buttons = comp->buttons;
 	// Upper row
 	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
 	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
@@ -280,18 +279,14 @@ static void init_board_buttons_widget_part( struct WidgetBoardButtons *widget )
 	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
 }
 
-struct Widget *widget_board_buttons_create( void )
+struct Widget *component_game_buttons_create( void )
 {
-    struct WidgetBoardButtons *const boardButtons = malloc( sizeof( struct WidgetBoardButtons ) );
-    if ( !boardButtons ) return NULL;
-	memset( boardButtons, 0, sizeof( *boardButtons ) );
+    struct ComponentGameButtons *const comp = calloc( 1, sizeof( struct ComponentGameButtons ) );
+    if ( !comp ) return NULL;
 
-	struct Widget *const widget = &boardButtons->header;
-    widget->id = WidgetId_BOARD_BUTTONS;
-	widget->enabled = true;
-	widget->redrawNeeded = true;
+	widget_set_header( &comp->header, ComponentId_GAME_BUTTONS, true );
 
-    struct WidgetCallbacks *const callbacks = &widget->callbacks;
+    struct WidgetCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->redrawCb = redraw_callback;
 	callbacks->mouseMoveCb = mouse_move_callback;
 	callbacks->mouseClickCb = mouse_click_callback;
@@ -300,7 +295,7 @@ struct Widget *widget_board_buttons_create( void )
 	callbacks->frameCb = NULL;
 
 	// Specific data
-	init_board_buttons_widget_part( boardButtons );
+	init_component_data( comp );
 
-	return (struct Widget *)boardButtons;
+	return (struct Widget *)comp;
 }

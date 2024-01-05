@@ -66,7 +66,7 @@ bool mastermind_register_update_callback( MastermindCallback const callback );
 struct Mastermind const *mastermind_get_instance( void );
 
 usize mastermind_get_total_turns( void );
-usize mastermind_get_nb_pegs_per_turn( void );
+usize mastermind_get_nb_pieces_per_turn( void );
 usize mastermind_get_player_turn( void );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
 enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );

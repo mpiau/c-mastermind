@@ -178,7 +178,7 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 
 static void draw_row( screenpos const ul, u8 turnToDisplay )
 {
-	u8 const nbPegs = mastermind_get_nb_pegs_per_turn();
+	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
 	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
 	struct Pin const *pins = mastermind_get_pins_at_turn( turnToDisplay );
 	u8 const playerTurn = mastermind_get_player_turn();
@@ -262,7 +262,7 @@ static void draw_solution_pegs( screenpos const ul, struct WidgetBoard const *bo
 	screenpos const ulSolution = SCREENPOS( ul.x + spacesBetween, ul.y + 1 );
 
 	struct Peg const *solution = mastermind_get_solution();
-	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pegs_per_turn(), false );
+	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pieces_per_turn(), false );
 }
 
 
@@ -316,7 +316,7 @@ static void calculate_board_display( struct Widget *widget, struct Mastermind co
 {
 	struct WidgetBoard *board = (struct WidgetBoard *)widget;
 
-	usize const nbPegs = mastermind_get_nb_pegs_per_turn();
+	usize const nbPegs = mastermind_get_nb_pieces_per_turn();
 
 	usize const totalWidth = widget->rectBox.size.w;
 	board->totalPegSize = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
@@ -432,7 +432,7 @@ struct Widget *widget_board_create( void )
 
 	struct Widget *const widget = &board->header;
 
-    widget->id = WidgetId_BOARD;
+    widget->id = ComponentId_BOARD;
 	widget->enabled = false;
 	widget->redrawNeeded = false;
 

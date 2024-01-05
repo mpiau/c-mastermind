@@ -161,7 +161,7 @@ struct Widget *widget_peg_selection_create( void )
     memset( pegSelection, 0, sizeof( *pegSelection ) );
 
     struct Widget *const widget = &pegSelection->header;
-    widget->id = WidgetId_PEG_SELECTION;
+    widget->id = ComponentId_PEG_SELECTION;
     widget->enabled = false;
 	widget->redrawNeeded = false;
 

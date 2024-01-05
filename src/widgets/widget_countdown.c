@@ -27,7 +27,7 @@ struct WidgetCountdown
 
 static void redraw_callback( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
 	if ( !widget->enabled ) return;
 	if ( widget->box.truncatedStatus != WidgetTruncatedStatus_NONE ) return;
 
@@ -86,7 +86,7 @@ static void redraw_callback( struct Widget *widget )
 
 static void frame_callback( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
     nsec const newTimestamp = time_get_timestamp_nsec();
@@ -110,11 +110,11 @@ struct Widget *widget_countdown_create( void )
 
 	struct Widget *const widget = &countdown->header;
 
-    widget->id = WidgetId_COUNTDOWN;
+    widget->id = ComponentId_COUNTDOWN;
 	widget->enabled = true;
 
-	assert( widget_exists( WidgetId_TIMER ) );
-	struct WidgetBox const *TimerBox = &widget_optget( WidgetId_TIMER )->box;
+	assert( widget_exists( ComponentId_TIMER ) );
+	struct WidgetBox const *TimerBox = &widget_optget( ComponentId_TIMER )->box;
 
     screenpos const borderUpLeft = (screenpos) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
     vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
@@ -140,7 +140,7 @@ struct Widget *widget_countdown_create( void )
 
 void widget_countdown_start( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	if ( countdown->status != CountdownStatus_NOT_STARTED ) return;
@@ -154,7 +154,7 @@ void widget_countdown_start( struct Widget *widget )
 
 void widget_countdown_pause( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	countdown->status = CountdownStatus_PAUSED;
@@ -163,7 +163,7 @@ void widget_countdown_pause( struct Widget *widget )
 
 void widget_countdown_resume( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	nsec const timestamp = time_get_timestamp_nsec();
@@ -175,7 +175,7 @@ void widget_countdown_resume( struct Widget *widget )
 
 void widget_countdown_reset( struct Widget *widget )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	countdown->status = CountdownStatus_NOT_STARTED;
@@ -184,7 +184,7 @@ void widget_countdown_reset( struct Widget *widget )
 
 void widget_countdown_set_duration( struct Widget *widget, sec const duration )
 {
-	assert( widget->id == WidgetId_COUNTDOWN );
+	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
 	if ( duration == 0 ) return;

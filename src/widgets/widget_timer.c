@@ -28,7 +28,7 @@ static void redraw_callback( struct Widget *widget )
 {
 	return;
 	
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     assert( widget->enabled );
     assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
 
@@ -55,7 +55,7 @@ static void redraw_callback( struct Widget *widget )
 
 void frame_callback( struct Widget *widget )
 {
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *timer = (struct WidgetTimer *)widget;
 
     if ( timer->status != TimerStatus_RUNNING ) return;
@@ -83,11 +83,11 @@ struct Widget *widget_timer_create( void )
 
 	struct Widget *const widget = &timer->header;
 
-    widget->id = WidgetId_TIMER;
+    widget->id = ComponentId_TIMER;
 	widget->enabled = true;
 
-	assert( widget_exists( WidgetId_BOARD ) );
-	struct WidgetBox const *boardBox = &widget_optget( WidgetId_BOARD )->box;
+	assert( widget_exists( ComponentId_BOARD ) );
+	struct WidgetBox const *boardBox = &widget_optget( ComponentId_BOARD )->box;
 
     screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
     screenpos const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
@@ -111,7 +111,7 @@ struct Widget *widget_timer_create( void )
 
 bool widget_timer_start( struct Widget *const widget )
 {
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
 
     if ( timer->status != TimerStatus_NOT_STARTED ) return false;
@@ -124,7 +124,7 @@ bool widget_timer_start( struct Widget *const widget )
 
 bool widget_timer_reset( struct Widget *const widget )
 {
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
 
     if ( timer->status != TimerStatus_RUNNING && timer->status != TimerStatus_PAUSED ) return false;
@@ -137,7 +137,7 @@ bool widget_timer_reset( struct Widget *const widget )
 
 bool widget_timer_pause( struct Widget *const widget )
 {
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
 
     if ( timer->status != TimerStatus_RUNNING ) return false;
@@ -150,7 +150,7 @@ bool widget_timer_pause( struct Widget *const widget )
 
 bool widget_timer_resume( struct Widget *const widget )
 {
-    assert( widget->id == WidgetId_TIMER );
+    assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
 
     if ( timer->status != TimerStatus_PAUSED ) return false;

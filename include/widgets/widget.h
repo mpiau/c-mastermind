@@ -6,18 +6,18 @@
 // No widget -> the game can still run the same
 // Ex: removing the fps bar widgte doesn't stop the game from calculating the FPS.
 
-enum WidgetId
+enum ComponentId
 {
-    WidgetId_FRAMERATE,
-	WidgetId_SCREEN_SIZE,
-	WidgetId_BOARD_BUTTONS,
-    WidgetId_BOARD,
-    WidgetId_COUNTDOWN,
-    WidgetId_TIMER,
-    WidgetId_SUMMARY,
-    WidgetId_PEG_SELECTION,
+    ComponentId_FRAMERATE,
+	ComponentId_SCREEN_SIZE,
+	ComponentId_GAME_BUTTONS,
+    ComponentId_BOARD,
+    ComponentId_COUNTDOWN,
+    ComponentId_TIMER,
+    ComponentId_SUMMARY,
+    ComponentId_PEG_SELECTION,
 
-    WidgetId_Count,
+    ComponentId_Count,
 };
 
 // Forward declaration
@@ -27,12 +27,12 @@ enum KeyInput;
 bool widget_global_init( void );
 void widget_global_uninit( void );
 
-bool widget_exists( enum WidgetId id );
+bool widget_exists( enum ComponentId id );
 
-struct Widget *widget_optget( enum WidgetId id ); // return NULL if doesn't exist
+struct Widget *widget_optget( enum ComponentId id ); // return NULL if doesn't exist
 
 void widget_frame( void );
 bool widget_try_consume_input( enum KeyInput input );
 
-void widget_set_header( struct Widget *widget, enum WidgetId id, bool enabled );
+void widget_set_header( struct Widget *widget, enum ComponentId id, bool enabled );
 

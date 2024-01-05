@@ -3,11 +3,11 @@
 
 #include "widgets/widget_utils.h"
 #include "widgets/widget_board.h"
-#include "widgets/widget_board_buttons.h"
-#include "widgets/widget_board_summary.h"
+#include "components/component_game_buttons.h"
+#include "components/component_framerate.h"
+#include "components/component_screen_size.h"
+#include "components/component_summary.h"
 #include "widgets/widget_timer.h"
-#include "widgets/widget_framerate.h"
-#include "widgets/widget_screen_size.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_peg_selection.h"
 
@@ -15,52 +15,14 @@
 
 #include <stdlib.h>
 
-static struct Widget *s_widgets[WidgetId_Count] = {};
-
-
-/*static void clear_rect( screenpos const upleft, vec2u16 const size, bool const borderOnly )
-{
-	for ( u16 y = 0; y < size.y; ++y )
-	{
-		console_cursor_set_position( upleft.y + y, upleft.x );
-
-		if ( !borderOnly || ( y == 0 || y == size.y - 1 ) )
-		{
-			console_draw( L"%*lc", size.x, L' ' );
-		}
-		else
-		{
-			console_draw( L"%lc", L' ' );
-			console_cursor_move_right_by( size.x - 2 );
-			console_draw( L"%lc", L' ' );
-		}
-
-	}
-}*/
-
-/*
-static void clear_content( struct WidgetBox const *box )
-{
-	clear_rect( box->contentUpLeft, widget_content_get_size( box ), false );
-}
-
-static void clear_borders( struct WidgetBox const *box )
-{
-	clear_rect( box->borderUpLeft, widget_border_get_size( box ), true );
-}
-
-static void clear_widget( struct WidgetBox const *box )
-{
-	clear_rect( box->borderUpLeft, widget_border_get_size( box ), false );
-}*/
-
+static struct Widget *s_widgets[ComponentId_Count] = {};
 
 // Array with the list of ID for the priority frame / priority input
 
 
 static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const newPos )
 {
-    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
         if ( widget && widget->callbacks.mouseMoveCb )
@@ -72,7 +34,7 @@ static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const
 
 static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton button )
 {
-    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
         if ( widget && widget->callbacks.mouseClickCb )
@@ -84,7 +46,7 @@ static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton 
 
 static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newSize )
 {
-    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
         if ( widget == NULL ) continue;
@@ -98,7 +60,7 @@ static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newS
 
 static void on_game_update_callback( struct Mastermind const *mastermind, enum GameUpdateType const updateType )
 {
-    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *widget = s_widgets[id];
 
@@ -112,15 +74,15 @@ static void on_game_update_callback( struct Mastermind const *mastermind, enum G
 
 bool widget_global_init( void )
 {
-    s_widgets[WidgetId_FRAMERATE] = widget_framerate_create();
-	s_widgets[WidgetId_SCREEN_SIZE] = widget_screen_size_create();
-	s_widgets[WidgetId_BOARD_BUTTONS] = widget_board_buttons_create();
-	s_widgets[WidgetId_BOARD] = widget_board_create();
-    s_widgets[WidgetId_TIMER] = widget_timer_create();
-	s_widgets[WidgetId_SUMMARY] = component_summary_create();
-	s_widgets[WidgetId_PEG_SELECTION] = widget_peg_selection_create();
+    s_widgets[ComponentId_FRAMERATE] = component_framerate_create();
+	s_widgets[ComponentId_SCREEN_SIZE] = component_screen_size_create();
+	s_widgets[ComponentId_GAME_BUTTONS] = component_game_buttons_create();
+	s_widgets[ComponentId_BOARD] = widget_board_create();
+    s_widgets[ComponentId_TIMER] = widget_timer_create();
+	s_widgets[ComponentId_SUMMARY] = component_summary_create();
+	s_widgets[ComponentId_PEG_SELECTION] = widget_peg_selection_create();
 	// boardSummary
-    // s_widgets[WidgetId_COUNTDOWN] = widget_countdown_create();
+    // s_widgets[ComponentId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
@@ -135,7 +97,7 @@ bool widget_global_init( void )
 
 void widget_global_uninit( void )
 {
-    for ( enum WidgetId idx = 0; idx < WidgetId_Count; ++idx )
+    for ( enum ComponentId idx = 0; idx < ComponentId_Count; ++idx )
     {
         if ( s_widgets[idx] )
         {
@@ -145,13 +107,13 @@ void widget_global_uninit( void )
 }
 
 
-bool widget_exists( enum WidgetId const id )
+bool widget_exists( enum ComponentId const id )
 {
     return s_widgets[id] != NULL;
 }
 
 
-struct Widget *widget_optget( enum WidgetId id )
+struct Widget *widget_optget( enum ComponentId id )
 {
     return s_widgets[id];
 }
@@ -161,7 +123,7 @@ struct Widget *widget_optget( enum WidgetId id )
 
 void widget_frame( void )
 {
-    for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *const widget = s_widgets[id];
 		if ( widget == NULL ) continue;
@@ -185,7 +147,7 @@ void widget_frame( void )
 
 bool widget_try_consume_input( enum KeyInput const input )
 {
-	for ( enum WidgetId id = 0; id < WidgetId_Count; ++id )
+	for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct Widget *const widget = s_widgets[id];
 		if ( widget == NULL ) continue;
@@ -200,9 +162,9 @@ bool widget_try_consume_input( enum KeyInput const input )
 }
 
 
-void widget_set_header( struct Widget *const widget, enum WidgetId const id, bool const enabled )
+void widget_set_header( struct Widget *const header, enum ComponentId const id, bool const enabled )
 {
-	widget->id = id;
-	widget->enabled = enabled;
-	widget->redrawNeeded = enabled;
+	header->id = id;
+	header->enabled = enabled;
+	header->redrawNeeded = enabled;
 }

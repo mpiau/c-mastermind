@@ -4,7 +4,6 @@
 #include "fps_counter.h"
 #include "game.h"
 #include "widgets/widget.h"
-#include "widgets/widget_screen_size.h"
 
 #include <windows.h>
 
@@ -76,7 +75,7 @@ bool console_screen_resize( vec2u16 const newSize )
     s_incomingSize = newSize;
     // s_resizeTimestamp = time_get_timestamp_nsec();
 
-/*	struct Widget *widgetScreenSize = widget_optget( WidgetId_SCREEN_SIZE );
+/*	struct Widget *widgetScreenSize = widget_optget( ComponentId_SCREEN_SIZE );
 	if ( widgetScreenSize )
 	{
 		widget_screen_size_size_update( (struct Widget *)widgetScreenSize, newSize );

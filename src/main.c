@@ -6,7 +6,6 @@
 #include "core_unions.h"
 #include "fps_counter.h"
 #include "widgets/widget_timer.h"
-#include "widgets/widget_framerate.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_utils.h"
 #include "mouse.h"
