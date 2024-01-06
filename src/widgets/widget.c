@@ -11,7 +11,7 @@
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_peg_selection.h"
 
-#include "console_screen.h"
+#include "console/console_screen.h"
 
 #include <stdlib.h>
 

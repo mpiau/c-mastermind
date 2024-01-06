@@ -1,5 +1,5 @@
 #include "console.h"
-#include "console_screen.h"
+#include "console/console_screen.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -270,10 +270,10 @@ void console_color_positive( void )
     console_draw( L"\x1b[27m" );
 }
 
-void console_color( enum ConsoleColorFG const fgColor, enum ConsoleColorBG const bgColor )
+/*void console_color( enum ConsoleColorFG const fgColor, enum ConsoleColorBG const bgColor )
 {
     console_draw( L"\x1b[%u;%um", fgColor, bgColor );
-}
+}*/
 
 void console_color_fg( enum ConsoleColorFG const fgColor )
 {

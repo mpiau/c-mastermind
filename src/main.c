@@ -1,7 +1,7 @@
 // Mastermind game in C
 #include "mastermind.h"
 #include "console.h"
-#include "console_screen.h"
+#include "console/console_screen.h"
 #include "characters_list.h"
 #include "core_unions.h"
 #include "fps_counter.h"

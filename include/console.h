@@ -93,7 +93,7 @@ void console_color_no_underline( void );
 void console_color_negative( void ); // Swap background and foreground
 void console_color_positive( void ); // Swap back to normal
 
-void console_color( enum ConsoleColorFG fgColor, enum ConsoleColorBG bgColor );
+//void console_color( enum ConsoleColorFG fgColor, enum ConsoleColorBG bgColor );
 void console_color_fg( enum ConsoleColorFG fgColor );
 void console_color_bg( enum ConsoleColorBG bgColor );
 

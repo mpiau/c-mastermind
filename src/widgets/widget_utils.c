@@ -1,7 +1,7 @@
 #include "widgets/widget_utils.h"
 
 #include "console.h"
-#include "console_screen.h"
+#include "console/console_screen.h"
 #include <stdio.h>
 
 enum

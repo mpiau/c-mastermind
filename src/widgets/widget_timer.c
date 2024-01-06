@@ -3,7 +3,7 @@
 #include "widgets/widget_definition.h"
 #include "widgets/widget_utils.h"
 
-#include "console_screen.h"
+#include "console/console_screen.h"
 #include "time_units.h"
 
 enum TimerStatus
