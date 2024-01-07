@@ -291,8 +291,6 @@ struct Widget *component_game_buttons_create( void )
 	callbacks->mouseMoveCb = mouse_move_callback;
 	callbacks->mouseClickCb = mouse_click_callback;
 	callbacks->gameUpdateCb = game_update_callback;
-	callbacks->resizeCb = NULL;
-	callbacks->frameCb = NULL;
 
 	// Specific data
 	init_component_data( comp );

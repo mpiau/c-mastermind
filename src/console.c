@@ -157,12 +157,12 @@ HANDLE console_output_handle( void )
 
 void console_cursor_hide( void )
 {
-	console_draw( L"\x1B[?25l" );
+	wprintf( L"\x1B[?25l" );
 }
 
 void console_cursor_show( void )
 {
-	console_draw( L"\x1B[?25h" );
+	wprintf( L"\x1B[?25h" );
 }
 
 void console_cursor_start_blinking( void )
@@ -226,12 +226,12 @@ void console_line_drawing_mode_exit( void )
 
 void console_alternate_buffer_enter( void )
 {
-	console_draw( L"\x1b[?1049h" );
+	wprintf( L"\x1b[?1049h" );
 }
 
 void console_alternate_buffer_exit( void )
 {
-	console_draw( L"\x1b[?1049l" );
+	wprintf( L"\x1b[?1049l" );
 }
 
 

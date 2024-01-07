@@ -6,6 +6,8 @@
 
 enum AttrColor
 {
+    AttrColor_DEFAULT    = 0x0000000000000000,
+
     // background part
     AttrColor_BLACK_BG   = 0x0000000000000001,
     AttrColor_RED_BG     = 0x0000000000000010,
@@ -37,9 +39,6 @@ enum AttrColor
     AttrColor_MAGENTA_FULL = AttrColor_MAGENTA_FG | AttrColor_MAGENTA_BG,
     AttrColor_CYAN_FULL    = AttrColor_CYAN_FG    | AttrColor_CYAN_BG,
     AttrColor_WHITE_FULL   = AttrColor_WHITE_FG   | AttrColor_WHITE_BG,
-
-    // Some useful masks
-    AttrColor_DEFAULT = AttrColor_WHITE_FG | AttrColor_BLACK_BG,
 };
 
 enum AttrStyle
@@ -61,34 +60,47 @@ enum AttrShade
     AttrShade_BRIGHT
 };
 
-struct Screen;
 
-struct Screen *console_screen_create( void *handle );
-void console_screen_destroy( struct Screen *screen );
+struct Attr
+{
+    enum AttrColor color;
+    enum AttrStyle style;
+    enum AttrShade shade;
+};
+
+#define ATTR( _color, _style, _shade ) ( struct Attr ) { .color = _color, .style = _style, .shade = _shade }
+
+
+bool console_screen_init( void const *handle );
+void console_screen_uninit( void );
 
 
 // Write / clear in an internal buffer, that won't be displayed to the user until the refresh function is called.
-void console_write( struct Screen *screen, utf16 const *format, ... );
-void console_clear( struct Screen *screen );
+int console_write( utf16 const *format, ... );
+void console_clear( void );
 
 // Draw the frame into the console (V2 to avoid a clash with the console.h for now)
-void console_refresh_v2( struct Screen *screen );
+void console_refresh_v2( void );
+
+void console_on_screen_resize( vec2u16 newSize );
 
 
 // Set the active attributes that will be applied on the next written character.
-void console_set_color( struct Screen *screen, enum AttrColor color );
-void console_set_style( struct Screen *screen, enum AttrStyle style );
-void console_set_shade( struct Screen *screen, enum AttrShade shade );
-bool console_set_attributes( struct Screen *screen, enum AttrColor const *optColor, enum AttrStyle const *optStyle, enum AttrShade const *optShade );
+void console_set_color( enum AttrColor color );
+void console_set_style( enum AttrStyle style );
+void console_set_shade( enum AttrShade shade );
+void console_set_attr( struct Attr attributes );
+
+void console_reset_attr( void );
 
 // Retrieve the active attributes that will be applied on the next written character.
-enum AttrColor console_color( struct Screen const *screen );
-enum AttrStyle console_style( struct Screen const *screen );
-enum AttrShade console_shade( struct Screen const *screen );
-bool console_attributes( struct Screen const *screen, enum AttrColor *outOptColor, enum AttrStyle *outOptStyle, enum AttrShade *outOptShade );
+enum AttrColor console_color( void );
+enum AttrStyle console_style( void );
+enum AttrShade console_shade( void );
+struct Attr console_attr( void );
 
-screenpos console_pos( struct Screen const *screen );
-void console_set_pos( struct Screen *screen, screenpos pos );
+screenpos console_cpos( void );
+void console_set_cpos( screenpos pos );
 
 
 
@@ -103,7 +115,7 @@ void console_set_pos( struct Screen *screen, screenpos pos );
 
 typedef void ( *OnScreenResizeCallback )( vec2u16 oldSize, vec2u16 newSize );
 
-bool console_screen_init( void const *handle ); /* HANDLE */
+// bool console_screen_init( void const *handle ); /* HANDLE */
 void console_screen_uninit( void );
 
 

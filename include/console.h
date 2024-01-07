@@ -5,6 +5,8 @@
 
 #include <windows.h> // Temp only, will remove later but convenient for the moment
 
+#include "console/console_screen.h"
+
 enum ConsoleColorFG
 {
     ConsoleColorFG_BLACK   = 30,

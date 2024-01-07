@@ -147,6 +147,7 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 		{
 			COORD const size = recordedInput->Event.WindowBufferSizeEvent.dwSize;
 			console_screen_resize( *(vec2u16 *)&size );
+			console_on_screen_resize( *(vec2u16 *)&size );
 			return;
 		}
 		case MOUSE_EVENT:
@@ -242,13 +243,17 @@ int main( void )
 		widget_frame();
 
 		// TEMP - To move somewhere else
-		console_cursor_set_position( 1, 35 );
-		console_color_reset();
+		console_set_cpos( SCREENPOS( 35, 1 ) );
+		console_set_attr( ATTR( AttrColor_BLACK_FG, AttrStyle_DEFAULT, AttrShade_BRIGHT ) );
 		screenpos const mousePos = mouse_get_position();
-		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
+		console_write( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
+//		console_cursor_set_position( 1, 35 );
+//		console_color_reset();
+//		screenpos const mousePos = mouse_get_position();
+//		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
 
 		// Refresh the game display in the console
-		console_refresh();
+		console_refresh_v2();
 
 		// Last function call in the loop
 		fpscounter_frame( fpsCounter );

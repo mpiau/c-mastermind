@@ -17,7 +17,6 @@ struct ComponentSummary
 	screenpos firstPinsRowUL;
 	screenpos solutionRowUL;
 };
-
 #define CAST_TO_COMPONENT( _header ) ( struct ComponentSummary * )( _header )
 
 
