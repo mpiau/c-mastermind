@@ -5,8 +5,8 @@
 
 enum MouseButton
 {
-	MouseButton_LeftClick,
-	MouseButton_RightClick
+	MouseButton_LEFT_CLICK,
+	MouseButton_RIGHT_CLICK
 };
 
 typedef void ( *OnMouseClickCallback )( screenpos pos, enum MouseButton button );

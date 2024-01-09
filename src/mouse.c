@@ -83,11 +83,11 @@ void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent )
 
 	if ( mouseEvent->dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED )
 	{
-		call_click_callback( MouseButton_LeftClick ); // Or perhaps translate that to a click with the KeyInput instead ?
+		call_click_callback( MouseButton_LEFT_CLICK ); // Or perhaps translate that to a click with the KeyInput instead ?
 	}
 	else if ( mouseEvent->dwButtonState == RIGHTMOST_BUTTON_PRESSED )
 	{
-		call_click_callback( MouseButton_RightClick );
+		call_click_callback( MouseButton_RIGHT_CLICK );
 	}
 }
 

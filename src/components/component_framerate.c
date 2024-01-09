@@ -14,7 +14,7 @@ struct ComponentFramerate
 
     screenpos   pos;
     usize       lastAverageFPS;
-    struct Attr attributes;
+    struct Style style;
 };
 #define CAST_TO_COMPONENT( _header ) ( struct ComponentFramerate * )( _header )
 
@@ -28,8 +28,8 @@ static void redraw_callback( struct Widget *header )
 
     struct ComponentFramerate const *comp = CAST_TO_COMPONENT( header );
 
-    console_set_cpos( comp->pos );
-    console_set_attr( comp->attributes ); 
+    console_set_pos( comp->pos );
+    console_set_style( comp->style );
     console_write( L"%3uFPS", comp->lastAverageFPS );
 }
 
@@ -63,7 +63,7 @@ struct Widget *component_framerate_create( void )
     // Specific to the component 
     comp->pos = SCREENPOS( 2, 1 );
     comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
-    comp->attributes = ATTR( AttrColor_BLACK_FG, AttrStyle_DEFAULT, AttrShade_BRIGHT );
+    comp->style = style_make( ColorFG_BLACK, ColorBrightness_FG, DispAttr_NONE );
 
     return (struct Widget *)comp;
 }

@@ -243,8 +243,8 @@ int main( void )
 		widget_frame();
 
 		// TEMP - To move somewhere else
-		console_set_cpos( SCREENPOS( 35, 1 ) );
-		console_set_attr( ATTR( AttrColor_BLACK_FG, AttrStyle_DEFAULT, AttrShade_BRIGHT ) );
+		console_set_pos( SCREENPOS( 35, 1 ) );
+		console_set_style( style_make( ColorFG_BLACK, ColorBrightness_FG, DispAttr_NONE ) );
 		screenpos const mousePos = mouse_get_position();
 		console_write( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
 //		console_cursor_set_position( 1, 35 );

@@ -184,7 +184,7 @@ static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enu
 {
 	struct ComponentGameButtons *buttons = (struct ComponentGameButtons *)widget;
 
-	if ( mouseButton == MouseButton_LeftClick && buttons->hoveredButton != ButtonId_Invalid )
+	if ( mouseButton == MouseButton_LEFT_CLICK && buttons->hoveredButton != ButtonId_Invalid )
 	{
 		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );
 		// After a successfull click, reset the hovered parameter.

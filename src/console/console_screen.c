@@ -10,18 +10,21 @@
 
 enum // Constants
 {
-    RESIZE_CALLBACKS_MAX_COUNT = 4
+    RESIZE_CALLBACKS_MAX_COUNT = 4,
+
+    DEFAULT_CHARACTER = L' '
 };
 
 // https://askubuntu.com/questions/528928/how-to-do-underline-bold-italic-strikethrough-color-background-and-size-i
 
+
 struct Cell
 {
     utf16 character;
-    struct Attr attributes;
+    struct Style style;
 };
 
-struct ScreenCells
+struct Screen
 {
     union
     {
@@ -30,45 +33,59 @@ struct ScreenCells
     };
 };
 
-struct Screen
+struct ScreenData
 {
     void const *handle;
     screenpos currPos;
     vec2u16 currSize;
-    struct Attr currAttributes;
-    struct ScreenCells currFrame;
-    struct ScreenCells incomingFrame;
+    struct Style currStyle;
+    struct Screen currFrame;
+    struct Screen incomingFrame;
 };
 
-static struct Screen s_screen = {};
+static struct ScreenData s_screenData = {};
 
 
-static void reset_attributes( struct Attr *const attr )
+static inline struct Style default_style( void )
 {
-    attr->color = AttrColor_DEFAULT;
-    attr->style = AttrStyle_DEFAULT;
-    attr->shade = AttrShade_DEFAULT;
+    return (struct Style) { .color = Color_DEFAULT, .dispAttr = DispAttr_NONE };
 }
 
-static void reset_frame_screen( struct ScreenCells *const frame )
+
+static inline struct Cell *get_incoming_frame_cell( usize const y, usize const x )
 {
-    usize const cellsCount = ARR_COUNT( frame->raw );
+    return &s_screenData.incomingFrame.array[y][x];
+}
+
+
+static inline struct Cell *get_incoming_frame_current_cell( void )
+{
+    return get_incoming_frame_cell( s_screenData.currPos.y - 1, s_screenData.currPos.x - 1 );
+}
+
+
+static void reset_screen( struct Screen *const screen )
+{
+    usize const cellsCount = ARR_COUNT( screen->raw );
     for ( usize idx = 0; idx < cellsCount; ++idx )
     {
-        reset_attributes( &frame->raw[idx].attributes );
-        frame->raw[idx].character = L' ';
+        screen->raw[idx].style = default_style();
+        screen->raw[idx].character = DEFAULT_CHARACTER;
     }
 }
+
 
 static bool cell_equals( struct Cell const *lhs, struct Cell const *rhs )
 {
     return memcmp( lhs, rhs, sizeof( *lhs ) ) == 0;
 }
 
-static bool attr_equals( struct Attr const *lhs, struct Attr const *rhs )
+
+static bool style_equals( struct Style const lhs, struct Style const rhs )
 {
-    return memcmp( lhs, rhs, sizeof( *lhs ) ) == 0;
+    return memcmp( &lhs, &rhs, sizeof( lhs ) ) == 0;
 }
+
 
 static vec2u16 get_screen_size( void const *handle )
 {
@@ -78,18 +95,18 @@ static vec2u16 get_screen_size( void const *handle )
     u16 const newScreenWidth = info.srWindow.Right - info.srWindow.Left + 1;
     u16 const newscreenHeight = info.srWindow.Bottom - info.srWindow.Top + 1;
 
-    return (vec2u16) { .x = newScreenWidth, .y = newscreenHeight };    
+    return VEC2U16( newScreenWidth, newscreenHeight );
 }
 
 
 bool console_screen_init( void const *handle )
 {
-    s_screen.handle = handle;
-    s_screen.currPos = SCREENPOS( 1, 1 );
-    s_screen.currSize = get_screen_size( handle );
-    reset_attributes( &s_screen.currAttributes );
-    reset_frame_screen( &s_screen.currFrame );
-    memcpy( &s_screen.incomingFrame, &s_screen.currFrame, sizeof( s_screen.incomingFrame ) );
+    s_screenData.handle = handle;
+    s_screenData.currPos = SCREENPOS( 1, 1 );
+    s_screenData.currSize = get_screen_size( handle );
+    s_screenData.currStyle = default_style();
+    reset_screen( &s_screenData.currFrame );
+    memcpy( &s_screenData.incomingFrame, &s_screenData.currFrame, sizeof( s_screenData.incomingFrame ) );
 
     return true;
 }
@@ -113,132 +130,115 @@ int console_write( utf16 const *format, ... )
     int const bufferSize = vsnwprintf( buffer, ARR_COUNT( buffer ), format, args );
 	va_end( args );
 
-    struct Attr const *attributes = &s_screen.currAttributes;
-    for ( usize idx = 0; idx < bufferSize && s_screen.currPos.x <= s_screen.currSize.w; ++idx )
+    struct Style const style = s_screenData.currStyle;
+    for ( usize idx = 0; idx < bufferSize && s_screenData.currPos.x <= s_screenData.currSize.w; ++idx )
     {
-        struct Cell *cell = &s_screen.incomingFrame.array[s_screen.currPos.y - 1][s_screen.currPos.x - 1];
+        struct Cell *cell = get_incoming_frame_current_cell();
         cell->character = buffer[idx];
-        cell->attributes = *attributes;
-        s_screen.currPos.x += 1;
+        cell->style = style;
+        s_screenData.currPos.x += 1;
     }
 
     return bufferSize;
 }
 
+
 void console_clear( void )
 {
-    reset_frame_screen( &s_screen.incomingFrame );
-}
-
-void generate_attr_style_sequence( enum AttrStyle style, utf16 *buffer, usize bufSize, usize *outBufPos, bool *first )
-{
-    if ( ( style & AttrStyle_BOLD ) != 0 )
-    {
-        *outBufPos += snwprintf( buffer + *outBufPos, bufSize - *outBufPos, *first ? L"1" : L";1" );
-        *first = false;
-    }
-    // [...]
-}
-
-void generate_attr_shade_sequence( enum AttrShade shade, utf16 *buffer, usize bufSize, usize *outBufPos, bool *first )
-{
-    if ( ( shade & AttrShade_DARK ) != 0 )
-    {
-        *outBufPos += snwprintf( buffer + *outBufPos, bufSize - *outBufPos, *first ? L"2" : L";2" );
-        *first = false;
-    }
-}
-
-usize get_foreground_color( enum AttrColor color )
-{
-    enum AttrColor fgColor = ( color & AttrColor_MaskForeground );
-
-    switch ( fgColor )
-    {
-        case 0: return 39; // default;
-        case AttrColor_BLACK_FG: return 30;
-        case AttrColor_RED_FG: return 31;
-        case AttrColor_GREEN_FG: return 32;
-        case AttrColor_YELLOW_FG: return 33;
-        case AttrColor_BLUE_FG: return 34;
-        case AttrColor_MAGENTA_FG: return 35;
-        case AttrColor_CYAN_FG: return 36;
-        case AttrColor_WHITE_FG: return 37;
-        default: assert( false );
-    }
-}
-
-usize get_background_color( enum AttrColor color )
-{
-    enum AttrColor bgColor = ( color & AttrColor_MaskBackground );
-
-    switch ( bgColor )
-    {
-        case 0: return 49; // default;
-        case AttrColor_BLACK_BG: return 40;
-        case AttrColor_RED_BG: return 41;
-        case AttrColor_GREEN_BG: return 42;
-        case AttrColor_YELLOW_BG: return 43;
-        case AttrColor_BLUE_BG: return 44;
-        case AttrColor_MAGENTA_BG: return 45;
-        case AttrColor_CYAN_BG: return 46;
-        case AttrColor_WHITE_BG: return 47;
-        default: assert( false );
-    }
-}
-
-void generate_attr_color_sequence( enum AttrColor color, bool isBright, utf16 *buffer, usize bufSize, usize *outBufPos, bool *first )
-{
-    bool const hasBgColor = ( color & AttrColor_MaskBackground ) != 0;
-    if ( hasBgColor )
-    {
-        usize colorNb = get_background_color( color );
-        if ( isBright && colorNb != 49 ) colorNb += 60;
-        *outBufPos += snwprintf( buffer + *outBufPos, bufSize - *outBufPos, *first ? L"%u" : L";%u", colorNb );
-        *first = false;
-    }
-
-    bool const hasFgColor = ( color & AttrColor_MaskForeground ) != 0;
-    if ( hasFgColor )
-    {
-        usize colorNb = get_foreground_color( color );
-        if ( isBright && colorNb != 39 ) colorNb += 60;
-        *outBufPos += snwprintf( buffer + *outBufPos, bufSize - *outBufPos, *first ? L"%u" : L";%u", colorNb );
-        *first = false;
-    }
+    reset_screen( &s_screenData.incomingFrame );
 }
 
 
-void generate_attr_virtual_sequence( struct Attr const *attr, utf16 *buffer, usize bufferSize, usize *outBufPos )
+// 
+
+
+struct Style style_make( enum Color const color, enum ColorBrightness const brightness, enum DispAttr const attr )
 {
-    // It works, but clean this mess
+    return (struct Style) {
+        .color = color | brightness,
+        .dispAttr = attr
+    };
+}
 
-    *outBufPos += snwprintf( buffer + *outBufPos, bufferSize - *outBufPos, L"\x1b[0;0m" );
 
-    if ( attr->color == AttrColor_DEFAULT && attr->style == AttrStyle_DEFAULT && attr->shade == AttrShade_DEFAULT )
-    {
-        // Nothing specific to write here, just send the reset.
-        return;
-    }
+void console_set_style( struct Style const style )
+{
+    s_screenData.currStyle = style;
+}
 
-    *outBufPos += snwprintf( buffer + *outBufPos, bufferSize - *outBufPos, L"\x1b[" );
-    bool first = true;
 
-    if ( attr->style != AttrStyle_DEFAULT )
-    {
-        generate_attr_style_sequence( attr->style, buffer, bufferSize, outBufPos, &first );
-    }
-    if ( attr->shade != AttrShade_DEFAULT )
-    {
-        generate_attr_shade_sequence( attr->shade, buffer, bufferSize, outBufPos, &first );
-    }
-    // For the colours, the shade BRIGHT will modify their values, so it's important to check for it
-    if ( attr->color != AttrShade_DEFAULT || attr->shade == AttrShade_BRIGHT )
-    {
-        generate_attr_color_sequence( attr->color, attr->shade == AttrShade_BRIGHT, buffer, bufferSize, outBufPos, &first );
-    }
+static inline bool style_is_bold( struct Style const style )
+{
+    return ( style.dispAttr & DispAttr_BOLD ) == DispAttr_BOLD;
+}
 
-    *outBufPos += snwprintf( buffer + *outBufPos, bufferSize - *outBufPos, L"m" );
+static inline bool style_is_faint( struct Style const style )
+{
+    return ( style.dispAttr & DispAttr_FAINT ) == DispAttr_FAINT;
+}
+
+static inline bool style_is_italic( struct Style const style )
+{
+    return ( style.dispAttr & DispAttr_ITALIC ) == DispAttr_ITALIC;
+}
+
+static inline bool style_is_underline( struct Style const style )
+{
+    return ( style.dispAttr & DispAttr_UNDERLINE ) == DispAttr_UNDERLINE;
+}
+
+
+static u8 get_fgcolor_code( struct Style const style )
+{
+    bool const isBrightForeground = ( ( style.color & ColorBrightness_FG ) != 0 );
+    u8 const brightParam = isBrightForeground ? 60 : 0;
+
+    static_assert( ColorFG_MaskAll == 0b00111000, "If the Mask has changed, you need to change this conversion as well" );
+    u8 const colorCode = ( style.color & ColorFG_MaskAll ) >> 3;
+
+    return 30 + colorCode + brightParam;
+}
+
+
+static u8 get_bgcolor_code( struct Style const style )
+{
+    bool const isBrightForeground = ( ( style.color & ColorBrightness_BG ) != 0 );
+    u8 const brightParam = isBrightForeground ? 60 : 0;
+
+    static_assert( ColorBG_MaskAll == 0b00000111, "If the Mask has changed, you need to change this conversion as well" );
+    u8 const colorCode = ( style.color & ColorBG_MaskAll );
+
+    return 40 + colorCode + brightParam;    
+}
+
+
+static int generate_color_sequence( struct Style const style, utf16 *const buffer, usize const bufferSize )
+{
+    return swprintf( buffer, bufferSize, L"\x1b[%u;%um", get_fgcolor_code( style ), get_bgcolor_code( style ) );
+}
+
+
+static int generate_attributes_sequence( struct Style const style, utf16 *const buffer, usize const bufferSize )
+{
+    // Start with a 0 to reset the old attributes first.
+    int nbWritten = swprintf( buffer, bufferSize, L"\x1b[0" );
+
+    if ( style_is_bold( style ) )  { nbWritten += swprintf( buffer + nbWritten, bufferSize - nbWritten, L";1" ); }
+    if ( style_is_faint( style ) ) { nbWritten += swprintf( buffer + nbWritten, bufferSize - nbWritten, L";2" ); }
+    // TODO : Complete the different edge cases [...]
+
+    nbWritten += swprintf( buffer + nbWritten, bufferSize - nbWritten, L"m" );
+
+    return nbWritten;
+}
+
+
+int generate_style_sequence( struct Style const style, utf16 *const buffer, usize const bufferSize )
+{
+    int nbWritten = 0;
+    nbWritten += generate_attributes_sequence( style, buffer + nbWritten, bufferSize - nbWritten );
+    nbWritten += generate_color_sequence( style, buffer + nbWritten, bufferSize - nbWritten );
+    return nbWritten;
 }
 
 
@@ -247,17 +247,16 @@ void console_refresh_v2( void )
     static utf16 refreshBuffer[8092] = {};
     usize bufPos = 0;
 
-    struct Attr attributes;
-    reset_attributes( &attributes );
-
+    // default State
+    struct Style style = default_style();
     screenpos cursorPos = SCREENPOS( 1, 1 );
 
-    for ( usize height = 0; height < s_screen.currSize.h && height < GAME_SIZE_HEIGHT; ++height )
+    for ( usize height = 0; height < s_screenData.currSize.h && height < GAME_SIZE_HEIGHT; ++height )
     {
-        for ( usize width = 0; width < s_screen.currSize.w && width < GAME_SIZE_WIDTH; ++width )
+        for ( usize width = 0; width < s_screenData.currSize.w && width < GAME_SIZE_WIDTH; ++width )
         {
-            struct Cell *currentCell = &s_screen.currFrame.array[height][width];
-            struct Cell const *incomingCell = &s_screen.incomingFrame.array[height][width];
+            struct Cell *currentCell = &s_screenData.currFrame.array[height][width];
+            struct Cell const *incomingCell = &s_screenData.incomingFrame.array[height][width];
             if ( cell_equals( currentCell, incomingCell ) ) continue;
 
             screenpos newpos = SCREENPOS( width + 1, height + 1 );
@@ -267,16 +266,11 @@ void console_refresh_v2( void )
                 cursorPos = newpos;
             }
 
-            // TODO: This condition has a problem, because without it the attributes are correct on screen.
-            // However it adds a bigger load on the output so we need to find the problem and fix it.
-            if ( !attr_equals( &currentCell->attributes, &incomingCell->attributes ) && !attr_equals( &incomingCell->attributes, &attributes ) )
+            if ( !style_equals( currentCell->style, incomingCell->style ) || !style_equals( incomingCell->style, style ) )
             {
-                // The attributes are different between the two, and our current attributes in the refresh buffer is not what we want.
-                // So we need to update that with virtual key sequences.
-                generate_attr_virtual_sequence( &incomingCell->attributes, refreshBuffer, ARR_COUNT( refreshBuffer ), &bufPos );
-
-                attributes = incomingCell->attributes;
-                currentCell->attributes = incomingCell->attributes;
+                bufPos += generate_style_sequence( incomingCell->style, refreshBuffer + bufPos, ARR_COUNT( refreshBuffer ) - bufPos );
+                style = incomingCell->style;
+                currentCell->style = incomingCell->style;
             }
 
             bufPos += snwprintf( refreshBuffer + bufPos, ARR_COUNT( refreshBuffer ) - bufPos, L"%lc", incomingCell->character );
@@ -294,63 +288,18 @@ void console_refresh_v2( void )
 }
 
 
-// 
+
+// [...]
 
 
-void console_set_color( enum AttrColor const color )
+void console_set_pos( screenpos const pos )
 {
-    s_screen.currAttributes.color = color;
+    s_screenData.currPos = pos;
 }
 
-void console_set_style( enum AttrStyle const style )
+screenpos console_pos( void )
 {
-    s_screen.currAttributes.style = style;
-}
-
-void console_set_shade( enum AttrShade shade )
-{
-    s_screen.currAttributes.shade = shade;
-}
-
-void console_set_attr( struct Attr const attributes )
-{
-    s_screen.currAttributes = attributes;
-}
-
-void console_reset_attr( void )
-{
-    reset_attributes( &s_screen.currAttributes );
-}
-
-enum AttrColor console_color( void )
-{
-    return s_screen.currAttributes.color;
-}
-
-enum AttrStyle console_style( void )
-{
-    return s_screen.currAttributes.style;
-}
-
-enum AttrShade console_shade( void )
-{
-    return s_screen.currAttributes.shade;
-}
-
-struct Attr console_attr( void )
-{
-    return s_screen.currAttributes;
-}
-
-
-void console_set_cpos( screenpos const pos )
-{
-    s_screen.currPos = pos;
-}
-
-screenpos console_cpos( void )
-{
-    return s_screen.currPos;
+    return s_screenData.currPos;
 }
 
 
@@ -359,7 +308,7 @@ static u32 s_callbackCount = 0;
 
 void console_on_screen_resize( vec2u16 const new )
 {
-    vec2u16 const old = s_screen.currSize;
+    vec2u16 const old = s_screenData.currSize;
     if ( old.x == new.x && old.y == new.y ) return;
 
     if ( old.x < new.x && old.x <= GAME_SIZE_WIDTH )
@@ -372,7 +321,7 @@ void console_on_screen_resize( vec2u16 const new )
         // draw the missing lines, erased when console size has been reduced.
     }
 
-    s_screen.currSize = new;
+    s_screenData.currSize = new;
 
     // TODO execute callbacks, or call components_on_resize() directly.
 
@@ -495,6 +444,6 @@ bool console_screen_register_on_resize_callback( OnScreenResizeCallback const ca
 
 vec2u16 console_screen_get_size( void )
 {
-    return s_screen.currSize;
+    return s_screenData.currSize;
 //    return s_currentSize;
 }

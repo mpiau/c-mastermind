@@ -33,7 +33,7 @@ all: test
 clean: clean-test
 
 test: $(SRC)
-	$(CC) $(CFLAGS) -o $@ $(filter %.c,$^)
+	$(CC) $(CFLAGS) -DDEBUG -g -o $@ $(filter %.c,$^)
 	./$@
 
 .PHONY: clean-test
