@@ -12,10 +12,10 @@ struct ComponentSummary
 
 	// Component Specific Data
 	struct Rect box;
-	screenpos firstPegsRowUL;
-	screenpos firstTurnRowUL;
-	screenpos firstPinsRowUL;
-	screenpos solutionRowUL;
+	screenpos_deprecated firstPegsRowUL;
+	screenpos_deprecated firstTurnRowUL;
+	screenpos_deprecated firstPinsRowUL;
+	screenpos_deprecated solutionRowUL;
 };
 #define CAST_TO_COMPONENT( _header ) ( struct ComponentSummary * )( _header )
 
@@ -36,7 +36,7 @@ static void draw_pin( struct Pin const *pin, bool visible )
 
 static void draw_pegs_at_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	screenpos const ul          = SCREENPOS( comp->firstPegsRowUL.x, comp->firstPegsRowUL.y + ( turn - 1 ) );
+	screenpos_deprecated const ul          = SCREENPOS_DEPRECATED( comp->firstPegsRowUL.x, comp->firstPegsRowUL.y + ( turn - 1 ) );
 	struct Peg const *pegs      = mastermind_get_pegs_at_turn( turn );
 	usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 
@@ -62,7 +62,7 @@ static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, u
 		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 	}
 
-	screenpos const ul = SCREENPOS( comp->firstTurnRowUL.x, comp->firstTurnRowUL.y + ( turn - 1 ) );
+	screenpos_deprecated const ul = SCREENPOS_DEPRECATED( comp->firstTurnRowUL.x, comp->firstTurnRowUL.y + ( turn - 1 ) );
 	console_cursor_setpos( ul );
 	console_draw( L"%02u", turn );
 }
@@ -70,7 +70,7 @@ static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, u
 
 static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	screenpos const ul          = SCREENPOS( comp->firstPinsRowUL.x, comp->firstPinsRowUL.y + ( turn - 1 ) );
+	screenpos_deprecated const ul          = SCREENPOS_DEPRECATED( comp->firstPinsRowUL.x, comp->firstPinsRowUL.y + ( turn - 1 ) );
 	struct Pin const *pins      = mastermind_get_pins_at_turn( turn );
 	usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 	usize const playerTurn      = mastermind_get_player_turn();
@@ -96,7 +96,7 @@ static void redraw_callback( struct Widget *widget )
 	usize const currTurn = mastermind_get_player_turn();
 	bool const isGameFinished = mastermind_is_game_finished();
 
-	screenpos const ul = rect_get_corner( &comp->box, RectCorner_UL );
+	screenpos_deprecated const ul = rect_get_corner( &comp->box, RectCorner_UL );
 	usize const width = comp->box.size.w;
 
 	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
@@ -114,7 +114,7 @@ static void redraw_callback( struct Widget *widget )
 	console_color_reset();
 
 	struct Peg const *solution = mastermind_get_solution();
-	screenpos const solutionPos = comp->solutionRowUL;
+	screenpos_deprecated const solutionPos = comp->solutionRowUL;
     for ( usize x = 0; x < nbPiecesPerTurn; ++x )
     {
 		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y );
@@ -124,9 +124,9 @@ static void redraw_callback( struct Widget *widget )
 }
 
 // TODO Move it in another file if the usage is approved.
-static inline screenpos screenpos_add( screenpos const lhs, screenpos const rhs )
+static inline screenpos_deprecated screenpos_add( screenpos_deprecated const lhs, screenpos_deprecated const rhs )
 {
-	return SCREENPOS( lhs.x + rhs.x, lhs.y + rhs.y );
+	return SCREENPOS_DEPRECATED( lhs.x + rhs.x, lhs.y + rhs.y );
 }
 
 
@@ -140,15 +140,15 @@ static void set_component_data( struct ComponentSummary *const comp )
 		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/
 	};
 	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
-	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - 1 - boxSize.w, 6 );
+	screenpos_deprecated const boxUL = SCREENPOS_DEPRECATED( GAME_SIZE_WIDTH - 1 - boxSize.w, 6 );
 
 	usize const spacesBeforeSolution = ( boxSize.w - ( ( nbPiecesPerTurn * 2 ) - 1 ) ) / 2;
 
 	comp->box = rect_make( boxUL, boxSize );
-	comp->firstPegsRowUL = SCREENPOS( boxUL.x + 2, boxUL.y + 1 );
-	comp->firstTurnRowUL = screenpos_add( comp->firstPegsRowUL, SCREENPOS( ( nbPiecesPerTurn * 2 ), 0 ) );
-	comp->firstPinsRowUL = screenpos_add( comp->firstTurnRowUL, SCREENPOS( 3, 0 ) );
-	comp->solutionRowUL = SCREENPOS(  boxUL.x + spacesBeforeSolution, boxUL.y + ( boxSize.y - 2 ) );
+	comp->firstPegsRowUL = SCREENPOS_DEPRECATED( boxUL.x + 2, boxUL.y + 1 );
+	comp->firstTurnRowUL = screenpos_add( comp->firstPegsRowUL, SCREENPOS_DEPRECATED( ( nbPiecesPerTurn * 2 ), 0 ) );
+	comp->firstPinsRowUL = screenpos_add( comp->firstTurnRowUL, SCREENPOS_DEPRECATED( 3, 0 ) );
+	comp->solutionRowUL = SCREENPOS_DEPRECATED(  boxUL.x + spacesBeforeSolution, boxUL.y + ( boxSize.y - 2 ) );
 }
 
 

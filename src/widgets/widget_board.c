@@ -30,7 +30,7 @@ enum // Constants
 };
 
 
-static void draw_peg( screenpos const ul, enum PegId const id, bool const hidden )
+static void draw_peg( screenpos_deprecated const ul, enum PegId const id, bool const hidden )
 {
 	bool const isEmpty = ( id == PegId_Empty );
 
@@ -57,7 +57,7 @@ static void draw_peg( screenpos const ul, enum PegId const id, bool const hidden
 	}
 }
 
-static void draw_pin( screenpos const ul, enum PinId const id )
+static void draw_pin( screenpos_deprecated const ul, enum PinId const id )
 {
 	bool const isEmpty = ( id == PinId_INCORRECT );
 
@@ -78,7 +78,7 @@ static inline void draw_character_n_times( utf16 const character, usize const nT
 	}
 }
 
-static void draw_row_board( screenpos const ul, u16 const nbPegs, u16 const nbPins )
+static void draw_row_board( screenpos_deprecated const ul, u16 const nbPegs, u16 const nbPins )
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 
@@ -102,7 +102,7 @@ static void draw_row_board( screenpos const ul, u16 const nbPegs, u16 const nbPi
 }
 
 
-static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
+static void draw_row_turn( screenpos_deprecated const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
 {
 	if ( turn == playerTurn )
 	{
@@ -122,11 +122,11 @@ static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn,
 }
 
 
-static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const nbPegs, bool const currentTurnDisplayed )
+static void draw_row_pegs( screenpos_deprecated const ul, struct Peg const *pegs, u32 const nbPegs, bool const currentTurnDisplayed )
 {
 	for ( u32 pegIdx = 0; pegIdx < nbPegs; ++pegIdx )
 	{
-		screenpos pegUL = (screenpos) {
+		screenpos_deprecated pegUL = (screenpos_deprecated) {
 			.x = ul.x + ( pegIdx * ( PEG_WIDTH + PEG_INTERSPACE ) ),
 			.y = ul.y
 		};
@@ -147,7 +147,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 }
 
 
-static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin const *pins, u32 const nbPins )
+static void draw_row_pins( screenpos_deprecated const ul, u32 const nbPegs, struct Pin const *pins, u32 const nbPins )
 {
 	bool const oddNbPins = nbPins % 2 != 0; // Need to add a last empty pin manually
 
@@ -158,7 +158,7 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 	u8 const firstRowLimit = ( nbPins + 1 ) / 2;
 	for ( int idx = 0; idx < firstRowLimit; ++idx )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * idx, ulY ), pins[idx].id );
+		draw_pin( SCREENPOS_DEPRECATED( ulX + 5 * idx, ulY ), pins[idx].id );
 	}
 
 	ulY += 3;
@@ -166,17 +166,17 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 	// second row, except the last for odds
 	for ( int idx = firstRowLimit; idx < nbPins; ++idx )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * ( idx - firstRowLimit ), ulY ), pins[idx].id );
+		draw_pin( SCREENPOS_DEPRECATED( ulX + 5 * ( idx - firstRowLimit ), ulY ), pins[idx].id );
 	}
 
 	if ( oddNbPins )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * ( nbPins - firstRowLimit ), ulY ), PinId_INCORRECT );
+		draw_pin( SCREENPOS_DEPRECATED( ulX + 5 * ( nbPins - firstRowLimit ), ulY ), PinId_INCORRECT );
 	}
 }
 
 
-static void draw_row( screenpos const ul, u8 turnToDisplay )
+static void draw_row( screenpos_deprecated const ul, u8 turnToDisplay )
 {
 	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
 	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
@@ -185,7 +185,7 @@ static void draw_row( screenpos const ul, u8 turnToDisplay )
 	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
 
 	draw_row_board( ul, nbPegs, nbPegs );
-	draw_row_pegs( SCREENPOS( ul.x + 4, ul.y + 2 ), pegs, nbPegs, isCurrentTurnDisplayed );
+	draw_row_pegs( SCREENPOS_DEPRECATED( ul.x + 4, ul.y + 2 ), pegs, nbPegs, isCurrentTurnDisplayed );
 	if ( playerTurn > turnToDisplay )
 	{
 		draw_row_pins( ul, nbPegs, pins, nbPegs );
@@ -194,11 +194,11 @@ static void draw_row( screenpos const ul, u8 turnToDisplay )
 }
 
 
-static void draw_header_title( screenpos const ul, struct WidgetBoard const *board )
+static void draw_header_title( screenpos_deprecated const ul, struct WidgetBoard const *board )
 {
 	usize const titleSize = 39;
 	usize const spacesBetween = ( board->totalBoardWidth - titleSize ) / 2;
-	screenpos const ulTitle = SCREENPOS( ul.x + spacesBetween, ul.y + 1); 
+	screenpos_deprecated const ulTitle = SCREENPOS_DEPRECATED( ul.x + spacesBetween, ul.y + 1); 
 
 	console_color_fg( ConsoleColorFG_YELLOW );
 
@@ -211,7 +211,7 @@ static void draw_header_title( screenpos const ul, struct WidgetBoard const *boa
 }
 
 
-static void draw_header_board( screenpos const ul, struct WidgetBoard const *board )
+static void draw_header_board( screenpos_deprecated const ul, struct WidgetBoard const *board )
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 
@@ -255,18 +255,18 @@ static void draw_header_board( screenpos const ul, struct WidgetBoard const *boa
 }
 
 
-static void draw_solution_pegs( screenpos const ul, struct WidgetBoard const *board )
+static void draw_solution_pegs( screenpos_deprecated const ul, struct WidgetBoard const *board )
 {
 	usize const pegsSize = board->totalPegSize;
 	usize const spacesBetween = ( board->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the board though, hence the decalage.
-	screenpos const ulSolution = SCREENPOS( ul.x + spacesBetween, ul.y + 1 );
+	screenpos_deprecated const ulSolution = SCREENPOS_DEPRECATED( ul.x + spacesBetween, ul.y + 1 );
 
 	struct Peg const *solution = mastermind_get_solution();
 	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pieces_per_turn(), false );
 }
 
 
-static void draw_footer_board( screenpos const ul, struct WidgetBoard const *board )
+static void draw_footer_board( screenpos_deprecated const ul, struct WidgetBoard const *board )
 {
 	console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 
@@ -331,33 +331,33 @@ static void calculate_board_display( struct Widget *widget, struct Mastermind co
 static void redraw_callback( struct Widget *widget )
 {
 	struct WidgetBoard *board = (struct WidgetBoard *)widget;
-	screenpos const ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
+	screenpos_deprecated const ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
 
 	int x = ul.x + board->spacesBetweenBoard;
 	int y = ul.y;
 
 	if ( board->lastDisplayedTurn == 3 )
 	{
-		draw_header_board( SCREENPOS( x, y ), board );
+		draw_header_board( SCREENPOS_DEPRECATED( x, y ), board );
 	}
 	else
 	{
-		draw_row( SCREENPOS( x, y ), board->lastDisplayedTurn - 3 );
+		draw_row( SCREENPOS_DEPRECATED( x, y ), board->lastDisplayedTurn - 3 );
 	}
 
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), board->lastDisplayedTurn - 2 );
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), board->lastDisplayedTurn - 1 );
+	draw_row( SCREENPOS_DEPRECATED( x, y + ROW_HEIGHT ), board->lastDisplayedTurn - 2 );
+	draw_row( SCREENPOS_DEPRECATED( x, y + ROW_HEIGHT * 2 ), board->lastDisplayedTurn - 1 );
 
 	if ( board->lastDisplayedTurn == mastermind_get_total_turns() + 1 )
 	{
 		console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 		console_cursor_set_position( y + ROW_HEIGHT * 3, x );
 		draw_character_n_times( L'#', board->totalBoardWidth );
-		draw_footer_board( SCREENPOS( x, y + ROW_HEIGHT * 3 + 1 ), board );
+		draw_footer_board( SCREENPOS_DEPRECATED( x, y + ROW_HEIGHT * 3 + 1 ), board );
 	}
 	else
 	{
-		draw_row( SCREENPOS( x, y + ROW_HEIGHT * 3 ), board->lastDisplayedTurn );
+		draw_row( SCREENPOS_DEPRECATED( x, y + ROW_HEIGHT * 3 ), board->lastDisplayedTurn );
 		console_cursor_set_position( y + ROW_HEIGHT * 4, x );
 		console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
 		draw_character_n_times( L'#', board->totalBoardWidth );
@@ -436,7 +436,7 @@ struct Widget *widget_board_create( void )
 	widget->enabled = false;
 	widget->redrawNeeded = false;
 
-	widget->rectBox = rect_make( SCREENPOS( 2, 3 ), VEC2U16( TOTAL_BOARD_SIZE, 25 ) );
+	widget->rectBox = rect_make( SCREENPOS_DEPRECATED( 2, 3 ), VEC2U16( TOTAL_BOARD_SIZE, 25 ) );
 
 	widget->callbacks.redrawCb = redraw_callback;
 	widget->callbacks.gameUpdateCb = on_game_update_callback;

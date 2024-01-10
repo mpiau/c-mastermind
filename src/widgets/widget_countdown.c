@@ -18,9 +18,9 @@ struct WidgetCountdown
 
     // Specific data to timer
 	enum CountdownStatus status;
-    nsec endTimerTimestamp;
-    nsec lastUpdateTimestamp;
-    nsec totalDuration;
+    nsecond endTimerTimestamp;
+    nsecond lastUpdateTimestamp;
+    nsecond totalDuration;
     bool finished;
 };
 
@@ -49,15 +49,15 @@ static void redraw_callback( struct Widget *widget )
         return;
     }
 
-    nsec const remainingTimeNsec = countdown->status == CountdownStatus_NOT_STARTED
+    nsecond const remainingTimeNsec = countdown->status == CountdownStatus_NOT_STARTED
 		? countdown->totalDuration
 		: countdown->endTimerTimestamp - countdown->lastUpdateTimestamp;
 
-	sec const remainingTimeSec = time_nsec_to_sec( remainingTimeNsec );
+	second const remainingTimeSec = time_nsec_to_sec( remainingTimeNsec );
 
     hour const hours  = remainingTimeSec / 3600;
-    min const minutes = ( remainingTimeSec % 3600 ) / 60;
-    sec const seconds = remainingTimeSec % 60;
+    minute const minutes = ( remainingTimeSec % 3600 ) / 60;
+    second const seconds = remainingTimeSec % 60;
 
     // Blue, yellow, blinking yellow, red, blinking red ?
     if ( remainingTimeNsec < ( countdown->totalDuration * 10 ) / 100 )
@@ -89,7 +89,7 @@ static void frame_callback( struct Widget *widget )
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
-    nsec const newTimestamp = time_get_timestamp_nsec();
+    nsecond const newTimestamp = time_get_timestamp_nsec();
 	// Would be better to check if the difference between the 2 is greater than 1 second no ?
 	bool const equalsInSeconds = time_nsec_to_sec( newTimestamp ) == time_nsec_to_sec( countdown->lastUpdateTimestamp );
     if ( countdown->status == CountdownStatus_TIME_OUT || equalsInSeconds ) return;
@@ -116,7 +116,7 @@ struct Widget *widget_countdown_create( void )
 	assert( widget_exists( ComponentId_TIMER ) );
 	struct WidgetBox const *TimerBox = &widget_optget( ComponentId_TIMER )->box;
 
-    screenpos const borderUpLeft = (screenpos) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
+    screenpos_deprecated const borderUpLeft = (screenpos_deprecated) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
     vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
@@ -166,7 +166,7 @@ void widget_countdown_resume( struct Widget *widget )
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
 
-	nsec const timestamp = time_get_timestamp_nsec();
+	nsecond const timestamp = time_get_timestamp_nsec();
 	countdown->endTimerTimestamp += ( timestamp - countdown->lastUpdateTimestamp );
 	countdown->lastUpdateTimestamp = timestamp;
 	countdown->status = CountdownStatus_IN_PROGRESS;
@@ -182,7 +182,7 @@ void widget_countdown_reset( struct Widget *widget )
 }
 
 
-void widget_countdown_set_duration( struct Widget *widget, sec const duration )
+void widget_countdown_set_duration( struct Widget *widget, second const duration )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;

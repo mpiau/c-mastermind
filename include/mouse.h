@@ -9,14 +9,14 @@ enum MouseButton
 	MouseButton_RIGHT_CLICK
 };
 
-typedef void ( *OnMouseClickCallback )( screenpos pos, enum MouseButton button );
-typedef void ( *OnMouseMoveCallback ) ( screenpos oldPos, screenpos newPos );
+typedef void ( *OnMouseClickCallback )( screenpos_deprecated pos, enum MouseButton button );
+typedef void ( *OnMouseMoveCallback ) ( screenpos_deprecated oldPos, screenpos_deprecated newPos );
 
 // The mouse position is different from the screen coordinate
 // While it would be x=1 and y=1 for the screen buffer
 // It would be x=0 and y=0 for the mouse position.
-// This function transform the mouse coordinates into screenpos to simplify its usage
-screenpos mouse_get_position();
+// This function transform the mouse coordinates into screenpos_deprecated to simplify its usage
+screenpos_deprecated mouse_get_position();
 
 struct _MOUSE_EVENT_RECORD;
 void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent );

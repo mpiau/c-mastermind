@@ -19,8 +19,8 @@ struct WidgetTimer
     struct Widget header;
 
     enum TimerStatus status;
-    nsec totalDuration;
-    nsec lastUpdateTimestamp;
+    nsecond totalDuration;
+    nsecond lastUpdateTimestamp;
 };
 
 
@@ -36,15 +36,15 @@ static void redraw_callback( struct Widget *widget )
 
     // TODO If widget truncated, return. Don't display anything
 
-    screenpos const contentUL = timer->header.box.contentUpLeft;
-    screenpos const contentBR = timer->header.box.contentBottomRight;
+    screenpos_deprecated const contentUL = timer->header.box.contentUpLeft;
+    screenpos_deprecated const contentBR = timer->header.box.contentBottomRight;
     u32 const width = contentBR.x - contentUL.x + 1;
 
-    sec const totalDuration = time_nsec_to_sec( timer->totalDuration );
+    second const totalDuration = time_nsec_to_sec( timer->totalDuration );
 
     hour const hours  = ( totalDuration / 3600 );
-    min const minutes = ( totalDuration % 3600 ) / 60;
-    sec const seconds = totalDuration % 60;
+    minute const minutes = ( totalDuration % 3600 ) / 60;
+    second const seconds = totalDuration % 60;
 
     console_color_fg( ConsoleColorFG_WHITE );
     console_cursor_set_position( contentUL.y, contentUL.x + ( ( width - 8 ) / 2 ) );
@@ -60,14 +60,14 @@ void frame_callback( struct Widget *widget )
 
     if ( timer->status != TimerStatus_RUNNING ) return;
 
-    sec const oldDuration = time_nsec_to_sec( timer->totalDuration );
-    nsec const newTimestamp = time_get_timestamp_nsec();
-    nsec const elapsedTime = newTimestamp - timer->lastUpdateTimestamp;
+    second const oldDuration = time_nsec_to_sec( timer->totalDuration );
+    nsecond const newTimestamp = time_get_timestamp_nsec();
+    nsecond const elapsedTime = newTimestamp - timer->lastUpdateTimestamp;
 
     timer->totalDuration += elapsedTime;
     timer->lastUpdateTimestamp = newTimestamp;
 
-    sec const newDuration = time_nsec_to_sec( timer->totalDuration );
+    second const newDuration = time_nsec_to_sec( timer->totalDuration );
     if ( oldDuration != newDuration )
     {
 		widget->redrawNeeded = true;
@@ -89,8 +89,8 @@ struct Widget *widget_timer_create( void )
 	assert( widget_exists( ComponentId_BOARD ) );
 	struct WidgetBox const *boardBox = &widget_optget( ComponentId_BOARD )->box;
 
-    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
-    screenpos const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
+    screenpos_deprecated const borderUpLeft = (screenpos_deprecated) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
+    screenpos_deprecated const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
 	widget_utils_set_title( &widget->box, L"Timer", ConsoleColorFG_MAGENTA );

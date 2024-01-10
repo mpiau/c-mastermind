@@ -71,7 +71,7 @@ void console_cursor_show( void );
 void console_cursor_start_blinking( void );
 void console_cursor_stop_blinking( void );
 void console_cursor_set_position( short y, short x );
-void console_cursor_setpos( screenpos position );
+void console_cursor_setpos( screenpos_deprecated position );
 void console_cursor_move_up_by( short n );
 void console_cursor_move_down_by( short n );
 void console_cursor_move_left_by( short n );
@@ -106,4 +106,4 @@ void console_screen_clear( void );
 void console_refresh( void );
 int console_draw( utf16 const *format, ... );
 
-void console_setpos( screenpos pos );
+void console_setpos( screenpos_deprecated pos );

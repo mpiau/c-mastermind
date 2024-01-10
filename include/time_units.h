@@ -2,11 +2,11 @@
 
 #include "core_types.h"
 
-typedef u64 nsec;
-typedef u64 usec;
-typedef u64 msec;
-typedef u64 sec;
-typedef u64 min;
+typedef u64 nsecond;
+typedef u64 usecond;
+typedef u64 msecond;
+typedef u64 second;
+typedef u64 minute;
 typedef u64 hour;
 typedef u64 day;
 
@@ -23,26 +23,26 @@ enum
 };
 
 
-nsec time_get_timestamp_nsec( void );
+nsecond time_get_timestamp_nsec( void );
 
 
-static inline nsec time_msec_to_nsec( msec const milliseconds )
+static inline nsecond time_msec_to_nsec( msecond const milliseconds )
 {
 	return milliseconds * Time_MSEC_IN_NSEC;
 }
 
-static inline msec time_nsec_to_msec( nsec const nanoseconds )
+static inline msecond time_nsec_to_msec( nsecond const nanoseconds )
 {
 	return nanoseconds / Time_MSEC_IN_NSEC;
 }
 
 
-static inline nsec time_sec_to_nsec( sec const seconds )
+static inline nsecond time_sec_to_nsec( second const seconds )
 {
 	return seconds * Time_SEC_IN_NSEC;
 }
 
-static inline sec time_nsec_to_sec( nsec const nanoseconds )
+static inline second time_nsec_to_sec( nsecond const nanoseconds )
 {
 	return nanoseconds / Time_SEC_IN_NSEC;
 }

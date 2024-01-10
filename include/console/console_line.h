@@ -7,9 +7,9 @@
 
 struct ConLine
 {
-    screenpos startPos;
-    screenpos endPos;
+    screenpos_deprecated startPos;
+    screenpos_deprecated endPos;
     u16 width;
 };
 
-struct ConLine console_line_make( screenpos start, usize width );
+struct ConLine console_line_make( screenpos_deprecated start, usize width );

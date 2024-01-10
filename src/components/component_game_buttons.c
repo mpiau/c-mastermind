@@ -112,7 +112,7 @@ static void button_get_disabled_color( enum ConsoleColorFG *const outTextColor, 
 static void game_buttons_update_status( struct Widget *header, enum ButtonStatus const status )
 {
 	struct ComponentGameButtons *widget = (struct ComponentGameButtons *)header;
-	screenpos const mousePosition = mouse_get_position();
+	screenpos_deprecated const mousePosition = mouse_get_position();
 
 	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
 	{
@@ -126,7 +126,7 @@ static void game_buttons_update_status( struct Widget *header, enum ButtonStatus
 }
 
 
-static void mouse_move_callback( struct Widget *const widget, screenpos const oldPos, screenpos const newPos )
+static void mouse_move_callback( struct Widget *const widget, screenpos_deprecated const oldPos, screenpos_deprecated const newPos )
 {
 	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
@@ -180,7 +180,7 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 }
 
 
-static void mouse_click_callback( struct Widget *widget, screenpos clickPos, enum MouseButton mouseButton )
+static void mouse_click_callback( struct Widget *widget, screenpos_deprecated clickPos, enum MouseButton mouseButton )
 {
 	struct ComponentGameButtons *buttons = (struct ComponentGameButtons *)widget;
 
@@ -209,7 +209,7 @@ static void redraw_callback( struct Widget *widget )
 	{
 		struct Button *button = &boardButtons->buttons[idx];
 
-		screenpos const ul = rect_get_corner( &button->box, RectCorner_UL );
+		screenpos_deprecated const ul = rect_get_corner( &button->box, RectCorner_UL );
 		bool const isHovered = ( boardButtons->hoveredButton == idx );
 
 		console_cursor_setpos( ul );
@@ -242,7 +242,7 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
-static inline struct Button button_make( screenpos const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
+static inline struct Button button_make( screenpos_deprecated const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
 {
 	assert( text != NULL );
 
@@ -261,22 +261,22 @@ static void init_component_data( struct ComponentGameButtons *comp )
 
 	struct Button *buttons = comp->buttons;
 	// Upper row
-	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
-	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
-	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
-	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
-	buttons[ButtonId_QUIT]         = button_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
+	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS_DEPRECATED( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
+	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS_DEPRECATED( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
+	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS_DEPRECATED( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
+	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS_DEPRECATED( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
+	buttons[ButtonId_QUIT]         = button_make( SCREENPOS_DEPRECATED( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
 	// Bottom row
-	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
-	buttons[ButtonId_NEXT]           = button_make( SCREENPOS( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
-	buttons[ButtonId_BOARD]          = button_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
-	buttons[ButtonId_PEGS]           = button_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
-	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
-	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
-	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
-	buttons[ButtonId_RESET]          = button_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
-	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
-	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
+	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS_DEPRECATED( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
+	buttons[ButtonId_NEXT]           = button_make( SCREENPOS_DEPRECATED( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
+	buttons[ButtonId_BOARD]          = button_make( SCREENPOS_DEPRECATED( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
+	buttons[ButtonId_PEGS]           = button_make( SCREENPOS_DEPRECATED( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
+	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS_DEPRECATED( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
+	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS_DEPRECATED( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
+	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS_DEPRECATED( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
+	buttons[ButtonId_RESET]          = button_make( SCREENPOS_DEPRECATED( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
+	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS_DEPRECATED( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
+	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS_DEPRECATED( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
 }
 
 struct Widget *component_game_buttons_create( void )

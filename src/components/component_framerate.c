@@ -12,9 +12,9 @@ struct ComponentFramerate
 {
     struct Widget header;
 
-    screenpos   pos;
+    screenpos_deprecated   pos;
     usize       lastAverageFPS;
-    struct Style style;
+    struct Properties properties;
 };
 #define CAST_TO_COMPONENT( _header ) ( struct ComponentFramerate * )( _header )
 
@@ -29,7 +29,7 @@ static void redraw_callback( struct Widget *header )
     struct ComponentFramerate const *comp = CAST_TO_COMPONENT( header );
 
     console_set_pos( comp->pos );
-    console_set_style( comp->style );
+    console_set_properties( comp->properties );
     console_write( L"%3uFPS", comp->lastAverageFPS );
 }
 
@@ -61,9 +61,9 @@ struct Widget *component_framerate_create( void )
     callbacks->redrawCb = redraw_callback;
 
     // Specific to the component 
-    comp->pos = SCREENPOS( 2, 1 );
+    comp->pos = SCREENPOS_DEPRECATED( 2, 1 );
     comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
-    comp->style = style_make( ColorFG_BLACK, ColorBrightness_FG, DispAttr_NONE );
+    comp->properties = properties_make( ColorFG_BLACK, Brightness_FG, AttrFlags_NONE );
 
     return (struct Widget *)comp;
 }

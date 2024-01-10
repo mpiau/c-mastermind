@@ -2,7 +2,7 @@
 
 #include <time.h>
 
-nsec time_get_timestamp_nsec( void )
+nsecond time_get_timestamp_nsec( void )
 {
     struct timespec time;
     clock_gettime( CLOCK_MONOTONIC, &time );

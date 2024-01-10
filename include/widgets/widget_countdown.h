@@ -10,4 +10,4 @@ void widget_countdown_pause( struct Widget *widget );
 void widget_countdown_resume( struct Widget *widget );
 
 void widget_countdown_reset( struct Widget *widget );
-void widget_countdown_set_duration( struct Widget *widget, sec duration );
+void widget_countdown_set_duration( struct Widget *widget, second duration );

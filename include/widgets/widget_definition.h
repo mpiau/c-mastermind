@@ -29,14 +29,14 @@ enum WidgetBorderOption
 struct WidgetBox
 {
     // Screen positions
-    screenpos borderUpLeft;
-    screenpos borderBottomRight;
-    screenpos contentUpLeft;
-    screenpos contentBottomRight;
+    screenpos_deprecated borderUpLeft;
+    screenpos_deprecated borderBottomRight;
+    screenpos_deprecated contentUpLeft;
+    screenpos_deprecated contentBottomRight;
 
     // Truncation related
-    screenpos truncatedBorderBottomRight;
-    screenpos truncatedContentBottomRight;
+    screenpos_deprecated truncatedBorderBottomRight;
+    screenpos_deprecated truncatedContentBottomRight;
     enum WidgetTruncatedStatus truncatedStatus;
 
     // Title
@@ -52,8 +52,8 @@ struct WidgetBox
 typedef void ( *WidgetFrameCallback )( struct Widget *widget );
 typedef void ( *WidgetRedrawCallback )( struct Widget *widget );
 typedef void ( *WidgetClearCallback )( struct Widget *widget );
-typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos oldPos, screenpos newPos );
-typedef void ( *WidgetMouseClickCallback )( struct Widget *widget, screenpos pos, enum MouseButton button );
+typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos_deprecated oldPos, screenpos_deprecated newPos );
+typedef void ( *WidgetMouseClickCallback )( struct Widget *widget, screenpos_deprecated pos, enum MouseButton button );
 typedef void ( *WidgetResizeCallback )( struct Widget *widget, vec2u16 oldSize, vec2u16 newSize );
 typedef void ( *WidgetGameUpdateCallback )( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type );
 

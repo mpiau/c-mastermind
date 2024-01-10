@@ -3,19 +3,19 @@
 #include "console.h"
 #include <stdio.h>
 
-struct Rect rect_make( screenpos const ul, vec2u16 const size )
+struct Rect rect_make( screenpos_deprecated const ul, vec2u16 const size )
 {
 	assert( size.h > 0 && size.w > 0 );
 
-	screenpos const ur = (screenpos) {
+	screenpos_deprecated const ur = (screenpos_deprecated) {
 			.x = ( ul.x + size.w ) - 1,
 			.y = ul.y
 	};
-	screenpos const bl = (screenpos) {
+	screenpos_deprecated const bl = (screenpos_deprecated) {
 			.x = ul.x,
 			.y = ( ul.y + size.h ) - 1
 	};
-	screenpos const br = (screenpos) {
+	screenpos_deprecated const br = (screenpos_deprecated) {
 			.x = ur.x,
 			.y = bl.y
 	};
@@ -30,7 +30,7 @@ struct Rect rect_make( screenpos const ul, vec2u16 const size )
 }
 
 
-screenpos rect_get_corner( struct Rect const *rect, enum RectCorner corner )
+screenpos_deprecated rect_get_corner( struct Rect const *rect, enum RectCorner corner )
 {
 	assert( rect && corner < RectCorner_Count );
 	return rect->corners[corner];
@@ -53,11 +53,11 @@ bool rect_check_collision( struct Rect const *lhs, struct Rect const *rhs )
 {
 	assert( lhs && rhs );
 
-	screenpos const lhsUL = rect_get_corner( lhs, RectCorner_UL );
-	screenpos const lhsBR = rect_get_corner( lhs, RectCorner_BR );
+	screenpos_deprecated const lhsUL = rect_get_corner( lhs, RectCorner_UL );
+	screenpos_deprecated const lhsBR = rect_get_corner( lhs, RectCorner_BR );
 
-	screenpos const rhsUL = rect_get_corner( rhs, RectCorner_UL );
-	screenpos const rhsBR = rect_get_corner( rhs, RectCorner_BR );
+	screenpos_deprecated const rhsUL = rect_get_corner( rhs, RectCorner_UL );
+	screenpos_deprecated const rhsBR = rect_get_corner( rhs, RectCorner_BR );
 
 	return !( lhsUL.x > rhsBR.x // lhs is at the right of rhs
 		|| lhsUL.y > rhsBR.y // lhs is below rhs
@@ -67,12 +67,12 @@ bool rect_check_collision( struct Rect const *lhs, struct Rect const *rhs )
 }
 
 
-bool rect_is_inside( struct Rect const *lhs, screenpos const pos )
+bool rect_is_inside( struct Rect const *lhs, screenpos_deprecated const pos )
 {
 	assert( lhs );
 
-	screenpos const lhsUL = rect_get_corner( lhs, RectCorner_UL );
-	screenpos const lhsBR = rect_get_corner( lhs, RectCorner_BR );
+	screenpos_deprecated const lhsUL = rect_get_corner( lhs, RectCorner_UL );
+	screenpos_deprecated const lhsBR = rect_get_corner( lhs, RectCorner_BR );
 
 	return ( pos.x >= lhsUL.x && pos.x <= lhsBR.x )
 		&& ( pos.y >= lhsUL.y && pos.y <= lhsBR.y );
@@ -98,7 +98,7 @@ void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
 {
     console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 	
-	screenpos const ul = rect_get_corner( rect, RectCorner_UL );
+	screenpos_deprecated const ul = rect_get_corner( rect, RectCorner_UL );
 	usize const widthNoCorners = rect->size.w - 2;
 
 	// First line
@@ -131,7 +131,7 @@ void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
 
 void rect_clear( struct Rect const *rect )
 {
-	screenpos const ul = rect_get_corner( rect, RectCorner_UL );
+	screenpos_deprecated const ul = rect_get_corner( rect, RectCorner_UL );
     for ( usize y = 0; y < rect->size.h; ++y )
     {
         console_cursor_set_position( ul.y + y, ul.x );

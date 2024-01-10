@@ -58,12 +58,12 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 {
 //	if ( widget_is_out_of_bounds( box ) ) return;
 
-    screenpos borderUL = box->borderUpLeft;
+    screenpos_deprecated borderUL = box->borderUpLeft;
 
     bool const ellipsisNeeded = box->truncatedStatus != WidgetTruncatedStatus_NONE;
 	bool const ellipsisXNeeded = ( box->truncatedStatus & WidgetTruncatedStatus_X_AXIS ) != 0;
 	bool const ellipsisYNeeded = ( box->truncatedStatus & WidgetTruncatedStatus_Y_AXIS ) != 0;
-	screenpos const borderBR = ellipsisNeeded ? box->truncatedBorderBottomRight : box->borderBottomRight;
+	screenpos_deprecated const borderBR = ellipsisNeeded ? box->truncatedBorderBottomRight : box->borderBottomRight;
 	u16 const width = borderBR.x - borderUL.x + 1;
 	u16 const height = borderBR.y - borderUL.y + 1;
 
@@ -116,8 +116,8 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 
 void widget_utils_clear_content( struct WidgetBox *box )
 {
-	screenpos const contentUL = box->contentUpLeft;
-	screenpos const contentBR = box->contentBottomRight;
+	screenpos_deprecated const contentUL = box->contentUpLeft;
+	screenpos_deprecated const contentBR = box->contentBottomRight;
 	u16 const contentWidth = contentBR.x - contentUL.x + 1;
 	u16 const contentHeight = contentBR.y - contentUL.y + 1;
 
@@ -139,11 +139,11 @@ void widget_utils_set_title( struct WidgetBox *const box, utf16 const *const tit
 }
 
 
-void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos const screenSize )
+void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos_deprecated const screenSize )
 {
-	screenpos const borderUL = box->borderUpLeft;
-	screenpos const borderBR = box->borderBottomRight;
-	screenpos const contentBR = box->contentBottomRight;
+	screenpos_deprecated const borderUL = box->borderUpLeft;
+	screenpos_deprecated const borderBR = box->borderBottomRight;
+	screenpos_deprecated const contentBR = box->contentBottomRight;
 
 	// reset
 	box->truncatedBorderBottomRight = borderBR;
@@ -183,7 +183,7 @@ void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos c
 }
 
 
-void widget_utils_set_position( struct WidgetBox *const box, screenpos const borderUpLeft, vec2u16 const contentSize )
+void widget_utils_set_position( struct WidgetBox *const box, screenpos_deprecated const borderUpLeft, vec2u16 const contentSize )
 {
 	// Note : Do some validation on the data before ?
 

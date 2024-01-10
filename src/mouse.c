@@ -13,7 +13,7 @@ enum // Constants
 
 struct MouseInfo
 {
-    screenpos position;
+    screenpos_deprecated position;
 
     OnMouseMoveCallback moveCallbacks[CALLBACKS_MAX_COUNT];
     u32 moveCallbackCount;
@@ -25,7 +25,7 @@ struct MouseInfo
 static struct MouseInfo s_mouseInfo = {};
 
 
-screenpos mouse_get_position()
+screenpos_deprecated mouse_get_position()
 {
     return s_mouseInfo.position;
 }
@@ -33,8 +33,8 @@ screenpos mouse_get_position()
 
 static void mouse_moved( vec2u16 const mousePos )
 {
-    screenpos const oldPos = mouse_get_position();
-	screenpos const newPos = SCREENPOS( mousePos.x + 1, mousePos.y + 1 );
+    screenpos_deprecated const oldPos = mouse_get_position();
+	screenpos_deprecated const newPos = SCREENPOS_DEPRECATED( mousePos.x + 1, mousePos.y + 1 );
 
 	if ( oldPos.x == newPos.x && oldPos.y == newPos.y ) return;
 
@@ -49,7 +49,7 @@ static void mouse_moved( vec2u16 const mousePos )
 
 static void call_click_callback( enum MouseButton const button )
 {
-	screenpos const mousePos = mouse_get_position();
+	screenpos_deprecated const mousePos = mouse_get_position();
 
 	for ( u32 idx = 0; idx < s_mouseInfo.clickCallbackCount; ++idx )
     {

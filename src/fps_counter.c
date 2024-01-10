@@ -24,9 +24,9 @@ enum
 
 struct FrameHistory
 {
-    nsec frameDuration[FRAME_HISTORY_COUNT];
-    nsec totalDuration;
-    nsec averageDuration;
+    nsecond frameDuration[FRAME_HISTORY_COUNT];
+    nsecond totalDuration;
+    nsecond averageDuration;
     u8   frameIndex;
 };
 
@@ -35,15 +35,15 @@ struct FPSCounter
     HANDLE waitableTimer;
     LARGE_INTEGER minWaitTimePerFrame100ns;
 
-    nsec frameBegin;
-    nsec frameEnd;
+    nsecond frameBegin;
+    nsecond frameEnd;
 
     struct FrameHistory history;
 };
 
 static struct FPSCounter s_fpsCounter = {}; // Just to avoid dynamic alloc
 
-static nsec S_CAPPED_FRAMERATE = FRAMERATE_60_IN_NSEC;
+static nsecond S_CAPPED_FRAMERATE = FRAMERATE_60_IN_NSEC;
 
 
 struct FPSCounter *fpscounter_init( void )
@@ -98,7 +98,7 @@ u64 fpscounter_frame( struct FPSCounter *fpsCounter )
         fpsCounter->frameEnd = time_get_timestamp_nsec();
     } while ( fpsCounter->frameEnd - fpsCounter->frameBegin < S_CAPPED_FRAMERATE );
 
-	nsec const delta = fpsCounter->frameEnd - fpsCounter->frameBegin;
+	nsecond const delta = fpsCounter->frameEnd - fpsCounter->frameBegin;
 
     struct FrameHistory *history = &fpsCounter->history;
     history->totalDuration -= history->frameDuration[history->frameIndex];

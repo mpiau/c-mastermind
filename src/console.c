@@ -180,7 +180,7 @@ void console_cursor_set_position( short const y, short const x )
     console_draw( L"\x1B[%u;%uH", y, x );
 }
 
-void console_cursor_setpos( screenpos const position )
+void console_cursor_setpos( screenpos_deprecated const position )
 {
 	console_cursor_set_position( position.y, position.x );
 }
@@ -293,7 +293,7 @@ void console_screen_clear( void )
 
 // ////////////////////////////////////////////////
 
-void console_setpos( screenpos pos )
+void console_setpos( screenpos_deprecated pos )
 {
     console_draw( L"\x1B[%u;%uH", pos.y, pos.x );
 }

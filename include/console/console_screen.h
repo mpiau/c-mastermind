@@ -33,38 +33,38 @@ enum Color
 };
 
 // Control the brightness of the foreground and background color
-enum ColorBrightness
+enum Brightness
 {
-    ColorBrightness_NONE = 0b00000000,
-    ColorBrightness_BG   = 0b01000000,
-    ColorBrightness_FG   = 0b10000000,
-    ColorBrightness_ALL  = ColorBrightness_FG | ColorBrightness_BG,
+    Brightness_NONE = 0b00000000,
+    Brightness_BG   = 0b01000000,
+    Brightness_FG   = 0b10000000,
+    Brightness_ALL  = Brightness_FG | Brightness_BG,
 };
 
-// SGR (Select Graphic Rendition) parameters, setting display attributes
-// You can set multiple attributes at the same time by combining them
-enum DispAttr
+enum AttrFlags
 {
-    DispAttr_NONE          = 0b00000000,
-    DispAttr_BOLD          = 0b00000001,
-    DispAttr_FAINT         = 0b00000010,
-    DispAttr_ITALIC        = 0b00000100,
-    DispAttr_UNDERLINE     = 0b00001000,
-    DispAttr_BLINK         = 0b00010000,
-    DispAttr_STRIKETHROUGH = 0b00100000,
-    DispAttr_REVERSE       = 0b01000000,
-    DispAttr_INVISIBLE     = 0b10000000,
+    AttrFlags_NONE      = 0b00000000,
+    AttrFlags_BOLD      = 0b00000001,
+    AttrFlags_FAINT     = 0b00000010,
+    AttrFlags_ITALIC    = 0b00000100,
+    AttrFlags_UNDERLINE = 0b00001000,
+    AttrFlags_BLINK     = 0b00010000,
+    AttrFlags_MaskAll   = 0b00011111
 
-    DispAttr_MaskAll       = 0b11111111
+    // 2 available attributes remaining
 };
-static_assert( DispAttr_MaskAll <= (u8)-1 );
 
-struct Style
+enum SpecialFlags
 {
-    byte color;
-    byte dispAttr;
+    SpecialFlags_NEEDS_REFRESH = 0b10000000
 };
-static_assert( sizeof( struct Style ) == 2 );
+
+struct Properties
+{
+    u8 color;
+    u8 flags;
+};
+static_assert( sizeof( struct Properties ) == 2 );
 
 
 bool console_screen_init( void const *handle );
@@ -81,12 +81,12 @@ void console_refresh_v2( void );
 void console_on_screen_resize( vec2u16 newSize );
 
 
-struct Style style_make( enum Color color, enum ColorBrightness brightness, enum DispAttr attributes );
-void console_set_style( struct Style style );
+struct Properties properties_make( enum Color color, enum Brightness brightness, enum AttrFlags flags );
+void console_set_properties( struct Properties properties );
 void console_reset_style( void );
 
-screenpos console_pos( void );
-void console_set_pos( screenpos pos );
+screenpos_deprecated console_pos( void );
+void console_set_pos( screenpos_deprecated pos );
 
 
 

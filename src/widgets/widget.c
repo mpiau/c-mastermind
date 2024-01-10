@@ -20,7 +20,7 @@ static struct Widget *s_widgets[ComponentId_Count] = {};
 // Array with the list of ID for the priority frame / priority input
 
 
-static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const newPos )
+static void on_mouse_mouvement_callback( screenpos_deprecated const oldPos, screenpos_deprecated const newPos )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
@@ -32,7 +32,7 @@ static void on_mouse_mouvement_callback( screenpos const oldPos, screenpos const
     }
 }
 
-static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton button )
+static void on_mouse_click_callback( screenpos_deprecated const mousePos, enum MouseButton button )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {

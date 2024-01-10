@@ -8,5 +8,5 @@ void widget_utils_clear_content( struct WidgetBox *box );
 
 void widget_utils_set_title( struct WidgetBox *box, utf16 const *title, enum ConsoleColorFG color );
 
-void widget_utils_calculate_truncation( struct WidgetBox *box, screenpos screenSize );
-void widget_utils_set_position( struct WidgetBox *box, screenpos borderUpLeft, vec2u16 contentSize );
+void widget_utils_calculate_truncation( struct WidgetBox *box, screenpos_deprecated screenSize );
+void widget_utils_set_position( struct WidgetBox *box, screenpos_deprecated borderUpLeft, vec2u16 contentSize );

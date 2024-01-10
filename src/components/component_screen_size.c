@@ -11,9 +11,9 @@ struct ComponentScreenSize
 {
     struct Widget header;
 
-	screenpos   pos;
-	struct Style errorStyle;
-	struct Style defaultStyle;
+	screenpos_deprecated   pos;
+	struct Properties errorProperties;
+	struct Properties defaultProperties;
 };
 #define CAST_TO_COMPONENT( _header ) ( struct ComponentScreenSize * )( _header )
 
@@ -30,18 +30,18 @@ static void redraw_callback( struct Widget *header )
 	console_set_pos( comp->pos );
 	u32 charsDrawn = 0;
 
-	console_set_style( widthTooSmall ? comp->errorStyle : comp->defaultStyle );
+	console_set_properties( widthTooSmall ? comp->errorProperties : comp->defaultProperties );
 	charsDrawn = console_write( L"%u", screenSize.w );
 
-	console_set_style( comp->defaultStyle );
+	console_set_properties( comp->defaultProperties );
 	charsDrawn += console_write( L"x" );
 
-	console_set_style( heightTooSmall ? comp->errorStyle : comp->defaultStyle );
+	console_set_properties( heightTooSmall ? comp->errorProperties : comp->defaultProperties );
 	charsDrawn += console_write( L"%u", screenSize.h );
 
 	if ( screenTooSmall )
 	{
-		console_set_style( comp->errorStyle );
+		console_set_properties( comp->errorProperties );
 		charsDrawn += console_write( L" (req: %ux%u)", GAME_SIZE_WIDTH, GAME_SIZE_HEIGHT );
 	}
 
@@ -68,9 +68,9 @@ struct Widget *component_screen_size_create( void )
 	callbacks->resizeCb = on_resize_callback;
 
 	// Specific component data
-	comp->pos = SCREENPOS( 10, 1 );
-	comp->errorStyle = style_make( ColorFG_RED, ColorBrightness_NONE, DispAttr_NONE );
-	comp->defaultStyle = style_make( ColorFG_BLACK, ColorBrightness_FG, DispAttr_NONE );
+	comp->pos = SCREENPOS_DEPRECATED( 10, 1 );
+	comp->errorProperties = properties_make( ColorFG_RED, Brightness_NONE, AttrFlags_NONE );
+	comp->defaultProperties = properties_make( ColorFG_BLACK, Brightness_FG, AttrFlags_NONE );
 
     return (struct Widget *)comp;
 }
