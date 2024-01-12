@@ -7,154 +7,158 @@
 #include "components/component_framerate.h"
 #include "components/component_screen_size.h"
 #include "components/component_summary.h"
+#include "components/component_mouse_position.h"
 #include "widgets/widget_timer.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_peg_selection.h"
 
-#include "console/console_screen.h"
-
 #include <stdlib.h>
 
-static struct Widget *s_widgets[ComponentId_Count] = {};
+static struct ComponentHeader *s_headers[ComponentId_Count] = {};
 
 // Array with the list of ID for the priority frame / priority input
 
 
-static void on_mouse_mouvement_callback( screenpos_deprecated const oldPos, screenpos_deprecated const newPos )
+static void on_mouse_move_callback( screenpos const pos )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
-        struct Widget *widget = s_widgets[id];
-        if ( widget && widget->callbacks.mouseMoveCb )
+        struct ComponentHeader *const header = s_headers[id];
+        if ( header && header->callbacks.mouseMoveCb )
         {
-            widget->callbacks.mouseMoveCb( widget, oldPos, newPos );
+            header->callbacks.mouseMoveCb( header, pos );
         }
     }
 }
 
-static void on_mouse_click_callback( screenpos_deprecated const mousePos, enum MouseButton button )
+
+static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton button )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
-        struct Widget *widget = s_widgets[id];
-        if ( widget && widget->callbacks.mouseClickCb )
+        struct ComponentHeader *header = s_headers[id];
+        if ( header && header->callbacks.mouseClickCb )
         {
-            widget->callbacks.mouseClickCb( widget, mousePos, button );
+            header->callbacks.mouseClickCb( header, mousePos, button );
         }
     }
 }
 
-static void on_screen_resize_callback( vec2u16 const oldSize, vec2u16 const newSize )
+
+void components_on_screen_resize( screensize const size )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
-        struct Widget *widget = s_widgets[id];
-        if ( widget == NULL ) continue;
-
-		if ( widget->callbacks.resizeCb != NULL )
+        struct ComponentHeader *const header = s_headers[id];
+        if ( header && header->callbacks.resizeCb )
 		{
-			widget->callbacks.resizeCb( widget, oldSize, newSize );
+			header->callbacks.resizeCb( header, size );
 		}
     }
 }
+
 
 static void on_game_update_callback( struct Mastermind const *mastermind, enum GameUpdateType const updateType )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
-        struct Widget *widget = s_widgets[id];
+        struct ComponentHeader *header = s_headers[id];
 
-        if ( widget && widget->callbacks.gameUpdateCb )
+        if ( header && header->callbacks.gameUpdateCb )
         {
-            widget->callbacks.gameUpdateCb( widget, mastermind, updateType );
+            header->callbacks.gameUpdateCb( header, mastermind, updateType );
         }
     }
 }
 
 
-bool widget_global_init( void )
+bool components_init( void )
 {
-    s_widgets[ComponentId_FRAMERATE] = component_framerate_create();
-	s_widgets[ComponentId_SCREEN_SIZE] = component_screen_size_create();
-	s_widgets[ComponentId_GAME_BUTTONS] = component_game_buttons_create();
-	s_widgets[ComponentId_BOARD] = widget_board_create();
-    s_widgets[ComponentId_TIMER] = widget_timer_create();
-	s_widgets[ComponentId_SUMMARY] = component_summary_create();
-	s_widgets[ComponentId_PEG_SELECTION] = widget_peg_selection_create();
+    s_headers[ComponentId_FRAMERATE] = component_framerate_create();
+	s_headers[ComponentId_SCREEN_SIZE] = component_screen_size_create();
+	s_headers[ComponentId_MOUSE_POSITION] = component_mouse_position_create();
+	s_headers[ComponentId_GAME_BUTTONS] = component_game_buttons_create();
+	s_headers[ComponentId_BOARD] = widget_board_create();
+    s_headers[ComponentId_TIMER] = widget_timer_create();
+	s_headers[ComponentId_SUMMARY] = component_summary_create();
+	s_headers[ComponentId_PEG_SELECTION] = widget_peg_selection_create();
 	// boardSummary
-    // s_widgets[ComponentId_COUNTDOWN] = widget_countdown_create();
+    // s_components[CompId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
-    mouse_register_on_mouse_mouvement_callback( on_mouse_mouvement_callback );
+    mouse_register_on_mouse_mouvement_callback( on_mouse_move_callback );
     mouse_register_on_mouse_click_callback( on_mouse_click_callback );
-    console_screen_register_on_resize_callback( on_screen_resize_callback );
 	mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
     return true;
 }
 
 
-void widget_global_uninit( void )
+void components_uninit( void )
 {
     for ( enum ComponentId idx = 0; idx < ComponentId_Count; ++idx )
     {
-        if ( s_widgets[idx] )
+        if ( s_headers[idx] )
         {
-            free( s_widgets[idx] );
+            free( s_headers[idx] );
+            s_headers[idx] = NULL;
         }
     }
 }
 
 
-bool widget_exists( enum ComponentId const id )
+bool component_exists( enum ComponentId const id )
 {
-    return s_widgets[id] != NULL;
+    return s_headers[id] != NULL;
 }
 
 
-struct Widget *widget_optget( enum ComponentId id )
+struct ComponentHeader *component_try_get( enum ComponentId id )
 {
-    return s_widgets[id];
+    return s_headers[id];
 }
 
 
 // /////////////////////////////////////////////////////////
 
-void widget_frame( void )
+void components_frame( void )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
-        struct Widget *const widget = s_widgets[id];
-		if ( widget == NULL ) continue;
+        struct ComponentHeader *const header = s_headers[id];
+		if ( header == NULL ) continue;
 
-        if ( widget->callbacks.frameCb != NULL )
+        if ( header->callbacks.frameCb != NULL )
         {
-            widget->callbacks.frameCb( widget );
+            header->callbacks.frameCb( header );
 		}
 
-		if ( widget->redrawNeeded )
+		if ( header->refreshNeeded )
 		{
-			if ( widget->callbacks.redrawCb != NULL )
+			if ( header->callbacks.redrawCb != NULL )
 			{
-				widget->callbacks.redrawCb( widget );
+				header->callbacks.redrawCb( header );
 			}
-			widget->redrawNeeded = false;
+			header->refreshNeeded = false;
 		}
    }
 }
 
 
-bool widget_try_consume_input( enum KeyInput const input )
+bool components_try_consume_input( enum KeyInput const input )
 {
-	for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
+    // The components displayed on top are at the end of the list.
+	for ( int id = ComponentId_Count - 1; id >= 0; --id )
     {
-        struct Widget *const widget = s_widgets[id];
-		if ( widget == NULL ) continue;
-        if ( widget->callbacks.inputReceivedCb == NULL ) continue;
+        struct ComponentHeader *const header = s_headers[id];
 
-		if ( widget->callbacks.inputReceivedCb( widget, input ) )
+		if ( !header || !header->callbacks.inputReceivedCb )
+            continue;
+
+		if ( header->callbacks.inputReceivedCb( header, input ) )
 		{
+            // Input has been consumed by the component, stop.
 			return true;
 		}
 	}
@@ -162,9 +166,9 @@ bool widget_try_consume_input( enum KeyInput const input )
 }
 
 
-void widget_set_header( struct Widget *const header, enum ComponentId const id, bool const enabled )
+void component_make_header( struct ComponentHeader *const header, enum ComponentId const id, bool const enabled )
 {
 	header->id = id;
 	header->enabled = enabled;
-	header->redrawNeeded = enabled;
+	header->refreshNeeded = enabled;
 }

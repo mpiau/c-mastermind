@@ -6,35 +6,36 @@
 #include "fps_counter.h"
 #include "mouse.h"
 
-#include "console.h"
+#include "terminal/terminal_screen.h"
+#include "terminal/terminal_style.h"
 
 struct ComponentFramerate
 {
-    struct Widget header;
+    struct ComponentHeader header;
 
-    screenpos_deprecated   pos;
+    screenpos   pos;
     usize       lastAverageFPS;
-    struct Properties properties;
+    struct TermStyle style;
 };
-#define CAST_TO_COMPONENT( _header ) ( struct ComponentFramerate * )( _header )
+#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentFramerate * )( _header ) )
 
 #define RETURN_IF_DISABLED( _header )                   \
     do { if ( !_header->enabled ) return; } while ( 0 )
 
 
-static void redraw_callback( struct Widget *header )
+static void redraw_callback( struct ComponentHeader *header )
 {
     RETURN_IF_DISABLED( header );
 
     struct ComponentFramerate const *comp = CAST_TO_COMPONENT( header );
 
-    console_set_pos( comp->pos );
-    console_set_properties( comp->properties );
-    console_write( L"%3uFPS", comp->lastAverageFPS );
+    term_screen_set_cursor_pos( comp->pos );
+    term_style_set_current( comp->style );
+    term_screen_write( L"%3uFPS", comp->lastAverageFPS );
 }
 
 
-static void frame_callback( struct Widget *header )
+static void frame_callback( struct ComponentHeader *header )
 {
     RETURN_IF_DISABLED( header );
 
@@ -44,26 +45,26 @@ static void frame_callback( struct Widget *header )
     if ( lastAverageFPS != comp->lastAverageFPS )
     {
         comp->lastAverageFPS = lastAverageFPS;
-        header->redrawNeeded = true;
+        header->refreshNeeded = true;
     }
 }
 
 
-struct Widget *component_framerate_create( void )
+struct ComponentHeader *component_framerate_create( void )
 {
     struct ComponentFramerate *const comp = calloc( 1, sizeof( struct ComponentFramerate ) );
     if ( !comp ) return NULL;
 
-    widget_set_header( &comp->header, ComponentId_FRAMERATE, true );
+    component_make_header( &comp->header, ComponentId_FRAMERATE, true );
 
-    struct WidgetCallbacks *const callbacks = &comp->header.callbacks;
+    struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
 
     // Specific to the component 
-    comp->pos = SCREENPOS_DEPRECATED( 2, 1 );
+    comp->pos = (screenpos) { .x = 2, .y = 1 };
     comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
-    comp->properties = properties_make( ColorFG_BLACK, Brightness_FG, AttrFlags_NONE );
+    comp->style = term_style_make( COLOR_BRIGHT_BLACK, Properties_FAINT );
 
-    return (struct Widget *)comp;
+    return (struct ComponentHeader *)comp;
 }

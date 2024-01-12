@@ -11,8 +11,6 @@ typedef union vec2u16
 
 static_assert( sizeof( vec2u16 ) == 2 * sizeof( u16 ) );
 
-typedef vec2u16 screenpos_deprecated;
-
 typedef union vec2u32
 {
     u32 raw[2];
@@ -25,16 +23,17 @@ static_assert( sizeof( vec2u32 ) == 2 * sizeof( u32 ) );
 
 #define VEC2U16( _x, _y )   ( (vec2u16) { .x = _x, .y = _y } )
 #define VEC2U32( _x, _y )   ( (vec2u32) { .x = _x, .y = _y } )
-#define SCREENPOS_DEPRECATED( _x, _y ) ( (screenpos_deprecated) { .x = _x, .y = _y } )
 
-union screenpos
+typedef union screenpos
 {
-    u16 raw;
-    struct { u8 y, x; };
-};
+    u32 raw;
+    struct { u16 x, y; };
+} screenpos;
 
-union screensize
+#define SCREENPOS( _x, _y ) ( (screenpos) { .x = _x, .y = _y } )
+
+typedef union screensize
 {
-    u16 raw;
-    struct { u8 h, w; };
-};
+    u32 raw;
+    struct { u16 w, h; };
+} screensize;

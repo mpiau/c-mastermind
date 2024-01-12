@@ -80,7 +80,7 @@ static const struct KeyInputData S_KEY_INPUT_DATA[] =
     KEY_INPUT_DEF( KeyInput_ALT       , VK_MENU,    "Alt"       ),
     KEY_INPUT_DEF( KeyInput_PAUSE     , VK_PAUSE,   "Pause"     ),
     KEY_INPUT_DEF( KeyInput_CAPSLOCK  , VK_CAPITAL, "Caps lock" ),
-    KEY_INPUT_DEF( KeyInput_ESCAPE    , VK_ESCAPE,  "Espace"    ),
+    KEY_INPUT_DEF( KeyInput_ESCAPE    , VK_ESCAPE,  "Escape"    ),
     KEY_INPUT_DEF( KeyInput_SPACE     , VK_SPACE,   "Space"     ),
     KEY_INPUT_DEF( KeyInput_PAGE_UP   , VK_PRIOR,   "Page Up"   ),
     KEY_INPUT_DEF( KeyInput_PAGE_DOWN , VK_NEXT,    "Page Down" ),

@@ -3,6 +3,6 @@
 #include "core_types.h"
 
 // Forward declaration
-struct Widget;
+struct ComponentHeader;
 
-struct Widget *widget_peg_selection_create( void );
+struct ComponentHeader *widget_peg_selection_create( void );

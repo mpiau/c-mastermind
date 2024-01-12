@@ -6,6 +6,9 @@
 #include "keyboard_inputs.h"
 #include "gameloop.h"
 
+#include "terminal/terminal_screen.h"
+#include "terminal/terminal_style.h"
+
 enum ButtonId
 {
 	// Upper row
@@ -52,11 +55,12 @@ struct Button
 
 struct ComponentGameButtons
 {
-	struct Widget header;
+	struct ComponentHeader header;
 
 	struct Button buttons[ButtonId_Count];
 	enum ButtonId hoveredButton;
 };
+#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentGameButtons * )( _header ) )
 
 
 static void button_get_hovered_color( enum ButtonId const id, enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
@@ -109,10 +113,10 @@ static void button_get_disabled_color( enum ConsoleColorFG *const outTextColor, 
 }
 
 
-static void game_buttons_update_status( struct Widget *header, enum ButtonStatus const status )
+static void game_buttons_update_status( struct ComponentHeader *header, enum ButtonStatus const status )
 {
 	struct ComponentGameButtons *widget = (struct ComponentGameButtons *)header;
-	screenpos_deprecated const mousePosition = mouse_get_position();
+	screenpos const mousePosition = mouse_get_position();
 
 	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
 	{
@@ -126,18 +130,18 @@ static void game_buttons_update_status( struct Widget *header, enum ButtonStatus
 }
 
 
-static void mouse_move_callback( struct Widget *const widget, screenpos_deprecated const oldPos, screenpos_deprecated const newPos )
+static void mouse_move_callback( struct ComponentHeader *const widget, screenpos const pos )
 {
 	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
-		if ( boardButtons->buttons[idx].status == ButtonStatus_ENABLED && rect_is_inside( &boardButtons->buttons[idx].box, newPos ) )
+		if ( boardButtons->buttons[idx].status == ButtonStatus_ENABLED && rect_is_inside( &boardButtons->buttons[idx].box, pos ) )
 		{
 			if ( boardButtons->hoveredButton != idx )
 			{
 				boardButtons->hoveredButton = idx;
-				widget->redrawNeeded = true;
+				widget->refreshNeeded = true;
 			}
 			return;
 		}
@@ -146,12 +150,12 @@ static void mouse_move_callback( struct Widget *const widget, screenpos_deprecat
 	if ( boardButtons->hoveredButton != ButtonId_Invalid )
 	{
 		boardButtons->hoveredButton = ButtonId_Invalid;
-		widget->redrawNeeded = true;
+		widget->refreshNeeded = true;
 	}
 }
 
 
-static void game_update_callback( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
+static void game_update_callback( struct ComponentHeader *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
 {
 	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
@@ -164,7 +168,7 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 			boardButtons->hoveredButton = ButtonId_Invalid;
 		}
 		game_buttons_update_status( widget, ButtonStatus_HIDDEN );
-		widget->redrawNeeded = true;
+		widget->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_NEW )
 	{
@@ -175,30 +179,23 @@ static void game_update_callback( struct Widget *widget, struct Mastermind const
 			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
 		}
 		game_buttons_update_status( widget, ButtonStatus_ENABLED );
-		widget->redrawNeeded = true;
+		widget->refreshNeeded = true;
 	}
 }
 
 
-static void mouse_click_callback( struct Widget *widget, screenpos_deprecated clickPos, enum MouseButton mouseButton )
+static void mouse_click_callback( struct ComponentHeader *widget, screenpos clickPos, enum MouseButton mouseButton )
 {
-	struct ComponentGameButtons *buttons = (struct ComponentGameButtons *)widget;
+	struct ComponentGameButtons *buttons = CAST_TO_COMPONENT( widget );
 
 	if ( mouseButton == MouseButton_LEFT_CLICK && buttons->hoveredButton != ButtonId_Invalid )
 	{
 		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );
-		// After a successfull click, reset the hovered parameter.
-		// This way, the button won't be highlighted anymore after a click, which seems better in a UX perspective
-		// buttons->hoveredButton = ButtonId_Invalid;
-		// widget->redrawNeeded = true;
-		// Edit: Well it was good until I tested clicking multiple times on the same button without moving the mouse.
-		// Once disabled, there is no feedback for the user.
-		// TODO: Either we put the button in black bright on click and then reapply the color, or not remove the color at all
 	}
 }
 
 
-static void redraw_callback( struct Widget *widget )
+static void redraw_callback( struct ComponentHeader *widget )
 {
 	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
@@ -209,7 +206,7 @@ static void redraw_callback( struct Widget *widget )
 	{
 		struct Button *button = &boardButtons->buttons[idx];
 
-		screenpos_deprecated const ul = rect_get_corner( &button->box, RectCorner_UL );
+		screenpos const ul = rect_get_corner( &button->box, RectCorner_UL );
 		bool const isHovered = ( boardButtons->hoveredButton == idx );
 
 		console_cursor_setpos( ul );
@@ -242,7 +239,7 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
-static inline struct Button button_make( screenpos_deprecated const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
+static inline struct Button button_make( screenpos const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
 {
 	assert( text != NULL );
 
@@ -261,32 +258,32 @@ static void init_component_data( struct ComponentGameButtons *comp )
 
 	struct Button *buttons = comp->buttons;
 	// Upper row
-	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS_DEPRECATED( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
-	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS_DEPRECATED( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
-	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS_DEPRECATED( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
-	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS_DEPRECATED( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
-	buttons[ButtonId_QUIT]         = button_make( SCREENPOS_DEPRECATED( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
+	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
+	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
+	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
+	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
+	buttons[ButtonId_QUIT]         = button_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
 	// Bottom row
-	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS_DEPRECATED( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
-	buttons[ButtonId_NEXT]           = button_make( SCREENPOS_DEPRECATED( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
-	buttons[ButtonId_BOARD]          = button_make( SCREENPOS_DEPRECATED( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
-	buttons[ButtonId_PEGS]           = button_make( SCREENPOS_DEPRECATED( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
-	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS_DEPRECATED( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
-	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS_DEPRECATED( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
-	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS_DEPRECATED( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
-	buttons[ButtonId_RESET]          = button_make( SCREENPOS_DEPRECATED( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
-	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS_DEPRECATED( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
-	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS_DEPRECATED( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
+	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
+	buttons[ButtonId_NEXT]           = button_make( SCREENPOS( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
+	buttons[ButtonId_BOARD]          = button_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
+	buttons[ButtonId_PEGS]           = button_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
+	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
+	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
+	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
+	buttons[ButtonId_RESET]          = button_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
+	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
+	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
 }
 
-struct Widget *component_game_buttons_create( void )
+struct ComponentHeader *component_game_buttons_create( void )
 {
     struct ComponentGameButtons *const comp = calloc( 1, sizeof( struct ComponentGameButtons ) );
     if ( !comp ) return NULL;
 
-	widget_set_header( &comp->header, ComponentId_GAME_BUTTONS, true );
+	component_make_header( &comp->header, ComponentId_GAME_BUTTONS, true );
 
-    struct WidgetCallbacks *const callbacks = &comp->header.callbacks;
+    struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->redrawCb = redraw_callback;
 	callbacks->mouseMoveCb = mouse_move_callback;
 	callbacks->mouseClickCb = mouse_click_callback;
@@ -295,5 +292,5 @@ struct Widget *component_game_buttons_create( void )
 	// Specific data
 	init_component_data( comp );
 
-	return (struct Widget *)comp;
+	return (struct ComponentHeader *)comp;
 }

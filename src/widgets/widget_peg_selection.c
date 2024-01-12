@@ -4,13 +4,13 @@
 
 struct WidgetPegSelection
 {
-    struct Widget header;
+    struct ComponentHeader header;
 
     enum PegId selection;
 };
 
 
-static void draw_colored_peg( struct Widget *widget, screenpos_deprecated const ul, enum PegId const id )
+static void draw_colored_peg( struct ComponentHeader *widget, screenpos const ul, enum PegId const id )
 {
     struct WidgetPegSelection *selection = (struct WidgetPegSelection *)widget;
 	console_color_fg( peg_get_color( id, selection->selection == id ) );
@@ -21,7 +21,7 @@ static void draw_colored_peg( struct Widget *widget, screenpos_deprecated const 
 	console_draw( L"`YP'" );
 }
 
-static void draw_peg( screenpos_deprecated const ul, enum PegId const id )
+static void draw_peg( screenpos const ul, enum PegId const id )
 {
 	bool const isEmpty = ( id == PegId_Empty );
 
@@ -38,7 +38,7 @@ static void draw_peg( screenpos_deprecated const ul, enum PegId const id )
 static void draw_rect_borders( struct Rect *rect )
 {
     console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
-    screenpos_deprecated const ul = rect_get_corner( rect, RectCorner_UL );
+    screenpos const ul = rect_get_corner( rect, RectCorner_UL );
     console_setpos( ul );
 
     console_draw( L"┌" );
@@ -60,9 +60,9 @@ static void draw_rect_borders( struct Rect *rect )
 }
 
 
-static void redraw_callback( struct Widget *widget )
+static void redraw_callback( struct ComponentHeader *widget )
 {
-    screenpos_deprecated ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
+    screenpos ul = rect_get_corner( &widget->rectBox, RectCorner_UL );
     draw_rect_borders( &widget->rectBox );
     ul.y += 1;
     ul.x += 2;
@@ -75,7 +75,7 @@ static void redraw_callback( struct Widget *widget )
     {
         for ( int x = 0; x < 4; ++x )
         {
-            screenpos_deprecated pos = SCREENPOS_DEPRECATED( ul.x + x * 5, ul.y + y * 3 );
+            screenpos pos = SCREENPOS( ul.x + x * 5, ul.y + y * 3 );
             enum PegId const id = y * 4 + x;
             assert( id < PegId_Count );
             draw_colored_peg( widget, pos, id );
@@ -84,7 +84,7 @@ static void redraw_callback( struct Widget *widget )
 
     // Vertical line for separation 
     console_color_fg( ConsoleColorFG_BRIGHT_BLUE );
-    screenpos_deprecated const vertLineUpPos = SCREENPOS_DEPRECATED( ul.x + rowPegWidth + 1, ul.y );
+    screenpos const vertLineUpPos = SCREENPOS( ul.x + rowPegWidth + 1, ul.y );
 
     console_cursor_set_position( vertLineUpPos.y - 1, vertLineUpPos.x );
     console_draw( L"┬" );
@@ -103,7 +103,7 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
-static bool input_received_callback( struct Widget *widget, enum KeyInput const input )
+static bool input_received_callback( struct ComponentHeader *widget, enum KeyInput const input )
 {
     // TEMP, need the keyInput to test something
     return false;
@@ -117,7 +117,7 @@ static bool input_received_callback( struct Widget *widget, enum KeyInput const 
             if ( pegSelect->selection >= 4 )
             {
                 pegSelect->selection -= 4;
-                widget->redrawNeeded = true;
+                widget->refreshNeeded = true;
             }
             break;
         }
@@ -126,7 +126,7 @@ static bool input_received_callback( struct Widget *widget, enum KeyInput const 
             if ( pegSelect->selection < 4 )
             {
                 pegSelect->selection += 4;
-                widget->redrawNeeded = true;
+                widget->refreshNeeded = true;
             }
             break;
         }
@@ -135,7 +135,7 @@ static bool input_received_callback( struct Widget *widget, enum KeyInput const 
             if ( pegSelect->selection != 0 && pegSelect->selection != 4 )
             {
                 pegSelect->selection -= 1;
-                widget->redrawNeeded = true;
+                widget->refreshNeeded = true;
             }
             break;
         }
@@ -144,7 +144,7 @@ static bool input_received_callback( struct Widget *widget, enum KeyInput const 
             if ( pegSelect->selection != 3 && pegSelect->selection != 7 )
             {
                 pegSelect->selection += 1;
-                widget->redrawNeeded = true;
+                widget->refreshNeeded = true;
             }
             break;
         }
@@ -154,20 +154,20 @@ static bool input_received_callback( struct Widget *widget, enum KeyInput const 
     return true;
 }
 
-struct Widget *widget_peg_selection_create( void )
+struct ComponentHeader *widget_peg_selection_create( void )
 {
     struct WidgetPegSelection *const pegSelection = malloc( sizeof( struct WidgetPegSelection ) );
     if ( !pegSelection ) return NULL;
     memset( pegSelection, 0, sizeof( *pegSelection ) );
 
-    struct Widget *const widget = &pegSelection->header;
+    struct ComponentHeader *const widget = &pegSelection->header;
     widget->id = ComponentId_PEG_SELECTION;
     widget->enabled = false;
-	widget->redrawNeeded = false;
+	widget->refreshNeeded = false;
 
-	widget->rectBox = rect_make( SCREENPOS_DEPRECATED( 87, 21 ), VEC2U16( 32, 7 ) );
+	widget->rectBox = rect_make( SCREENPOS( 87, 21 ), VEC2U16( 32, 7 ) );
 
-    struct WidgetCallbacks *const callbacks = &widget->callbacks;
+    struct ComponentCallbacks *const callbacks = &widget->callbacks;
     callbacks->redrawCb = redraw_callback;
     callbacks->inputReceivedCb = input_received_callback;
 
@@ -175,5 +175,5 @@ struct Widget *widget_peg_selection_create( void )
 
     pegSelection->selection = PegId_RED;
 
-    return (struct Widget *)pegSelection;
+    return (struct ComponentHeader *)pegSelection;
 }

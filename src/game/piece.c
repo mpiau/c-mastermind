@@ -1,6 +1,6 @@
 #include "game/piece.h"
 
-#include "console.h"
+#include "console/console.h"
 #include "settings.h"
 #include "characters_list.h"
 

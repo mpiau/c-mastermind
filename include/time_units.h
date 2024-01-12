@@ -10,7 +10,7 @@ typedef u64 minute;
 typedef u64 hour;
 typedef u64 day;
 
-enum
+enum Time
 {
 	Time_SEC_IN_MSEC = 1000,
 	Time_SEC_IN_USEC = Time_SEC_IN_MSEC * 1000,

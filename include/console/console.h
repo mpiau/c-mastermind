@@ -5,8 +5,6 @@
 
 #include <windows.h> // Temp only, will remove later but convenient for the moment
 
-#include "console/console_screen.h"
-
 enum ConsoleColorFG
 {
     ConsoleColorFG_BLACK   = 30,
@@ -71,7 +69,7 @@ void console_cursor_show( void );
 void console_cursor_start_blinking( void );
 void console_cursor_stop_blinking( void );
 void console_cursor_set_position( short y, short x );
-void console_cursor_setpos( screenpos_deprecated position );
+void console_cursor_setpos( screenpos position );
 void console_cursor_move_up_by( short n );
 void console_cursor_move_down_by( short n );
 void console_cursor_move_left_by( short n );
@@ -99,11 +97,6 @@ void console_color_positive( void ); // Swap back to normal
 void console_color_fg( enum ConsoleColorFG fgColor );
 void console_color_bg( enum ConsoleColorBG bgColor );
 
-
-//vec2u16 console_screen_get_size( HANDLE handle );
-void console_screen_clear( void );
-
-void console_refresh( void );
 int console_draw( utf16 const *format, ... );
 
-void console_setpos( screenpos_deprecated pos );
+void console_setpos( screenpos pos );

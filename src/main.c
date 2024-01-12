@@ -1,7 +1,6 @@
 // Mastermind game in C
 #include "mastermind.h"
-#include "console.h"
-#include "console/console_screen.h"
+#include "console/console.h"
 #include "characters_list.h"
 #include "core_unions.h"
 #include "fps_counter.h"
@@ -11,6 +10,9 @@
 #include "mouse.h"
 #include "gameloop.h"
 #include "settings.h"
+
+#include "terminal/terminal_screen.h"
+#include "terminal/terminal_style.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -119,7 +121,7 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 		return;
 	}
 
-	if ( widget_try_consume_input( input ) )
+	if ( components_try_consume_input( input ) )
 	{
 		return;
 	}
@@ -146,8 +148,7 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 		case WINDOW_BUFFER_SIZE_EVENT:
 		{
 			COORD const size = recordedInput->Event.WindowBufferSizeEvent.dwSize;
-			console_screen_resize( *(vec2u16 *)&size );
-			console_on_screen_resize( *(vec2u16 *)&size );
+			term_screen_on_resize( *(screensize *)&size );
 			return;
 		}
 		case MOUSE_EVENT:
@@ -176,12 +177,10 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 }
 
 
-static bool consume_user_inputs( HANDLE const consoleHandle )
+static bool consume_user_inputs( void )
 {
-	assert( consoleHandle != INVALID_HANDLE_VALUE );
-
 	DWORD nbEvents = 0;
-	if ( !GetNumberOfConsoleInputEvents( consoleHandle, &nbEvents ) )
+	if ( !GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents ) )
 	{
 		fprintf( stderr, "[ERROR]: GetNumberOfConsoleInputEvents failure. (Code %u)\n", GetLastError() );
 		return false;
@@ -194,7 +193,7 @@ static bool consume_user_inputs( HANDLE const consoleHandle )
 
 	DWORD nbInputsRead;
 	INPUT_RECORD inputsBuffer[nbEvents];
-	if ( !ReadConsoleInput( consoleHandle, &inputsBuffer[0], nbEvents, &nbInputsRead ) )
+	if ( !ReadConsoleInput( console_input_handle(), &inputsBuffer[0], nbEvents, &nbInputsRead ) )
 	{
 		fprintf( stderr, "[ERROR]: ReadConsoleInput failure. (Code %u)\n", GetLastError() );
 		return false;
@@ -229,37 +228,22 @@ int main( void )
 
 	settings_global_init();
 	mouse_init();
-	if ( !widget_global_init() )
+	if ( !components_init() )
 	{
+		fprintf( stderr, "[FATAL ERROR]: Failed to init Components. Aborting." );
 		return 3;
 	}
 
 	while ( s_mainLoop )
 	{
-		consume_user_inputs( console_input_handle() );
-
-		// Frame functions
-		console_screen_frame();
-		widget_frame();
-
-		// TEMP - To move somewhere else
-		console_set_pos( SCREENPOS_DEPRECATED( 35, 1 ) );
-		console_set_properties( properties_make( ColorFG_BLACK, Brightness_FG, AttrFlags_NONE ) );
-		screenpos_deprecated const mousePos = mouse_get_position();
-		console_write( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
-//		console_cursor_set_position( 1, 35 );
-//		console_color_reset();
-//		screenpos const mousePos = mouse_get_position();
-//		console_draw( L" | Mouse: %ux%u  ", mousePos.x, mousePos.y );
-
-		// Refresh the game display in the console
-		console_refresh_v2();
-
+		consume_user_inputs();
+		components_frame();
+		term_screen_refresh();
 		// Last function call in the loop
 		fpscounter_frame( fpsCounter );
 	}
 
-	widget_global_uninit();
+	components_uninit();
 	fpscounter_uninit( fpsCounter );
 	console_global_uninit();
 	return 0;

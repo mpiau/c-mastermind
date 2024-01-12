@@ -14,7 +14,7 @@ enum CountdownStatus
 
 struct WidgetCountdown
 {
-	struct Widget header;
+	struct ComponentHeader header;
 
     // Specific data to timer
 	enum CountdownStatus status;
@@ -25,7 +25,7 @@ struct WidgetCountdown
 };
 
 
-static void redraw_callback( struct Widget *widget )
+static void redraw_callback( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
 	if ( !widget->enabled ) return;
@@ -84,7 +84,7 @@ static void redraw_callback( struct Widget *widget )
 }
 
 
-static void frame_callback( struct Widget *widget )
+static void frame_callback( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
@@ -102,21 +102,21 @@ static void frame_callback( struct Widget *widget )
 }
 
 
-struct Widget *widget_countdown_create( void )
+struct ComponentHeader *widget_countdown_create( void )
 {
     struct WidgetCountdown *const countdown = malloc( sizeof( struct WidgetCountdown ) );
     if ( !countdown ) return NULL;
     memset( countdown, 0, sizeof( *countdown ) );
 
-	struct Widget *const widget = &countdown->header;
+	struct ComponentHeader *const widget = &countdown->header;
 
     widget->id = ComponentId_COUNTDOWN;
 	widget->enabled = true;
 
-	assert( widget_exists( ComponentId_TIMER ) );
-	struct WidgetBox const *TimerBox = &widget_optget( ComponentId_TIMER )->box;
+	assert( component_exists( ComponentId_TIMER ) );
+	struct WidgetBox const *TimerBox = &component_try_get( ComponentId_TIMER )->box;
 
-    screenpos_deprecated const borderUpLeft = (screenpos_deprecated) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
+    screenpos const borderUpLeft = (screenpos) { .x = TimerBox->borderUpLeft.x, .y = TimerBox->borderBottomRight.y + 1 };
     vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
@@ -124,21 +124,20 @@ struct Widget *widget_countdown_create( void )
 
     countdown->header.callbacks.frameCb = frame_callback;
 	countdown->header.callbacks.redrawCb = redraw_callback;
-    countdown->header.callbacks.resizeCb = NULL;
 
 	// Widget specific
 
 	countdown->status = CountdownStatus_NOT_STARTED;
 	countdown->totalDuration = time_sec_to_nsec( 60 );
 
-    return (struct Widget *)countdown;
+    return (struct ComponentHeader *)countdown;
 }
 
 
 // //////////////////////////////////////////////////////////////////
 
 
-void widget_countdown_start( struct Widget *widget )
+void widget_countdown_start( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
@@ -152,7 +151,7 @@ void widget_countdown_start( struct Widget *widget )
 }
 
 
-void widget_countdown_pause( struct Widget *widget )
+void widget_countdown_pause( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
@@ -161,7 +160,7 @@ void widget_countdown_pause( struct Widget *widget )
 }
 
 
-void widget_countdown_resume( struct Widget *widget )
+void widget_countdown_resume( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
@@ -173,7 +172,7 @@ void widget_countdown_resume( struct Widget *widget )
 }
 
 
-void widget_countdown_reset( struct Widget *widget )
+void widget_countdown_reset( struct ComponentHeader *widget )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;
@@ -182,7 +181,7 @@ void widget_countdown_reset( struct Widget *widget )
 }
 
 
-void widget_countdown_set_duration( struct Widget *widget, second const duration )
+void widget_countdown_set_duration( struct ComponentHeader *widget, second const duration )
 {
 	assert( widget->id == ComponentId_COUNTDOWN );
     struct WidgetCountdown *countdown = (struct WidgetCountdown *)widget;

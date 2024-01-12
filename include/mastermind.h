@@ -4,7 +4,7 @@
 #include "core_unions.h"
 
 #include "keyboard_inputs.h"
-#include "console.h"
+#include "console/console.h"
 
 #include "game/piece.h"
 

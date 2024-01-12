@@ -1,5 +1,5 @@
 #pragma once
 
-#include "core_types.h"
+struct ComponentHeader;
 
-struct Widget *component_screen_size_create( void );
+struct ComponentHeader *component_screen_size_create( void );

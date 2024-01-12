@@ -5,7 +5,7 @@
 
 #include "widgets/widget.h"
 #include "mastermind.h"
-#include "console.h"
+#include "console/console.h"
 #include "mouse.h"
 #include "rect.h"
 
@@ -29,14 +29,14 @@ enum WidgetBorderOption
 struct WidgetBox
 {
     // Screen positions
-    screenpos_deprecated borderUpLeft;
-    screenpos_deprecated borderBottomRight;
-    screenpos_deprecated contentUpLeft;
-    screenpos_deprecated contentBottomRight;
+    screenpos borderUpLeft;
+    screenpos borderBottomRight;
+    screenpos contentUpLeft;
+    screenpos contentBottomRight;
 
     // Truncation related
-    screenpos_deprecated truncatedBorderBottomRight;
-    screenpos_deprecated truncatedContentBottomRight;
+    screenpos truncatedBorderBottomRight;
+    screenpos truncatedContentBottomRight;
     enum WidgetTruncatedStatus truncatedStatus;
 
     // Title
@@ -49,18 +49,18 @@ struct WidgetBox
 };
 
 
-typedef void ( *WidgetFrameCallback )( struct Widget *widget );
-typedef void ( *WidgetRedrawCallback )( struct Widget *widget );
-typedef void ( *WidgetClearCallback )( struct Widget *widget );
-typedef void ( *WidgetMouseMoveCallback )( struct Widget *widget, screenpos_deprecated oldPos, screenpos_deprecated newPos );
-typedef void ( *WidgetMouseClickCallback )( struct Widget *widget, screenpos_deprecated pos, enum MouseButton button );
-typedef void ( *WidgetResizeCallback )( struct Widget *widget, vec2u16 oldSize, vec2u16 newSize );
-typedef void ( *WidgetGameUpdateCallback )( struct Widget *widget, struct Mastermind const *mastermind, enum GameUpdateType type );
+typedef void ( *WidgetFrameCallback )( struct ComponentHeader *widget );
+typedef void ( *WidgetRedrawCallback )( struct ComponentHeader *widget );
+typedef void ( *WidgetClearCallback )( struct ComponentHeader *widget );
+typedef void ( *WidgetMouseMoveCallback )( struct ComponentHeader *widget, screenpos pos );
+typedef void ( *WidgetMouseClickCallback )( struct ComponentHeader *widget, screenpos pos, enum MouseButton button );
+typedef void ( *WidgetResizeCallback )( struct ComponentHeader *widget, screensize newSize );
+typedef void ( *WidgetGameUpdateCallback )( struct ComponentHeader *widget, struct Mastermind const *mastermind, enum GameUpdateType type );
 
 // Must return true if the input has been consumed by the widget. False otherwise.
-typedef bool ( *WidgetOnInputReceivedCallback )( struct Widget *widget, enum KeyInput input );
+typedef bool ( *WidgetOnInputReceivedCallback )( struct ComponentHeader *widget, enum KeyInput input );
 
-struct WidgetCallbacks
+struct ComponentCallbacks
 {
     WidgetFrameCallback		 frameCb;
     WidgetClearCallback		 clearCb;
@@ -72,12 +72,12 @@ struct WidgetCallbacks
     WidgetOnInputReceivedCallback inputReceivedCb;
 };
 
-struct Widget
+struct ComponentHeader
 {
     enum ComponentId id;
 	struct Rect            rectBox;
     struct WidgetBox 	   box;
-    struct WidgetCallbacks callbacks;
+    struct ComponentCallbacks callbacks;
     bool                   enabled;
-    bool                   redrawNeeded;
+    bool                   refreshNeeded;
 };

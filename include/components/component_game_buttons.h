@@ -1,5 +1,5 @@
 #pragma once
 
-#include "core_types.h"
+struct ComponentHeader;
 
-struct Widget *component_game_buttons_create( void );
+struct ComponentHeader *component_game_buttons_create( void );

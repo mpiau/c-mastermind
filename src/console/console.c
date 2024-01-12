@@ -1,5 +1,6 @@
-#include "console.h"
-#include "console/console_screen.h"
+#include "console/console.h"
+
+#include "terminal/terminal_screen.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -48,7 +49,7 @@ static void update_console_mode( void )
 	handle = console_output_handle();
 	GetConsoleMode( handle, (LPDWORD)&s_oldOutputMode );
 
-	newMode = ( s_oldOutputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN );
+	newMode = ( ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN );
 	SetConsoleMode( handle, newMode );
 }
 
@@ -96,8 +97,8 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
 	console_alternate_buffer_enter();
     console_cursor_hide();
 
-	console_screen_init( console_output_handle() );
-    vec2u16 const screenSize = console_screen_get_size();
+    term_screen_init( console_output_handle() );
+    screensize const screenSize = term_screen_current_size();
     SetConsoleScreenBufferSize( console_output_handle(), *(COORD *)&screenSize );
 
     return true;
@@ -106,11 +107,7 @@ bool console_global_init( char const *optTitle, bool const onDedicatedConsole )
 
 void console_global_uninit( void )
 {
-    if ( !console_is_global_init() )
-    {
-        fprintf( stderr, "[ERROR]: Trying to uninit the Console, which isn't initialized !\n" );
-        return;
-    }
+    if ( !console_is_global_init() ) return;
 
     SetConsoleCtrlHandler( console_ctrl_handler, FALSE );
     reset_console_mode();
@@ -180,7 +177,7 @@ void console_cursor_set_position( short const y, short const x )
     console_draw( L"\x1B[%u;%uH", y, x );
 }
 
-void console_cursor_setpos( screenpos_deprecated const position )
+void console_cursor_setpos( screenpos const position )
 {
 	console_cursor_set_position( position.y, position.x );
 }
@@ -285,15 +282,9 @@ void console_color_bg( enum ConsoleColorBG const bgColor )
     console_draw( L"\x1b[%um", bgColor );
 }
 
-
-void console_screen_clear( void )
-{
-	console_draw( L"\x1b[2J" );
-}
-
 // ////////////////////////////////////////////////
 
-void console_setpos( screenpos_deprecated pos )
+void console_setpos( screenpos pos )
 {
     console_draw( L"\x1B[%u;%uH", pos.y, pos.x );
 }
@@ -310,16 +301,3 @@ int console_draw( utf16 const *format, ... )
     return nbWritten;
 }
 
-
-void console_refresh( void )
-{
-	// We should instead compare the differences between the current displayed screen and the incoming one,
-	// generate the necessary code to update the screen, and then use that generated buffer into the
-	// wprintf. This step will also us to easily handle the resize because we will only check the limits of the
-	// current size, and so only print what's visible naturally, without having each widget to do the job themselves.
-    if ( s_bufPos > 0 )
-    {
-		wprintf( s_screenBuffer );
-		s_bufPos = 0;
-    }
-}

@@ -3,7 +3,6 @@
 #include "widgets/widget_definition.h"
 #include "widgets/widget_utils.h"
 
-#include "console/console_screen.h"
 #include "time_units.h"
 
 enum TimerStatus
@@ -16,7 +15,7 @@ enum TimerStatus
 
 struct WidgetTimer
 {
-    struct Widget header;
+    struct ComponentHeader header;
 
     enum TimerStatus status;
     nsecond totalDuration;
@@ -24,7 +23,7 @@ struct WidgetTimer
 };
 
 
-static void redraw_callback( struct Widget *widget )
+static void redraw_callback( struct ComponentHeader *widget )
 {
 	return;
 	
@@ -36,8 +35,8 @@ static void redraw_callback( struct Widget *widget )
 
     // TODO If widget truncated, return. Don't display anything
 
-    screenpos_deprecated const contentUL = timer->header.box.contentUpLeft;
-    screenpos_deprecated const contentBR = timer->header.box.contentBottomRight;
+    screenpos const contentUL = timer->header.box.contentUpLeft;
+    screenpos const contentBR = timer->header.box.contentBottomRight;
     u32 const width = contentBR.x - contentUL.x + 1;
 
     second const totalDuration = time_nsec_to_sec( timer->totalDuration );
@@ -45,15 +44,15 @@ static void redraw_callback( struct Widget *widget )
     hour const hours  = ( totalDuration / 3600 );
     minute const minutes = ( totalDuration % 3600 ) / 60;
     second const seconds = totalDuration % 60;
-
+/*
     console_color_fg( ConsoleColorFG_WHITE );
     console_cursor_set_position( contentUL.y, contentUL.x + ( ( width - 8 ) / 2 ) );
     console_draw( L"%02u:%02u:%02u", hours, minutes, seconds );
-    console_color_reset();
+    console_color_reset();*/
 }
 
 
-void frame_callback( struct Widget *widget )
+void frame_callback( struct ComponentHeader *widget )
 {
     assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *timer = (struct WidgetTimer *)widget;
@@ -70,46 +69,45 @@ void frame_callback( struct Widget *widget )
     second const newDuration = time_nsec_to_sec( timer->totalDuration );
     if ( oldDuration != newDuration )
     {
-		widget->redrawNeeded = true;
+		widget->refreshNeeded = true;
     }
 }
 
 
-struct Widget *widget_timer_create( void )
+struct ComponentHeader *widget_timer_create( void )
 {
     struct WidgetTimer *const timer = malloc( sizeof( struct WidgetTimer ) );
     if ( !timer ) return NULL;
     memset( timer, 0, sizeof( *timer ) );
 
-	struct Widget *const widget = &timer->header;
+	struct ComponentHeader *const widget = &timer->header;
 
     widget->id = ComponentId_TIMER;
 	widget->enabled = true;
 
-	assert( widget_exists( ComponentId_BOARD ) );
-	struct WidgetBox const *boardBox = &widget_optget( ComponentId_BOARD )->box;
+	assert( component_exists( ComponentId_BOARD ) );
+	struct WidgetBox const *boardBox = &component_try_get( ComponentId_BOARD )->box;
 
-    screenpos_deprecated const borderUpLeft = (screenpos_deprecated) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
-    screenpos_deprecated const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
+    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
+    vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
 	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
 	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
 	widget_utils_set_title( &widget->box, L"Timer", ConsoleColorFG_MAGENTA );
 
-    struct WidgetCallbacks *const callbacks = &widget->callbacks;
+    struct ComponentCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
     callbacks->redrawCb = redraw_callback;
-    callbacks->resizeCb = NULL;
 
 	// Specific to widget 
 
     timer->totalDuration = 0;
     timer->status = TimerStatus_NOT_STARTED;
 
-    return (struct Widget *)timer;
+    return (struct ComponentHeader *)timer;
 }
 
 
-bool widget_timer_start( struct Widget *const widget )
+bool widget_timer_start( struct ComponentHeader *const widget )
 {
     assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
@@ -122,7 +120,7 @@ bool widget_timer_start( struct Widget *const widget )
 }
 
 
-bool widget_timer_reset( struct Widget *const widget )
+bool widget_timer_reset( struct ComponentHeader *const widget )
 {
     assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
@@ -135,7 +133,7 @@ bool widget_timer_reset( struct Widget *const widget )
 }
 
 
-bool widget_timer_pause( struct Widget *const widget )
+bool widget_timer_pause( struct ComponentHeader *const widget )
 {
     assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;
@@ -148,7 +146,7 @@ bool widget_timer_pause( struct Widget *const widget )
 }
 
 
-bool widget_timer_resume( struct Widget *const widget )
+bool widget_timer_resume( struct ComponentHeader *const widget )
 {
     assert( widget->id == ComponentId_TIMER );
     struct WidgetTimer *const timer = (struct WidgetTimer *const)widget;

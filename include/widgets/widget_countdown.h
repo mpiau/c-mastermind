@@ -3,11 +3,11 @@
 #include "core_types.h"
 #include "time_units.h"
 
-struct Widget *widget_countdown_create( void );
+struct ComponentHeader *widget_countdown_create( void );
 
-void widget_countdown_start( struct Widget *widget );
-void widget_countdown_pause( struct Widget *widget );
-void widget_countdown_resume( struct Widget *widget );
+void widget_countdown_start( struct ComponentHeader *widget );
+void widget_countdown_pause( struct ComponentHeader *widget );
+void widget_countdown_resume( struct ComponentHeader *widget );
 
-void widget_countdown_reset( struct Widget *widget );
-void widget_countdown_set_duration( struct Widget *widget, second duration );
+void widget_countdown_reset( struct ComponentHeader *widget );
+void widget_countdown_set_duration( struct ComponentHeader *widget, second duration );

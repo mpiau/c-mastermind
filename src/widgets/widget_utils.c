@@ -1,7 +1,7 @@
 #include "widgets/widget_utils.h"
 
-#include "console.h"
-#include "console/console_screen.h"
+#include "console/console.h"
+#include "terminal/terminal_screen.h"
 #include <stdio.h>
 
 enum
@@ -58,12 +58,12 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 {
 //	if ( widget_is_out_of_bounds( box ) ) return;
 
-    screenpos_deprecated borderUL = box->borderUpLeft;
+    screenpos borderUL = box->borderUpLeft;
 
     bool const ellipsisNeeded = box->truncatedStatus != WidgetTruncatedStatus_NONE;
 	bool const ellipsisXNeeded = ( box->truncatedStatus & WidgetTruncatedStatus_X_AXIS ) != 0;
 	bool const ellipsisYNeeded = ( box->truncatedStatus & WidgetTruncatedStatus_Y_AXIS ) != 0;
-	screenpos_deprecated const borderBR = ellipsisNeeded ? box->truncatedBorderBottomRight : box->borderBottomRight;
+	screenpos const borderBR = ellipsisNeeded ? box->truncatedBorderBottomRight : box->borderBottomRight;
 	u16 const width = borderBR.x - borderUL.x + 1;
 	u16 const height = borderBR.y - borderUL.y + 1;
 
@@ -116,8 +116,8 @@ void widget_utils_draw_borders( struct WidgetBox const *box )
 
 void widget_utils_clear_content( struct WidgetBox *box )
 {
-	screenpos_deprecated const contentUL = box->contentUpLeft;
-	screenpos_deprecated const contentBR = box->contentBottomRight;
+	screenpos const contentUL = box->contentUpLeft;
+	screenpos const contentBR = box->contentBottomRight;
 	u16 const contentWidth = contentBR.x - contentUL.x + 1;
 	u16 const contentHeight = contentBR.y - contentUL.y + 1;
 
@@ -139,11 +139,11 @@ void widget_utils_set_title( struct WidgetBox *const box, utf16 const *const tit
 }
 
 
-void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos_deprecated const screenSize )
+void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos const screenSize )
 {
-	screenpos_deprecated const borderUL = box->borderUpLeft;
-	screenpos_deprecated const borderBR = box->borderBottomRight;
-	screenpos_deprecated const contentBR = box->contentBottomRight;
+	screenpos const borderUL = box->borderUpLeft;
+	screenpos const borderBR = box->borderBottomRight;
+	screenpos const contentBR = box->contentBottomRight;
 
 	// reset
 	box->truncatedBorderBottomRight = borderBR;
@@ -183,25 +183,26 @@ void widget_utils_calculate_truncation( struct WidgetBox *const box, screenpos_d
 }
 
 
-void widget_utils_set_position( struct WidgetBox *const box, screenpos_deprecated const borderUpLeft, vec2u16 const contentSize )
+void widget_utils_set_position( struct WidgetBox *const box, screenpos const borderUpLeft, vec2u16 const contentSize )
 {
 	// Note : Do some validation on the data before ?
 
 	box->borderUpLeft = borderUpLeft;
-	box->contentUpLeft = (vec2u16) {
+	box->contentUpLeft = (screenpos) {
 		.x = borderUpLeft.x + 1,
 		.y = borderUpLeft.y + 1
 	};
 
-	box->contentBottomRight = (vec2u16) {
+	box->contentBottomRight = (screenpos) {
 		.x = box->contentUpLeft.x + ( contentSize.x - 1 ),
 		.y = box->contentUpLeft.y + ( contentSize.y - 1 )
 	};
 
-	box->borderBottomRight = (vec2u16) {
+	box->borderBottomRight = (screenpos) {
 		.x = box->contentBottomRight.x + 1,
 		.y = box->contentBottomRight.y + 1
 	};
 
-	widget_utils_calculate_truncation( box, console_screen_get_size() );
+	screensize size = term_screen_current_size();
+	widget_utils_calculate_truncation( box, *(screenpos *)&size );
 }
