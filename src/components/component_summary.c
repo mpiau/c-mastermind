@@ -135,7 +135,7 @@ static void set_component_data( struct ComponentSummary *const comp )
 		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/
 	};
 	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
-	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - 1 - boxSize.w, 6 );
+	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 6 );
 
 	usize const spacesBeforeSolution = ( boxSize.w - ( ( nbPiecesPerTurn * 2 ) - 1 ) ) / 2;
 

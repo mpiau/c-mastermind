@@ -32,7 +32,7 @@ enum // Constants
 	PIN_INTERSPACE = 1,
 	ROW_HEIGHT = 6,
 
-	TOTAL_BOARD_SIZE = 80,
+	TOTAL_BOARD_SIZE = 78,
 };
 
 

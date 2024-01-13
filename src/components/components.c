@@ -7,7 +7,7 @@
 #include "components/component_screen_size.h"
 #include "components/component_summary.h"
 #include "components/component_mouse_position.h"
-#include "widgets/widget_timer.h"
+#include "components/component_timer.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_peg_selection.h"
 #include "keyboard_inputs.h"
