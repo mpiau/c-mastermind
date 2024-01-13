@@ -1,13 +1,11 @@
 #include "components/component_framerate.h"
 
-#include "widgets/widget_definition.h"
-#include "widgets/widget_utils.h"
-
+#include "components/component_header.h"
 #include "fps_counter.h"
-#include "mouse.h"
+#include "terminal/terminal.h"
 
-#include "terminal/terminal_screen.h"
-#include "terminal/terminal_style.h"
+#include <stdlib.h>
+
 
 struct ComponentFramerate
 {
@@ -15,23 +13,24 @@ struct ComponentFramerate
 
     screenpos   pos;
     usize       lastAverageFPS;
-    struct TermStyle style;
+    struct Style style;
 };
+
 #define CAST_TO_COMPONENT( _header ) ( ( struct ComponentFramerate * )( _header ) )
 
 #define RETURN_IF_DISABLED( _header )                   \
     do { if ( !_header->enabled ) return; } while ( 0 )
 
 
-static void redraw_callback( struct ComponentHeader *header )
+static void on_refresh_callback( struct ComponentHeader const *header )
 {
     RETURN_IF_DISABLED( header );
 
     struct ComponentFramerate const *comp = CAST_TO_COMPONENT( header );
 
-    term_screen_set_cursor_pos( comp->pos );
-    term_style_set_current( comp->style );
-    term_screen_write( L"%3uFPS", comp->lastAverageFPS );
+    cursor_update_pos( comp->pos );
+    style_update( comp->style );
+    term_write( L"%3uFPS", comp->lastAverageFPS );
 }
 
 
@@ -59,12 +58,12 @@ struct ComponentHeader *component_framerate_create( void )
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->frameCb = frame_callback;
-    callbacks->redrawCb = redraw_callback;
+    callbacks->refreshCb = on_refresh_callback;
 
     // Specific to the component 
     comp->pos = (screenpos) { .x = 2, .y = 1 };
     comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
-    comp->style = term_style_make( COLOR_BRIGHT_BLACK, Properties_FAINT );
+    comp->style = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 
     return (struct ComponentHeader *)comp;
 }

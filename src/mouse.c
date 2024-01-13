@@ -1,10 +1,9 @@
 #include "mouse.h"
 
-#include <windows.h>
-
-#include "console/console.h"
 #include "gameloop.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 enum // Constants
 {
@@ -17,15 +16,12 @@ struct MouseInfo
 
     OnMouseMoveCallback moveCallbacks[CALLBACKS_MAX_COUNT];
     u32 moveCallbackCount;
-
-    OnMouseClickCallback clickCallbacks[CALLBACKS_MAX_COUNT];
-    u32 clickCallbackCount;
 };
 
 static struct MouseInfo s_mouseInfo = {};
 
 
-screenpos mouse_get_position()
+screenpos mouse_pos()
 {
     return s_mouseInfo.position;
 }
@@ -33,27 +29,17 @@ screenpos mouse_get_position()
 
 static void mouse_moved( vec2u16 const mousePos )
 {
-    screenpos const oldPos = mouse_get_position();
+    screenpos const oldPos = mouse_pos();
 	screenpos const newPos = (screenpos) { .x = mousePos.x + 1, .y = mousePos.y + 1 };
 
-	if ( oldPos.x == newPos.x && oldPos.y == newPos.y ) return;
+	if ( oldPos.x == newPos.x && oldPos.y == newPos.y )
+        return;
 
     s_mouseInfo.position = newPos;
 
     for ( u32 idx = 0; idx < s_mouseInfo.moveCallbackCount; ++idx )
     {
         s_mouseInfo.moveCallbacks[idx]( s_mouseInfo.position );
-    }
-}
-
-
-static void call_click_callback( enum MouseButton const button )
-{
-	screenpos const mousePos = mouse_get_position();
-
-	for ( u32 idx = 0; idx < s_mouseInfo.clickCallbackCount; ++idx )
-    {
-        s_mouseInfo.clickCallbacks[idx]( mousePos, button );
     }
 }
 
@@ -83,16 +69,16 @@ void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent )
 
 	if ( mouseEvent->dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED )
 	{
-		call_click_callback( MouseButton_LEFT_CLICK ); // Or perhaps translate that to a click with the KeyInput instead ?
+        gameloop_emit_key( KeyInput_MOUSE_BTN_LEFT );
 	}
 	else if ( mouseEvent->dwButtonState == RIGHTMOST_BUTTON_PRESSED )
 	{
-		call_click_callback( MouseButton_RIGHT_CLICK );
+        gameloop_emit_key( KeyInput_MOUSE_BTN_RIGHT );
 	}
 }
 
 
-bool mouse_register_on_mouse_mouvement_callback( OnMouseMoveCallback const callback )
+bool mouse_register_on_mouse_move_callback( OnMouseMoveCallback const callback )
 {
     if ( callback == NULL )                                     return false;
     if ( s_mouseInfo.moveCallbackCount == CALLBACKS_MAX_COUNT ) return false;
@@ -103,18 +89,8 @@ bool mouse_register_on_mouse_mouvement_callback( OnMouseMoveCallback const callb
 }
 
 
-bool mouse_register_on_mouse_click_callback( OnMouseClickCallback const callback )
-{
-    if ( callback == NULL )                                      return false;
-    if ( s_mouseInfo.clickCallbackCount == CALLBACKS_MAX_COUNT ) return false;
-
-    s_mouseInfo.clickCallbacks[s_mouseInfo.clickCallbackCount] = callback;
-    s_mouseInfo.clickCallbackCount++;
-    return true;	
-}
-
-
-void mouse_init( void )
+bool mouse_init( void )
 {
 	s_mouseInfo = (struct MouseInfo) {};
+    return true;
 }

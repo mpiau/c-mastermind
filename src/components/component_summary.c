@@ -1,14 +1,18 @@
 #include "components/component_summary.h"
 
-#include "widgets/widget_definition.h"
-#include "widgets/widget_utils.h"
+#include "components/component_header.h"
+#include "terminal/terminal.h"
 #include "characters_list.h"
 #include "mastermind.h"
 #include "game.h"
+#include "rect.h"
+
+#include <stdlib.h>
+
 
 struct ComponentSummary
 {
-	struct ComponentHeader header; /* TODO ComponentHeader instead of Widget */
+	struct ComponentHeader header;
 
 	// Component Specific Data
 	struct Rect box;
@@ -24,13 +28,13 @@ static void draw_pin( struct Pin const *pin, bool visible )
 {
 	if ( !visible )
 	{
-		console_draw( L" " );
+		term_write( L" " );
 		return;
 	}
 
-	console_color_fg( pin_get_color( pin->id ) );
+	style_update( pin_get_style( pin->id ) );
 	utf16 const character = pin->id == PinId_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle;
-	console_draw( L"%lc", character );
+	term_write( L"%lc", character );
 }
 
 
@@ -55,16 +59,16 @@ static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, u
 	if ( !isGameFinished && turn <= playerTurn )
 	{
 		bool const isPlayerTurn = ( playerTurn == turn );
-		console_color_fg( isPlayerTurn ? ConsoleColorFG_YELLOW : ConsoleColorFG_WHITE );
+		style_update( STYLE( isPlayerTurn ? FGColor_YELLOW : FGColor_WHITE ) );
 	}
 	else
 	{
-		console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
+		style_update( STYLE( FGColor_BRIGHT_BLACK ) );
 	}
 
 	screenpos const ul = SCREENPOS( comp->firstTurnRowUL.x, comp->firstTurnRowUL.y + ( turn - 1 ) );
-	console_cursor_setpos( ul );
-	console_draw( L"%02u", turn );
+	cursor_update_pos( ul );
+	term_write( L"%02u", turn );
 }
 
 
@@ -76,7 +80,7 @@ static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const 
 	usize const playerTurn      = mastermind_get_player_turn();
 	bool const pinVisible       = mastermind_is_game_finished() || turn < playerTurn;
 
-	console_cursor_setpos( ul );
+	cursor_update_pos( ul );
 	for ( usize idx = 0; idx < nbPiecesPerTurn; ++idx )
 	{
 		draw_pin( &pins[idx], pinVisible );
@@ -84,22 +88,14 @@ static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const 
 }
 
 
-static void redraw_callback( struct ComponentHeader *widget )
+static void on_refresh_callback( struct ComponentHeader const *header )
 {
-	struct ComponentSummary const *comp = CAST_TO_COMPONENT( widget );
-
+	struct ComponentSummary const *comp = CAST_TO_COMPONENT( header );
 	rect_draw_borders( &comp->box, L"Summary" );
 
-	struct Mastermind const *mastermind = mastermind_get_instance();
     usize const nbTurns = mastermind_get_total_turns();
-    usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 	usize const currTurn = mastermind_get_player_turn();
 	bool const isGameFinished = mastermind_is_game_finished();
-
-	screenpos const ul = rect_get_corner( &comp->box, RectCorner_UL );
-	usize const width = comp->box.size.w;
-
-	console_color_fg( ConsoleColorFG_BRIGHT_BLACK );
 
     for ( int y = 0; y < nbTurns; ++y )
     {
@@ -109,18 +105,17 @@ static void redraw_callback( struct ComponentHeader *widget )
 		draw_pins_at_turn( comp, displayTurn );
 
 		// That's a crappy way of doing it now, so we would need to cleanup that by encapsulating that "darker" color in console.h
-		if ( !isGameFinished && y + 1 == currTurn ) { console_draw( L"\x1B[2m" ); }
+//		if ( !isGameFinished && y + 1 == currTurn ) { term_write( L"\x1B[2m" ); }
     }
-	console_color_reset();
 
+    usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 	struct Peg const *solution = mastermind_get_solution();
 	screenpos const solutionPos = comp->solutionRowUL;
+
     for ( usize x = 0; x < nbPiecesPerTurn; ++x )
     {
 		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y );
     }
-
-	console_color_reset();
 }
 
 // TODO Move it in another file if the usage is approved.
@@ -152,25 +147,25 @@ static void set_component_data( struct ComponentSummary *const comp )
 }
 
 
-static void on_game_update_callback( struct ComponentHeader *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
+static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
 {
 	if ( type == GameUpdateType_GAME_NEW )
 	{
-		set_component_data( CAST_TO_COMPONENT( widget ) );
-		widget->refreshNeeded = true;
-		widget->enabled = true;
+		set_component_data( CAST_TO_COMPONENT( header ) );
+		header->refreshNeeded = true;
+		header->enabled = true;
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
 	{
-		widget->refreshNeeded = true;
+		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_NEXT_TURN )
 	{
-		widget->refreshNeeded = true;
+		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_PEG_ADDED )
 	{
-		widget->refreshNeeded = true;
+		header->refreshNeeded = true;
 	}
 
 	// TODO to catch:
@@ -187,7 +182,7 @@ struct ComponentHeader *component_summary_create( void )
 	component_make_header( &comp->header, ComponentId_SUMMARY, false );
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
-    callbacks->redrawCb = redraw_callback;
+    callbacks->refreshCb = on_refresh_callback;
 	callbacks->gameUpdateCb = on_game_update_callback;
 
 	return (struct ComponentHeader *)comp;

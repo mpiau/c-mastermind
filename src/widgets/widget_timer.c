@@ -1,9 +1,13 @@
 #include "widgets/widget_timer.h"
 
-#include "widgets/widget_definition.h"
-#include "widgets/widget_utils.h"
+#include "components/component_header.h"
 
 #include "time_units.h"
+#include "rect.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 
 enum TimerStatus
 {
@@ -20,24 +24,15 @@ struct WidgetTimer
     enum TimerStatus status;
     nsecond totalDuration;
     nsecond lastUpdateTimestamp;
+    struct Rect box;
 };
 
 
-static void redraw_callback( struct ComponentHeader *widget )
+static void on_refresh_callback( struct ComponentHeader const *widget )
 {
-	return;
-	
-    assert( widget->id == ComponentId_TIMER );
-    assert( widget->enabled );
-    assert( widget->box.truncatedStatus == WidgetTruncatedStatus_NONE );
-
-    struct WidgetTimer *timer = (struct WidgetTimer *)widget;
+    struct WidgetTimer const *timer = (struct WidgetTimer const *)widget;
 
     // TODO If widget truncated, return. Don't display anything
-
-    screenpos const contentUL = timer->header.box.contentUpLeft;
-    screenpos const contentBR = timer->header.box.contentBottomRight;
-    u32 const width = contentBR.x - contentUL.x + 1;
 
     second const totalDuration = time_nsec_to_sec( timer->totalDuration );
 
@@ -85,18 +80,11 @@ struct ComponentHeader *widget_timer_create( void )
     widget->id = ComponentId_TIMER;
 	widget->enabled = true;
 
-	assert( component_exists( ComponentId_BOARD ) );
-	struct WidgetBox const *boardBox = &component_try_get( ComponentId_BOARD )->box;
-
-    screenpos const borderUpLeft = (screenpos) { .x = boardBox->borderBottomRight.x + 7, .y = boardBox->borderUpLeft.y };
-    vec2u16 const contentSize  = (vec2u16)   { .x = 16, .y = 1 };
-	widget_utils_set_position( &widget->box, borderUpLeft, contentSize );
-	widget->box.borderOption = WidgetBorderOption_ALWAYS_VISIBLE;
-	widget_utils_set_title( &widget->box, L"Timer", ConsoleColorFG_MAGENTA );
+    timer->box = rect_make( (screenpos) { .x = 1, .y = 1 }, (vec2u16) { .x = 16, .y = 1 } );
 
     struct ComponentCallbacks *const callbacks = &widget->callbacks;
     callbacks->frameCb = frame_callback;
-    callbacks->redrawCb = redraw_callback;
+    callbacks->refreshCb = on_refresh_callback;
 
 	// Specific to widget 
 

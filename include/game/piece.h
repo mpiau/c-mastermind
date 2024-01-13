@@ -1,10 +1,10 @@
 #pragma once
 
-#include "core_types.h"
-#include "core_unions.h"
+#include "core/core.h"
 
 enum PegId
 {
+    PegId_BLACK,
     PegId_RED,
     PegId_GREEN,
     PegId_YELLOW,
@@ -12,7 +12,6 @@ enum PegId
     PegId_MAGENTA,
     PegId_BLUE,
     PegId_WHITE,
-    PegId_BLACK,
 
     PegId_Count,
     PegId_Empty = PegId_Count // Doesn't count as a valid color id, but can be used to draw an empty peg space.
@@ -55,5 +54,5 @@ struct Pin
     enum PinId id;
 };
 
-
-enum ConsoleColorFG pin_get_color( enum PinId id );
+struct Style;
+struct Style pin_get_style( enum PinId id );

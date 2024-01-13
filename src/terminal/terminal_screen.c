@@ -1,10 +1,13 @@
-#include "terminal/terminal_screen.h"
-#include "terminal/terminal_sequence.h"
-#include "terminal/terminal_character.h"
+#include "terminal/terminal.h"
+#include "terminal/internal/terminal_sequence.h"
+#include "terminal/internal/terminal_character.h"
 #include "game.h"
-#include "widgets/widget.h"
+
+#include "components/components.h"
 
 #include <stdio.h>
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 
@@ -26,11 +29,6 @@ struct ScreenInfo
     // The second one is limited to the boundaries of the game: 120x30.
     screensize size;
     screensize supportedGameSize;
-
-    screenpos cursorPos;
-/*
-    void const *handle;
-*/
 };
 
 
@@ -69,22 +67,17 @@ bool term_screen_init( void const *handle )
 {
     screensize const screenSize = get_screen_size( handle );
 
-    s_screenInfo = (struct ScreenInfo) {
-        .size = screenSize,
-        .supportedGameSize = game_size_from_screen( screenSize ),
-        .cursorPos = (screenpos) {.y = 1, .x = 1 },
-        // .screen - initialized below
-    };
-
-    term_screen_clear();
+    s_screenInfo.size = screenSize;
+    s_screenInfo.supportedGameSize = game_size_from_screen( screenSize );
+    term_clear();
 
     return true;
 }
 
 
-int term_screen_write( utf16 const *format, ... )
+int term_write( utf16 const *format, ... )
 {
-    static utf16 buffer[TERM_SCREEN_WRITE_MAXIMUM_BUFFER] = {};
+    static utf16 buffer[TERM_WRITE_BUFFER_SIZE] = {};
 
     va_list args;
 	va_start( args, format );
@@ -94,47 +87,46 @@ int term_screen_write( utf16 const *format, ... )
     assert( bufferSize > 0 ); // Otherwise, we may have busted the limit of the buffer, or a bad format has been given.
 
     u16 const maxWidth = s_screenInfo.supportedGameSize.w;
-    screenpos *const cursorPos = &s_screenInfo.cursorPos;
 
     for ( usize idx = 0; idx < bufferSize; ++idx )
     {
+        screenpos const cursorPos = cursor_pos();
+  
         // We have reached the end of the game screen, and we don't want to continue on the next line either.
         // So stop prematurely here.
-        // @mpiau note: Perhaps this is a feedback we could give to the user ?
-        if ( cursorPos->x > maxWidth ) break;
+        if ( cursorPos.x > maxWidth ) break;
 
-        struct Character *const character = get_character_at_pos( *cursorPos );
+        struct Character *const character = get_character_at_pos( cursorPos );
 
         *character = (struct Character) {
             .unicode = buffer[idx],
-            .style = term_style_current()
+            .style = style_current()
         };
-        term_character_refresh_needed( character );
-
-        cursorPos->x += 1;
+        character_mark_as_refresh_needed( character );
+        cursor_move_right_by( 1 );
     }
 
     return bufferSize;
 }
 
 
-void term_screen_clear( void )
+void term_clear( void )
 {
     for ( usize idx = 0; idx < ARR_COUNT( s_screenInfo.screen.raw ); ++idx )
     {
-        s_screenInfo.screen.raw[idx] = term_character_default();
+        s_screenInfo.screen.raw[idx] = character_default();
     }
 }
 
 
-void term_screen_refresh( void )
+void term_refresh( void )
 {
-    static utf16 buffer[TERM_SCREEN_REFRESH_MAXIMUM_BUFFER] = {};
+    static utf16 buffer[TERM_REFRESH_BUFFER_SIZE] = {};
     usize const bufTotalSize = ARR_COUNT( buffer );
     usize bufPos = 0;
 
     screensize const gameSize = s_screenInfo.supportedGameSize;
-    struct TermStyle style = term_style_default();
+    struct Style style = STYLE_DEFAULT;
     screenpos cursorPos = (screenpos) { .y = 1, .x = 1 };
 
     for ( usize y = 0; y < gameSize.h; ++y )
@@ -143,7 +135,7 @@ void term_screen_refresh( void )
         {
             struct Character *character = &s_screenInfo.screen.content[y][x];
 
-            if ( !term_character_needs_refresh( *character ) )
+            if ( !character_needs_refresh( *character ) )
                 continue;
 
             // Ensure first that the cursor is in good position. If not, update it accordingly.
@@ -155,7 +147,7 @@ void term_screen_refresh( void )
             }
 
             // Then check if the style needs to be adjusted before writing the unicode character
-            if ( !term_style_equals( style, character->style ) )
+            if ( !style_equals( style, character->style ) )
             {
                 bufPos += term_sequence_set_style( buffer + bufPos, bufTotalSize - bufPos, character->style );
                 style = character->style;
@@ -165,7 +157,7 @@ void term_screen_refresh( void )
             bufPos += snwprintf( buffer + bufPos, bufTotalSize - bufPos, L"%lc", character->unicode );
             cursorPos.x += 1;
 
-            term_character_refreshed( character );
+            character_refreshed( character );
         }
     }
 
@@ -179,7 +171,7 @@ void term_screen_refresh( void )
 }
 
 
-void term_screen_on_resize( screensize const newSize )
+void term_on_resize( screensize const newSize )
 {
     screensize const old = s_screenInfo.size;
     if ( old.w == newSize.w && old.h == newSize.h ) return;
@@ -191,7 +183,7 @@ void term_screen_on_resize( screensize const newSize )
             for ( usize x = 0; x < GAME_SIZE_WIDTH; ++x )
             {
                 struct Character *character = get_character_at_pos( SCREENPOS( x + 1, lineHeight + 1 ) );
-                term_character_refresh_needed( character );
+                character_mark_as_refresh_needed( character );
             }
         }
     }
@@ -203,7 +195,7 @@ void term_screen_on_resize( screensize const newSize )
             for ( usize x = newSize.w; x < old.w; ++x )
             {
                 struct Character *character = get_character_at_pos( SCREENPOS( x + 1, lineHeight + 1 ) );
-                term_character_refresh_needed( character );
+                character_mark_as_refresh_needed( character );
             }
         }
     }
@@ -214,19 +206,7 @@ void term_screen_on_resize( screensize const newSize )
 }
 
 
-screensize term_screen_current_size( void )
+screensize term_size( void )
 {
     return s_screenInfo.size;
-}
-
-
-screenpos term_screen_cursor_pos( void )
-{
-    return s_screenInfo.cursorPos;
-}
-
-
-void term_screen_set_cursor_pos( screenpos const pos )
-{
-    s_screenInfo.cursorPos = pos;
 }

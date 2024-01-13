@@ -1,13 +1,17 @@
 #include "components/component_game_buttons.h"
 
-#include "widgets/widget_definition.h"
-#include "widgets/widget_utils.h"
+#include "components/component_header.h"
+#include "terminal/terminal.h"
 #include "game.h"
 #include "keyboard_inputs.h"
 #include "gameloop.h"
+#include "rect.h"
+#include "mouse.h"
+#include "mastermind.h"
 
-#include "terminal/terminal_screen.h"
-#include "terminal/terminal_style.h"
+#include <stdlib.h>
+#include <string.h>
+
 
 enum ButtonId
 {
@@ -63,60 +67,60 @@ struct ComponentGameButtons
 #define CAST_TO_COMPONENT( _header ) ( ( struct ComponentGameButtons * )( _header ) )
 
 
-static void button_get_hovered_color( enum ButtonId const id, enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
+static void button_get_hovered_style( enum ButtonId const id, struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
 	switch( id )
 	{
 		case ButtonId_VALIDATE:
-			*outTextColor = ConsoleColorFG_GREEN;
-			*outKeyColor = ConsoleColorFG_BRIGHT_GREEN;
+			*outTextStyle = STYLE( FGColor_GREEN );
+			*outKeyStyle  = STYLE( FGColor_BRIGHT_GREEN );
 			break;
 
 		case ButtonId_ABANDON_GAME:
 		case ButtonId_RESET:
-			*outTextColor = ConsoleColorFG_RED;
-			*outKeyColor = ConsoleColorFG_BRIGHT_RED;
+			*outTextStyle = STYLE( FGColor_RED );
+			*outKeyStyle  = STYLE( FGColor_BRIGHT_RED );
 			break;
 
 		default:
-			*outTextColor = ConsoleColorFG_YELLOW;
-			*outKeyColor = ConsoleColorFG_BRIGHT_YELLOW;
+			*outTextStyle = STYLE( FGColor_YELLOW );
+			*outKeyStyle  = STYLE( FGColor_BRIGHT_YELLOW );
 			break;
 	}
 }
 
-static void button_get_default_color( enum ButtonId const id, enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
+static void button_get_default_style( enum ButtonId const id, struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
 	switch( id )
 	{
 		case ButtonId_VALIDATE:
-			*outKeyColor = ConsoleColorFG_GREEN;
+			*outKeyStyle = STYLE( FGColor_GREEN );
 			break;
 
 		case ButtonId_ABANDON_GAME:
 		case ButtonId_RESET:
-			*outKeyColor = ConsoleColorFG_RED;
+			*outKeyStyle = STYLE( FGColor_RED );
 			break;
 
 		default:
-			*outKeyColor = ConsoleColorFG_YELLOW;
+			*outKeyStyle = STYLE( FGColor_YELLOW );
 			break;
 	}
 
-	*outTextColor = ConsoleColorFG_BRIGHT_BLACK;
+	*outTextStyle = STYLE( FGColor_BRIGHT_BLACK );
 }
 
-static void button_get_disabled_color( enum ConsoleColorFG *const outTextColor, enum ConsoleColorFG *const outKeyColor )
+static void button_get_disabled_style( struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
-	*outTextColor = ConsoleColorFG_BRIGHT_BLACK;
-	*outKeyColor = ConsoleColorFG_BRIGHT_BLACK;
+	*outTextStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
+	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 }
 
 
 static void game_buttons_update_status( struct ComponentHeader *header, enum ButtonStatus const status )
 {
 	struct ComponentGameButtons *widget = (struct ComponentGameButtons *)header;
-	screenpos const mousePosition = mouse_get_position();
+	screenpos const mousePosition = mouse_pos();
 
 	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
 	{
@@ -130,7 +134,7 @@ static void game_buttons_update_status( struct ComponentHeader *header, enum But
 }
 
 
-static void mouse_move_callback( struct ComponentHeader *const widget, screenpos const pos )
+static void on_mouse_move_callback( struct ComponentHeader *const widget, screenpos const pos )
 {
 	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
 
@@ -155,9 +159,9 @@ static void mouse_move_callback( struct ComponentHeader *const widget, screenpos
 }
 
 
-static void game_update_callback( struct ComponentHeader *widget, struct Mastermind const *mastermind, enum GameUpdateType type )
+static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
 {
-	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
+	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)header;
 
 	if ( type == GameUpdateType_GAME_FINISHED )
 	{
@@ -167,73 +171,73 @@ static void game_update_callback( struct ComponentHeader *widget, struct Masterm
 		{
 			boardButtons->hoveredButton = ButtonId_Invalid;
 		}
-		game_buttons_update_status( widget, ButtonStatus_HIDDEN );
-		widget->refreshNeeded = true;
+		game_buttons_update_status( header, ButtonStatus_HIDDEN );
+		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_NEW )
 	{
 		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
 		abandonButton->status = ButtonStatus_ENABLED;
-		if ( rect_is_inside( &abandonButton->box, mouse_get_position() ) )
+		if ( rect_is_inside( &abandonButton->box, mouse_pos() ) )
 		{
 			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
 		}
-		game_buttons_update_status( widget, ButtonStatus_ENABLED );
-		widget->refreshNeeded = true;
+		game_buttons_update_status( header, ButtonStatus_ENABLED );
+		header->refreshNeeded = true;
 	}
 }
 
 
-static void mouse_click_callback( struct ComponentHeader *widget, screenpos clickPos, enum MouseButton mouseButton )
+static bool on_input_received_callback( struct ComponentHeader *header, enum KeyInput input )
 {
-	struct ComponentGameButtons *buttons = CAST_TO_COMPONENT( widget );
-
-	if ( mouseButton == MouseButton_LEFT_CLICK && buttons->hoveredButton != ButtonId_Invalid )
+	struct ComponentGameButtons *buttons = CAST_TO_COMPONENT( header );
+	if ( input == KeyInput_MOUSE_BTN_LEFT && buttons->hoveredButton != ButtonId_Invalid )
 	{
 		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );
+		return true;
 	}
+
+	return false;
 }
 
 
-static void redraw_callback( struct ComponentHeader *widget )
+static void on_refresh_callback( struct ComponentHeader const *widget )
 {
-	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
+	struct ComponentGameButtons const *boardButtons = (struct ComponentGameButtons const *)widget;
 
-	enum ConsoleColorFG textColor;
-	enum ConsoleColorFG keyColor;
+	struct Style textStyle;
+	struct Style keyStyle;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
-		struct Button *button = &boardButtons->buttons[idx];
+		struct Button const *button = &boardButtons->buttons[idx];
 
-		screenpos const ul = rect_get_corner( &button->box, RectCorner_UL );
+		screenpos const ul = rect_get_ul_corner( &button->box );
 		bool const isHovered = ( boardButtons->hoveredButton == idx );
 
-		console_cursor_setpos( ul );
+		cursor_update_pos( ul );
 		if ( button->status == ButtonStatus_ENABLED )
 		{
-			isHovered ? button_get_hovered_color( idx, &textColor, &keyColor ) : button_get_default_color( idx, &textColor, &keyColor );
+			isHovered ? button_get_hovered_style( idx, &textStyle, &keyStyle ) : button_get_default_style( idx, &textStyle, &keyStyle );
 
-			console_draw( L"\x1b[0m" );
-			console_color_fg( textColor );
-			console_draw( L"[" );
+			style_update( textStyle );
+			term_write( L"[" );
 
-			console_color_fg( keyColor );
-			console_draw( L"%lc", button->text[0] );
+			style_update( keyStyle );
+			term_write( L"%lc", button->text[0] );
 
-			console_color_fg( textColor );
-			console_draw( L"%S]", &button->text[1] );
+			style_update( textStyle );
+			term_write( L"%S]", &button->text[1] );
 		}
 		else if ( button->status == ButtonStatus_DISABLED )
 		{
-			button_get_disabled_color( &textColor, &keyColor );
-			console_draw( L"\x1b[2m" );
-			console_color_fg( textColor );
-			console_draw( L"[%S]", button->text );
+			button_get_disabled_style( &textStyle, &keyStyle );
+			style_update( textStyle );
+			term_write( L"[%S]", button->text );
 		}
 		else
 		{
-			console_draw( L"%*lc", wcslen( button->text ) + 2, L' ' ); // + 2 for '[' and ']'
+			term_write( L"%*lc", wcslen( button->text ) + 2, L' ' ); // + 2 for '[' and ']'
 		}
 	}
 }
@@ -284,10 +288,10 @@ struct ComponentHeader *component_game_buttons_create( void )
 	component_make_header( &comp->header, ComponentId_GAME_BUTTONS, true );
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
-    callbacks->redrawCb = redraw_callback;
-	callbacks->mouseMoveCb = mouse_move_callback;
-	callbacks->mouseClickCb = mouse_click_callback;
-	callbacks->gameUpdateCb = game_update_callback;
+    callbacks->refreshCb = on_refresh_callback;
+	callbacks->mouseMoveCb = on_mouse_move_callback;
+	callbacks->inputReceivedCb = on_input_received_callback;
+	callbacks->gameUpdateCb = on_game_update_callback;
 
 	// Specific data
 	init_component_data( comp );

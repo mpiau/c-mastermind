@@ -4,6 +4,10 @@
 #include "keyboard_inputs.h"
 #include "settings.h"
 
+#include <stdlib.h>
+#include <string.h>
+
+
 struct Mastermind
 {
     // Game settings. Can't be changed without creating a new game
@@ -33,7 +37,7 @@ static void emit_game_update( enum GameUpdateType const type )
 {
     for ( int idx = 0; idx < s_callbackCount; ++idx )
     {
-        s_callbacks[idx]( &s_mastermind, type );
+        s_callbacks[idx]( type );
     }
 }
 
@@ -381,20 +385,20 @@ struct Peg const *mastermind_get_solution( void )
 
 // ////// PEGS FUNCTIONS
 
-enum ConsoleColorFG peg_get_color( enum PegId const id, bool const selected )
+termcolor peg_get_color( enum PegId const id, bool const selected )
 {
 	switch ( id )
 	{
-		case PegId_RED:     return ( selected ? ConsoleColorFG_BRIGHT_RED     : ConsoleColorFG_RED     );
-		case PegId_GREEN:   return ( selected ? ConsoleColorFG_BRIGHT_GREEN   : ConsoleColorFG_GREEN   );
-		case PegId_YELLOW:  return ( selected ? ConsoleColorFG_BRIGHT_YELLOW  : ConsoleColorFG_YELLOW  );
-		case PegId_CYAN:    return ( selected ? ConsoleColorFG_BRIGHT_CYAN    : ConsoleColorFG_CYAN    );
-		case PegId_MAGENTA: return ( selected ? ConsoleColorFG_BRIGHT_MAGENTA : ConsoleColorFG_MAGENTA );
-		case PegId_BLUE:    return ( selected ? ConsoleColorFG_BRIGHT_BLUE    : ConsoleColorFG_BLUE    );
-		case PegId_WHITE:   return ( selected ? ConsoleColorFG_BRIGHT_WHITE   : ConsoleColorFG_WHITE   );
+		case PegId_RED:     return ( selected ? FGColor_BRIGHT_RED     : FGColor_RED     );
+		case PegId_GREEN:   return ( selected ? FGColor_BRIGHT_GREEN   : FGColor_GREEN   );
+		case PegId_YELLOW:  return ( selected ? FGColor_BRIGHT_YELLOW  : FGColor_YELLOW  );
+		case PegId_CYAN:    return ( selected ? FGColor_BRIGHT_CYAN    : FGColor_CYAN    );
+		case PegId_MAGENTA: return ( selected ? FGColor_BRIGHT_MAGENTA : FGColor_MAGENTA );
+		case PegId_BLUE:    return ( selected ? FGColor_BRIGHT_BLUE    : FGColor_BLUE    );
+		case PegId_WHITE:   return ( selected ? FGColor_BRIGHT_WHITE   : FGColor_WHITE   );
          // Perhaps put the \x1b[2m to be darker, this way we won't use white here, but the bright black
-		case PegId_BLACK:   return ( selected ? ConsoleColorFG_WHITE          : ConsoleColorFG_BRIGHT_BLACK );
-		case PegId_Empty:   return ( selected ? ConsoleColorFG_BRIGHT_BLACK   : ConsoleColorFG_BRIGHT_BLACK );
+		case PegId_BLACK:   return ( selected ? FGColor_WHITE          : FGColor_BRIGHT_BLACK );
+		case PegId_Empty:   return ( selected ? FGColor_BRIGHT_BLACK   : FGColor_BRIGHT_BLACK );
 		default: assert( false );
 	}
 }

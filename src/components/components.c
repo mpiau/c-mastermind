@@ -1,7 +1,6 @@
-#include "widgets/widget.h"
-#include "widgets/widget_definition.h"
+#include "components/components.h"
+#include "components/component_header.h"
 
-#include "widgets/widget_utils.h"
 #include "widgets/widget_board.h"
 #include "components/component_game_buttons.h"
 #include "components/component_framerate.h"
@@ -11,6 +10,9 @@
 #include "widgets/widget_timer.h"
 #include "widgets/widget_countdown.h"
 #include "widgets/widget_peg_selection.h"
+#include "keyboard_inputs.h"
+#include "mastermind.h"
+#include "mouse.h"
 
 #include <stdlib.h>
 
@@ -32,19 +34,6 @@ static void on_mouse_move_callback( screenpos const pos )
 }
 
 
-static void on_mouse_click_callback( screenpos const mousePos, enum MouseButton button )
-{
-    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
-    {
-        struct ComponentHeader *header = s_headers[id];
-        if ( header && header->callbacks.mouseClickCb )
-        {
-            header->callbacks.mouseClickCb( header, mousePos, button );
-        }
-    }
-}
-
-
 void components_on_screen_resize( screensize const size )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
@@ -58,7 +47,7 @@ void components_on_screen_resize( screensize const size )
 }
 
 
-static void on_game_update_callback( struct Mastermind const *mastermind, enum GameUpdateType const updateType )
+static void on_game_update_callback( enum GameUpdateType const updateType )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
@@ -66,7 +55,7 @@ static void on_game_update_callback( struct Mastermind const *mastermind, enum G
 
         if ( header && header->callbacks.gameUpdateCb )
         {
-            header->callbacks.gameUpdateCb( header, mastermind, updateType );
+            header->callbacks.gameUpdateCb( header, updateType );
         }
     }
 }
@@ -87,8 +76,7 @@ bool components_init( void )
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
-    mouse_register_on_mouse_mouvement_callback( on_mouse_move_callback );
-    mouse_register_on_mouse_click_callback( on_mouse_click_callback );
+    mouse_register_on_mouse_move_callback( on_mouse_move_callback );
 	mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
     return true;
@@ -122,6 +110,7 @@ struct ComponentHeader *component_try_get( enum ComponentId id )
 
 // /////////////////////////////////////////////////////////
 
+
 void components_frame( void )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
@@ -136,9 +125,9 @@ void components_frame( void )
 
 		if ( header->refreshNeeded )
 		{
-			if ( header->callbacks.redrawCb != NULL )
+			if ( header->callbacks.refreshCb != NULL )
 			{
-				header->callbacks.redrawCb( header );
+				header->callbacks.refreshCb( header );
 			}
 			header->refreshNeeded = false;
 		}

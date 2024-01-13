@@ -1,8 +1,11 @@
 #include "components/component_mouse_position.h"
 
-#include "widgets/widget_definition.h"
-#include "terminal/terminal_screen.h"
-#include "terminal/terminal_style.h"
+#include "components/component_header.h"
+#include "mouse.h"
+#include "terminal/terminal.h"
+
+#include <stdlib.h>
+
 
 struct ComponentMousePosition
 {
@@ -10,26 +13,25 @@ struct ComponentMousePosition
 
     screenpos pos;
     screenpos ul;
-    struct TermStyle style;
+    struct Style style;
 };
 #define CAST_TO_COMPONENT( _header ) ( ( struct ComponentMousePosition * )( _header ) )
 
-static void on_mouse_move_callback( struct ComponentHeader *const widget, screenpos const pos )
+
+static void on_mouse_move_callback( struct ComponentHeader *header, screenpos const pos )
 {
-    CAST_TO_COMPONENT( widget )->pos = pos;
-    widget->refreshNeeded = true;
+    CAST_TO_COMPONENT( header )->pos = pos;
+    header->refreshNeeded = true;
 }
 
-
-static void on_redraw_callback( struct ComponentHeader *const widget )
+static void on_refresh_callback( struct ComponentHeader const *header )
 {
-    struct ComponentMousePosition *comp = CAST_TO_COMPONENT( widget );
+    struct ComponentMousePosition const *comp = CAST_TO_COMPONENT( header );
 
-	term_screen_set_cursor_pos( comp->ul );
-	term_style_set_current( comp->style );
-	term_screen_write( L"Mouse: %ux%u  ", comp->pos.x, comp->pos.y );
+	cursor_update_pos( comp->ul );
+	style_update( comp->style );
+	term_write( L"Mouse: %ux%u  ", comp->pos.x, comp->pos.y );
 }
-
 
 struct ComponentHeader *component_mouse_position_create( void )
 {
@@ -40,12 +42,12 @@ struct ComponentHeader *component_mouse_position_create( void )
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->mouseMoveCb = on_mouse_move_callback;
-    callbacks->redrawCb = on_redraw_callback;
+    callbacks->refreshCb = on_refresh_callback;
 
     // Specific to the component 
-    comp->ul = (screenpos) { .x = 35, .y = 1 };
-    comp->pos = mouse_get_position();
-    comp->style = term_style_make( COLOR_BRIGHT_BLACK, Properties_NONE );
+    comp->ul = (screenpos) { .x = 41, .y = 1 };
+    comp->pos = mouse_pos();
+    comp->style = STYLE( FGColor_BRIGHT_BLACK );
 
     return (struct ComponentHeader *)comp;
 }

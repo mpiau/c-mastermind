@@ -4,7 +4,7 @@
 
 #include "mastermind.h"
 
-bool settings_global_init( void );
+bool settings_init( void );
 
 bool settings_set_nb_turns( usize nbTurns );
 bool settings_set_nb_pieces_per_turn( usize nbPieces );

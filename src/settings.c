@@ -15,7 +15,7 @@ struct Settings
 struct Settings s_settings = {};
 
 
-bool settings_global_init( void )
+bool settings_init( void )
 {
     s_settings.cappedFramerate = 60; // -> Instead of having a getter, it will directly set it by calling the FPSCounter.
 

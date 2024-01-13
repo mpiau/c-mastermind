@@ -1,13 +1,10 @@
 #pragma once
 
-#include "core_types.h"
-#include "core_unions.h"
+#include "core/core.h"
 
 enum RectCorner
 {
 	RectCorner_UL, // Up left
-	RectCorner_UR, // Up Right
-	RectCorner_BL, // Bottom Left
 	RectCorner_BR, // Bottom Right
 
 	RectCorner_Count
@@ -22,6 +19,8 @@ struct Rect
 struct Rect rect_make( screenpos upLeft, vec2u16 size );
 
 screenpos rect_get_corner( struct Rect const *rect, enum RectCorner corner );
+screenpos rect_get_ul_corner( struct Rect const *rect );
+screenpos rect_get_br_corner( struct Rect const *rect );
 u16 rect_get_width( struct Rect const *rect );
 u16 rect_get_height( struct Rect const *rect );
 

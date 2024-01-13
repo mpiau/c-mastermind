@@ -1,12 +1,9 @@
 #pragma once
 
-#include "core_types.h"
-#include "core_unions.h"
-
+#include "core/core.h"
 #include "keyboard_inputs.h"
-#include "console/console.h"
-
 #include "game/piece.h"
+#include "terminal/terminal_colors.h"
 
 enum // Constants
 {
@@ -56,7 +53,7 @@ enum GameUpdateType
     // [...]
 };
 
-typedef void ( * MastermindCallback )( struct Mastermind const *mastermind, enum GameUpdateType updateType );
+typedef void ( * MastermindCallback )( enum GameUpdateType updateType );
 
 bool mastermind_try_consume_input( enum KeyInput input );
 bool mastermind_register_update_callback( MastermindCallback const callback );
@@ -78,4 +75,4 @@ struct Pin const *mastermind_get_pins_at_turn( usize turn );
 struct Peg const *mastermind_get_solution( void );
 
 
-enum ConsoleColorFG peg_get_color( enum PegId id, bool selected );
+termcolor peg_get_color( enum PegId id, bool selected );

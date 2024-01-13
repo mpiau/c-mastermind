@@ -1,18 +1,15 @@
 // Mastermind game in C
+#include "core/core.h"
 #include "mastermind.h"
-#include "console/console.h"
 #include "characters_list.h"
-#include "core_unions.h"
 #include "fps_counter.h"
-#include "widgets/widget_timer.h"
-#include "widgets/widget_countdown.h"
-#include "widgets/widget_utils.h"
 #include "mouse.h"
 #include "gameloop.h"
 #include "settings.h"
+#include "random.h"
 
-#include "terminal/terminal_screen.h"
-#include "terminal/terminal_style.h"
+#include "components/components.h"
+#include "terminal/terminal.h"
 
 #include <fcntl.h>
 #include <io.h>
@@ -21,27 +18,16 @@
 #include <time.h>
 #include <math.h>
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+enum ExitCode
+{
+	ExitCode_SUCCESS,
+	ExitCode_FAILURE
+};
+
 static bool s_mainLoop = true;
-
-/*
-	// PEGS DISPLAY 
-	console_draw( L",d88b." );
-	console_draw( L"888888");
-	console_draw( L"`Y88P'" );
-
-	console_draw( L",db." );
-	console_draw( L"`YP'" );
-
-	console_draw( L",-." );
-	console_draw( L"`-'" );
-
-	console_draw( L" __ " );
-	console_draw( L",  ." );
-	console_draw( L"`  '" );
-	console_draw( L" -- " );
-*/
 
 /*char const *get_game_name( void )
 {
@@ -112,8 +98,8 @@ void draw_title( vec2u16 const screenSize )
 
 static void gameloop_consume_key_input( enum KeyInput const input )
 {
-	console_cursor_set_position( 1, 16 );
-	console_draw( L"Input: %2u", input );
+//	cursor_update_yx( 1, 16 );
+//	term_write( L"Input: %2u", input );
 
 	if ( input == KeyInput_ESCAPE || input == KeyInput_Q )
 	{
@@ -148,7 +134,7 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 		case WINDOW_BUFFER_SIZE_EVENT:
 		{
 			COORD const size = recordedInput->Event.WindowBufferSizeEvent.dwSize;
-			term_screen_on_resize( *(screensize *)&size );
+			term_on_resize( *(screensize *)&size );
 			return;
 		}
 		case MOUSE_EVENT:
@@ -180,7 +166,7 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 static bool consume_user_inputs( void )
 {
 	DWORD nbEvents = 0;
-	if ( !GetNumberOfConsoleInputEvents( console_input_handle(), &nbEvents ) )
+	if ( !GetNumberOfConsoleInputEvents( term_input_handle(), &nbEvents ) )
 	{
 		fprintf( stderr, "[ERROR]: GetNumberOfConsoleInputEvents failure. (Code %u)\n", GetLastError() );
 		return false;
@@ -193,7 +179,7 @@ static bool consume_user_inputs( void )
 
 	DWORD nbInputsRead;
 	INPUT_RECORD inputsBuffer[nbEvents];
-	if ( !ReadConsoleInput( console_input_handle(), &inputsBuffer[0], nbEvents, &nbInputsRead ) )
+	if ( !ReadConsoleInput( term_input_handle(), &inputsBuffer[0], nbEvents, &nbInputsRead ) )
 	{
 		fprintf( stderr, "[ERROR]: ReadConsoleInput failure. (Code %u)\n", GetLastError() );
 		return false;
@@ -208,43 +194,45 @@ static bool consume_user_inputs( void )
 }
 
 
+bool init_systems( void )
+{
+	bool success = true;
+
+	success = success && random_init();
+	success = success && term_init( "Mastermind", true );
+	success = success && ( fpscounter_init() != NULL );
+	success = success && settings_init();
+	success = success && mouse_init();
+	success = success && components_init();
+
+	return success;
+}
+
+
+void uninit_systems( void )
+{
+	components_uninit();
+	fpscounter_uninit( fpscounter_get_instance() );
+	term_uninit();
+}
+
+
 int main( void )
 {
-	srand( time( NULL ) );
-
-	if ( !console_global_init( "Mastermind Game", true ) )
+	if ( !init_systems() )
 	{
-		// TODO have a filelog for these. The console is already used for the game.
-		fprintf( stderr, "[FATAL ERROR]: Failed to init the console. Aborting." );
-		return 1; // TODO improve these errors code.
-	}
-
-	struct FPSCounter *const fpsCounter = fpscounter_init();
-	if ( fpsCounter == NULL )
-	{
-		fprintf( stderr, "[FATAL ERROR]: Failed to init FPS Counter. Aborting." );
-		return 2;
-	}
-
-	settings_global_init();
-	mouse_init();
-	if ( !components_init() )
-	{
-		fprintf( stderr, "[FATAL ERROR]: Failed to init Components. Aborting." );
-		return 3;
+		return ExitCode_FAILURE;
 	}
 
 	while ( s_mainLoop )
 	{
 		consume_user_inputs();
 		components_frame();
-		term_screen_refresh();
+		term_refresh();
 		// Last function call in the loop
-		fpscounter_frame( fpsCounter );
+		fpscounter_frame( fpscounter_get_instance() );
 	}
 
-	components_uninit();
-	fpscounter_uninit( fpsCounter );
-	console_global_uninit();
-	return 0;
+	uninit_systems();
+	return ExitCode_SUCCESS;
 }
