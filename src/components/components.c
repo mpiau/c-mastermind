@@ -68,9 +68,9 @@ bool components_init( void )
 	s_headers[ComponentId_MOUSE_POSITION] = component_mouse_position_create();
 	s_headers[ComponentId_GAME_BUTTONS] = component_game_buttons_create();
 	s_headers[ComponentId_BOARD] = widget_board_create();
-    s_headers[ComponentId_TIMER] = widget_timer_create();
+    s_headers[ComponentId_TIMER] = component_timer_create();
 	s_headers[ComponentId_SUMMARY] = component_summary_create();
-	s_headers[ComponentId_PEG_SELECTION] = widget_peg_selection_create();
+	s_headers[ComponentId_PEG_SELECTION] = component_peg_selection_create();
 	// boardSummary
     // s_components[CompId_COUNTDOWN] = widget_countdown_create();
     // Init others widgets [...]

@@ -155,7 +155,7 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 }
 
 
-struct ComponentHeader *widget_timer_create( void )
+struct ComponentHeader *component_timer_create( void )
 {
     struct ComponentTimer *const comp = calloc( 1, sizeof( struct ComponentTimer ) );
     if ( !comp ) return NULL;

@@ -1,4 +1,4 @@
-#include "terminal/internal/terminal_character.h"
+#include "terminal/terminal_character.h"
 
 // Special attribute that is using the first bit of the attributes field of struct Style
 // While I agree that it's a dependency that could involve some risks if not handled carefully,

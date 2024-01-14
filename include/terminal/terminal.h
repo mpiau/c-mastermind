@@ -3,6 +3,7 @@
 #include "terminal/terminal_cursor.h"
 #include "terminal/terminal_screen.h"
 #include "terminal/terminal_style.h"
+#include "terminal/terminal_character.h"
 
 
 bool term_init( char const *optTitle, bool onDedicatedConsole );

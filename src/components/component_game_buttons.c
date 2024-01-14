@@ -119,24 +119,24 @@ static void button_get_disabled_style( struct Style *const outTextStyle, struct 
 
 static void game_buttons_update_status( struct ComponentHeader *header, enum ButtonStatus const status )
 {
-	struct ComponentGameButtons *widget = (struct ComponentGameButtons *)header;
+	struct ComponentGameButtons *comp = (struct ComponentGameButtons *)header;
 	screenpos const mousePosition = mouse_pos();
 
 	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
 	{
-		struct Button *button = &widget->buttons[idx];
+		struct Button *button = &comp->buttons[idx];
 		button->status = status;
 		if ( status == ButtonStatus_ENABLED && rect_is_inside( &button->box, mousePosition ) )
 		{
-			widget->hoveredButton = idx;
+			comp->hoveredButton = idx;
 		}
 	}
 }
 
 
-static void on_mouse_move_callback( struct ComponentHeader *const widget, screenpos const pos )
+static void on_mouse_move_callback( struct ComponentHeader *const header, screenpos const pos )
 {
-	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)widget;
+	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)header;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
@@ -145,7 +145,7 @@ static void on_mouse_move_callback( struct ComponentHeader *const widget, screen
 			if ( boardButtons->hoveredButton != idx )
 			{
 				boardButtons->hoveredButton = idx;
-				widget->refreshNeeded = true;
+				header->refreshNeeded = true;
 			}
 			return;
 		}
@@ -154,7 +154,7 @@ static void on_mouse_move_callback( struct ComponentHeader *const widget, screen
 	if ( boardButtons->hoveredButton != ButtonId_Invalid )
 	{
 		boardButtons->hoveredButton = ButtonId_Invalid;
-		widget->refreshNeeded = true;
+		header->refreshNeeded = true;
 	}
 }
 
@@ -201,19 +201,19 @@ static bool on_input_received_callback( struct ComponentHeader *header, enum Key
 }
 
 
-static void on_refresh_callback( struct ComponentHeader const *widget )
+static void on_refresh_callback( struct ComponentHeader const *header )
 {
-	struct ComponentGameButtons const *boardButtons = (struct ComponentGameButtons const *)widget;
+	struct ComponentGameButtons const *comp = (struct ComponentGameButtons const *)header;
 
 	struct Style textStyle;
 	struct Style keyStyle;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
-		struct Button const *button = &boardButtons->buttons[idx];
+		struct Button const *button = &comp->buttons[idx];
 
 		screenpos const ul = rect_get_ul_corner( &button->box );
-		bool const isHovered = ( boardButtons->hoveredButton == idx );
+		bool const isHovered = ( comp->hoveredButton == idx );
 
 		cursor_update_pos( ul );
 		if ( button->status == ButtonStatus_ENABLED )

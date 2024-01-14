@@ -1,6 +1,6 @@
 #include "terminal/terminal.h"
 #include "terminal/internal/terminal_sequence.h"
-#include "terminal/internal/terminal_character.h"
+#include "terminal/terminal_character.h"
 #include "game.h"
 
 #include "components/components.h"
@@ -203,6 +203,12 @@ void term_on_resize( screensize const newSize )
     s_screenInfo.size = newSize;
     s_screenInfo.supportedGameSize = game_size_from_screen( newSize );
     components_on_screen_resize( s_screenInfo.size );
+}
+
+
+struct Character term_character_buffered_at_pos( screenpos const pos )
+{
+    return s_screenInfo.screen.content[pos.y - 1][pos.x - 1];
 }
 
 
