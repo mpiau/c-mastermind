@@ -9,7 +9,7 @@
 #include "components/component_mouse_position.h"
 #include "components/component_timer.h"
 #include "widgets/widget_countdown.h"
-#include "widgets/widget_peg_selection.h"
+#include "components/component_peg_selection.h"
 #include "keyboard_inputs.h"
 #include "mastermind.h"
 #include "mouse.h"
@@ -26,7 +26,7 @@ static void on_mouse_move_callback( screenpos const pos )
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct ComponentHeader *const header = s_headers[id];
-        if ( header && header->callbacks.mouseMoveCb )
+        if ( header && header->enabled && header->callbacks.mouseMoveCb )
         {
             header->callbacks.mouseMoveCb( header, pos );
         }
@@ -39,7 +39,7 @@ void components_on_screen_resize( screensize const size )
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct ComponentHeader *const header = s_headers[id];
-        if ( header && header->callbacks.resizeCb )
+        if ( header && header->enabled && header->callbacks.resizeCb )
 		{
 			header->callbacks.resizeCb( header, size );
 		}
@@ -123,7 +123,7 @@ void components_frame( void )
             header->callbacks.frameCb( header );
 		}
 
-		if ( header->refreshNeeded )
+		if ( header->refreshNeeded && header->enabled )
 		{
 			if ( header->callbacks.refreshCb != NULL )
 			{
@@ -142,7 +142,7 @@ bool components_try_consume_input( enum KeyInput const input )
     {
         struct ComponentHeader *const header = s_headers[id];
 
-		if ( !header || !header->callbacks.inputReceivedCb )
+		if ( !header || !header->enabled || !header->callbacks.inputReceivedCb )
             continue;
 
 		if ( header->callbacks.inputReceivedCb( header, input ) )

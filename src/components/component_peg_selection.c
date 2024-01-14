@@ -1,4 +1,4 @@
-#include "widgets/widget_peg_selection.h"
+#include "components/component_peg_selection.h"
 
 #include "components/component_header.h"
 #include "terminal/terminal.h"
