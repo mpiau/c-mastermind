@@ -227,15 +227,18 @@ struct ComponentHeader *component_peg_selection_create( void )
     // Specific to the widget 
     comp->hovered = PegId_Empty;
     comp->selected = PegId_Empty;
-	comp->box = rect_make( SCREENPOS( 81, 3 ), VEC2U16( 14, 26 ) );
-    comp->buttons[PegId_BLACK] = peg_button_make( SCREENPOS( 84, 5 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_RED] = peg_button_make( SCREENPOS( 84, 8 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_GREEN] = peg_button_make( SCREENPOS( 84, 11 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_YELLOW] = peg_button_make( SCREENPOS( 84, 14 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_CYAN] = peg_button_make( SCREENPOS( 84, 17 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_MAGENTA] = peg_button_make( SCREENPOS( 84, 20 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_BLUE] = peg_button_make( SCREENPOS( 84, 23 ), VEC2U16( 8, 2 ) );
-    comp->buttons[PegId_WHITE] = peg_button_make( SCREENPOS( 84, 26 ), VEC2U16( 8, 2 ) );
+
+    screenpos ul = SCREENPOS( /*81*/3, 3 );
+	comp->box = rect_make( ul, VEC2U16( 14, 27 ) );
+    ul.x += 3;
+    comp->buttons[PegId_BLACK] = peg_button_make( SCREENPOS( ul.x, ul.y + 2 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_RED] = peg_button_make( SCREENPOS( ul.x, ul.y + 5 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_GREEN] = peg_button_make( SCREENPOS( ul.x, ul.y + 8 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_YELLOW] = peg_button_make( SCREENPOS( ul.x, ul.y + 11 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_CYAN] = peg_button_make( SCREENPOS( ul.x, ul.y + 14 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_MAGENTA] = peg_button_make( SCREENPOS( ul.x, ul.y + 17 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_BLUE] = peg_button_make( SCREENPOS( ul.x, ul.y + 20 ), VEC2U16( 8, 2 ) );
+    comp->buttons[PegId_WHITE] = peg_button_make( SCREENPOS( ul.x, ul.y + 23 ), VEC2U16( 8, 2 ) );
 
     comp->dragPos = SCREENPOS( 0, 0 );
     memset( comp->dragSave, 0, sizeof( comp->dragSave ) );

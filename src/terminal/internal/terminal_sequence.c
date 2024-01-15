@@ -23,6 +23,7 @@ int term_sequence_set_properties( utf16 *const outBuffer, usize const bufferSize
 
     if ( attr_is_bold( properties ) )  { nbWritten += swprintf( outBuffer + nbWritten, bufferSize - nbWritten, L";1" ); }
     if ( attr_is_faint( properties ) ) { nbWritten += swprintf( outBuffer + nbWritten, bufferSize - nbWritten, L";2" ); }
+    if ( attr_is_italic( properties ) ) { nbWritten += swprintf( outBuffer + nbWritten, bufferSize - nbWritten, L";3" ); }
     // TODO : Complete the different edge cases [...]
     // https://askubuntu.com/questions/528928/how-to-do-underline-bold-italic-strikethrough-color-background-and-size-i
 

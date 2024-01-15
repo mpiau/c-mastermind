@@ -22,20 +22,6 @@ enum ButtonId
 	ButtonId_SETTINGS,
 	ButtonId_QUIT,
 
-	// Bottom row
-	ButtonId_PREVIOUS,
-	ButtonId_NEXT,
-	ButtonId_BOARD,
-	ButtonId_PEGS,
-	ButtonId_PLACE_SELECT,
-	ButtonId_ERASE_UNSELECT,
-	ButtonId_VALIDATE,
-	ButtonId_RESET,
-	ButtonId_HISTORY_UP,
-	ButtonId_HISTORY_DOWN,
-	ButtonId_GameButtonsBegin = ButtonId_PREVIOUS,
-	ButtonId_GameButtonsEnd = ButtonId_HISTORY_DOWN,
-
 	ButtonId_Count,
 
 	// Special edge case, impl only.
@@ -71,13 +57,13 @@ static void button_get_hovered_style( enum ButtonId const id, struct Style *cons
 {
 	switch( id )
 	{
-		case ButtonId_VALIDATE:
+		/*case ButtonId_VALIDATE:
 			*outTextStyle = STYLE( FGColor_GREEN );
 			*outKeyStyle  = STYLE( FGColor_BRIGHT_GREEN );
-			break;
+			break;*/
 
 		case ButtonId_ABANDON_GAME:
-		case ButtonId_RESET:
+//		case ButtonId_RESET:
 			*outTextStyle = STYLE( FGColor_RED );
 			*outKeyStyle  = STYLE( FGColor_BRIGHT_RED );
 			break;
@@ -93,12 +79,12 @@ static void button_get_default_style( enum ButtonId const id, struct Style *cons
 {
 	switch( id )
 	{
-		case ButtonId_VALIDATE:
+		/*case ButtonId_VALIDATE:
 			*outKeyStyle = STYLE( FGColor_GREEN );
-			break;
+			break;*/
 
 		case ButtonId_ABANDON_GAME:
-		case ButtonId_RESET:
+//		case ButtonId_RESET:
 			*outKeyStyle = STYLE( FGColor_RED );
 			break;
 
@@ -114,23 +100,6 @@ static void button_get_disabled_style( struct Style *const outTextStyle, struct 
 {
 	*outTextStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
-}
-
-
-static void game_buttons_update_status( struct ComponentHeader *header, enum ButtonStatus const status )
-{
-	struct ComponentGameButtons *comp = (struct ComponentGameButtons *)header;
-	screenpos const mousePosition = mouse_pos();
-
-	for ( enum ButtonId idx = ButtonId_GameButtonsBegin; idx <= ButtonId_GameButtonsEnd; ++idx )
-	{
-		struct Button *button = &comp->buttons[idx];
-		button->status = status;
-		if ( status == ButtonStatus_ENABLED && rect_is_inside( &button->box, mousePosition ) )
-		{
-			comp->hoveredButton = idx;
-		}
-	}
 }
 
 
@@ -171,7 +140,6 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 		{
 			boardButtons->hoveredButton = ButtonId_Invalid;
 		}
-		game_buttons_update_status( header, ButtonStatus_HIDDEN );
 		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_NEW )
@@ -182,7 +150,6 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 		{
 			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
 		}
-		game_buttons_update_status( header, ButtonStatus_ENABLED );
 		header->refreshNeeded = true;
 	}
 }
@@ -267,8 +234,9 @@ static void init_component_data( struct ComponentGameButtons *comp )
 	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
 	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
 	buttons[ButtonId_QUIT]         = button_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
+
 	// Bottom row
-	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
+/*	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
 	buttons[ButtonId_NEXT]           = button_make( SCREENPOS( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
 	buttons[ButtonId_BOARD]          = button_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
 	buttons[ButtonId_PEGS]           = button_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
@@ -277,7 +245,7 @@ static void init_component_data( struct ComponentGameButtons *comp )
 	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
 	buttons[ButtonId_RESET]          = button_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
 	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
-	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );
+	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );*/
 }
 
 struct ComponentHeader *component_game_buttons_create( void )

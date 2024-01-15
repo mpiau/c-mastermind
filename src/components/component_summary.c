@@ -132,7 +132,7 @@ static void set_component_data( struct ComponentSummary *const comp )
 
 	vec2u16 const boxSize = (vec2u16) {
 		.x = 4 /*borders + space each side*/ + ( nbPiecesPerTurn * 2 ) - 1 /*pegs*/ + 4 /*turn display*/ + nbPiecesPerTurn /*pins*/,
-		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/
+		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/ + 1
 	};
 	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
 	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 6 );

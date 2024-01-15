@@ -224,6 +224,40 @@ int main( void )
 		return ExitCode_FAILURE;
 	}
 
+	cursor_update_yx( 30, 104 );
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
+	term_write( L"Development Build" );
+
+	cursor_update_yx( 29, 2 );
+	style_update( STYLE( FGColor_WHITE ) );
+	term_write( L"[New Game]" );
+	cursor_update_yx( 30, 2);
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
+	term_write( L"space     " );
+
+	cursor_update_yx( 29, 15 );
+	style_update( STYLE( FGColor_WHITE ) );
+	term_write( L"[Quit]" );
+	cursor_update_yx( 30, 15);
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
+	term_write( L"esc   " );
+
+	cursor_move_right_by( 6 );
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+	term_write( L"[" );
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
+	term_write( L"S" );
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+	term_write( L"|Settings]" );
+
+	cursor_move_right_by( 1 );
+	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	term_write( L"[" );
+	style_update( STYLE_WITH_ATTR( FGColor_YELLOW, Attr_ITALIC ) );
+	term_write( L"ESC" );
+	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	term_write( L"|Quit]" );
+
 	while ( s_mainLoop )
 	{
 		consume_user_inputs();

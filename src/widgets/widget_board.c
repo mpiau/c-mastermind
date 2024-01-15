@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-struct WidgetBoard
+struct ComponentBoard
 {
 	struct ComponentHeader header;
 
@@ -19,6 +19,7 @@ struct WidgetBoard
 	usize totalPegSize;
 	usize totalPinSize;
 	struct Rect box;
+	struct Rect currentTurnPegs[Mastermind_MAX_PIECES_PER_TURN];
 };
 
 
@@ -84,29 +85,6 @@ static inline void draw_character_n_times( utf16 const character, usize const nT
 	}
 }
 
-static void draw_row_board( screenpos const ul, u16 const nbPegs, u16 const nbPins )
-{
-	style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-
-	u16 const nbPegSpaces = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
-	u16 const nbPinSpaces = ( ( nbPins + 1 ) / 2 ) * ( PIN_WIDTH + PIN_INTERSPACE ) - PIN_INTERSPACE;
-
-	cursor_update_yx( ul.y, ul.x );
-	term_write( L"################" );
-	for ( u16 x = 0; x < nbPegSpaces + nbPinSpaces; ++x ) term_write( L"#" );
-
-	cursor_update_yx( ul.y + 1, ul.x );
-	term_write( L"### %*lc ####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-	cursor_update_yx( ul.y + 2, ul.x );
-	term_write( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-	cursor_update_yx( ul.y + 3, ul.x );
-	term_write( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-	cursor_update_yx( ul.y + 4, ul.x );
-	term_write( L"##  %*lc  ##   %*lc   ##", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-	cursor_update_yx( ul.y + 5, ul.x );
-	term_write( L"### %*lc ####  %*lc  ###", nbPegSpaces, L' ', nbPinSpaces, L' ' );
-}
-
 
 static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
 {
@@ -123,8 +101,8 @@ static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn,
 		style_update( STYLE( FGColor_BRIGHT_BLACK ) );
 	}
 
-	cursor_update_yx( ul.y + 3, ul.x + 9 + ( nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) ) - PEG_INTERSPACE );
-	term_write( L"%02u", turn );
+	cursor_update_yx( ul.y + 2, ul.x + 2 + ( nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) ) - PEG_INTERSPACE );
+	term_write( L"Turn %02u", turn );
 }
 
 
@@ -140,7 +118,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 
 		pegUL.y += PEG_HEIGHT;
 		cursor_update_pos( pegUL );
-		if ( currentTurnDisplayed && mastermind_get_selection_bar_index( mastermind_get_instance() ) == pegIdx )
+/*		if ( currentTurnDisplayed && mastermind_get_selection_bar_index( mastermind_get_instance() ) == pegIdx )
 		{
 			style_update( STYLE( FGColor_BRIGHT_BLUE ) );
 			draw_character_n_times( L'-', PEG_WIDTH );
@@ -148,7 +126,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 		else
 		{
 			draw_character_n_times( L' ', PEG_WIDTH );
-		}
+		}*/
 	}
 }
 
@@ -158,7 +136,7 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 	bool const oddNbPins = nbPins % 2 != 0; // Need to add a last empty pin manually
 
 	int const ulX = ul.x + 11 + nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
-	int ulY = ul.y + 1;
+	int ulY = ul.y;// + 1;
 
 	// first row
 	u8 const firstRowLimit = ( nbPins + 1 ) / 2;
@@ -182,86 +160,8 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 }
 
 
-static void draw_row( screenpos const ul, u8 turnToDisplay )
-{
-	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
-	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
-	struct Pin const *pins = mastermind_get_pins_at_turn( turnToDisplay );
-	u8 const playerTurn = mastermind_get_player_turn();
-	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
 
-	draw_row_board( ul, nbPegs, nbPegs );
-	draw_row_pegs( SCREENPOS( ul.x + 4, ul.y + 2 ), pegs, nbPegs, isCurrentTurnDisplayed );
-	if ( playerTurn > turnToDisplay )
-	{
-		draw_row_pins( ul, nbPegs, pins, nbPegs );
-	}
-	draw_row_turn( ul, nbPegs, turnToDisplay, playerTurn );
-}
-
-
-static void draw_header_title( screenpos const ul, struct WidgetBoard const *board )
-{
-	usize const titleSize = 39;
-	usize const spacesBetween = ( board->totalBoardWidth - titleSize ) / 2;
-	screenpos const ulTitle = SCREENPOS( ul.x + spacesBetween, ul.y + 1); 
-
-	style_update( STYLE( FGColor_YELLOW ) );
-
-	cursor_update_yx( ulTitle.y, ulTitle.x );
-	term_write( L"_  _ ___ ___ ___ ___ ___ _  _ _ _  _ __ " );
-	cursor_update_yx( ulTitle.y + 1, ulTitle.x );
-	term_write( L"|\\/| |_| [_   |  |_  |_/ |\\/| | |\\ | | \\" );
-	cursor_update_yx( ulTitle.y + 2, ulTitle.x );
-	term_write( L"|  | | | __]  |  |__ | \\ |  | | | \\| |_/" );
-}
-
-
-static void draw_header_board( screenpos const ul, struct WidgetBoard const *board )
-{
-	usize const width = board->totalBoardWidth;
-
-	style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-
-	// First line
-	cursor_update_yx( ul.y, ul.x );
-	term_write( L"   " );
-	draw_character_n_times( L'#', width - 6 );
-	term_write( L"   " );
-
-	// Second line
-	cursor_update_yx( ul.y + 1, ul.x );
-	term_write( L" ####" );
-	draw_character_n_times( L' ', width - 10 );
-	term_write( L"#### " );
-
-	// Third line
-	cursor_update_yx( ul.y + 2, ul.x );
-	term_write( L" ##" );
-	draw_character_n_times( L' ', width - 6 );
-	term_write( L"## " );
-
-	// Fourth line
-	cursor_update_yx( ul.y + 3, ul.x );
-	term_write( L"###" );
-	draw_character_n_times( L' ', width - 6 );
-	term_write( L"###" );
-
-	// Fifth line
-	cursor_update_yx( ul.y + 4, ul.x );
-	term_write( L"#####" );
-	draw_character_n_times( L' ', width - 10 );
-	term_write( L"#####" );
-
-	// Sixth line
-	cursor_update_yx( ul.y + 5, ul.x );
-	draw_character_n_times( L'#', width );
-
-	draw_header_title( ul, board );
-}
-
-
-static void draw_solution_pegs( screenpos const ul, struct WidgetBoard const *board )
+static void draw_solution_pegs( screenpos const ul, struct ComponentBoard const *board )
 {
 	usize const pegsSize = board->totalPegSize;
 	usize const spacesBetween = ( board->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the board though, hence the decalage.
@@ -272,55 +172,9 @@ static void draw_solution_pegs( screenpos const ul, struct WidgetBoard const *bo
 }
 
 
-static void draw_footer_board( screenpos const ul, struct WidgetBoard const *board )
-{
-	usize const width = board->totalBoardWidth;
-
-	style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-
-	// First line
-	cursor_update_yx( ul.y, ul.x );
-	term_write( L"######" );
-	draw_character_n_times( L' ', width - 12 );
-	term_write( L"######" );
-
-	// Second line
-	cursor_update_yx( ul.y + 1, ul.x );
-	term_write( L"####" );
-	draw_character_n_times( L' ', width - 8 );
-	term_write( L"####" );
-
-	// Thirth line
-	cursor_update_yx( ul.y + 2, ul.x );
-	term_write( L"###" );
-	draw_character_n_times( L' ', width - 6 );
-	term_write( L"###" );
-
-	// Forth line
-	cursor_update_yx( ul.y + 3, ul.x );
-	term_write( L" ###" );
-	draw_character_n_times( L' ', width - 8 );
-	term_write( L"### " );
-
-	// Fifth line
-	cursor_update_yx( ul.y + 4, ul.x );
-	term_write( L"  ####" );
-	draw_character_n_times( L' ', width - 12 );
-	term_write( L"####  " );
-
-	// Sixth line
-	cursor_update_yx( ul.y + 5, ul.x );
-	term_write( L"    " );
-	draw_character_n_times( L'#', width - 8 );
-	term_write( L"    " );
-
-	draw_solution_pegs( ul, board );
-}
-
-
 static void calculate_board_display( struct ComponentHeader *widget )
 {
-	struct WidgetBoard *board = (struct WidgetBoard *)widget;
+	struct ComponentBoard *board = (struct ComponentBoard *)widget;
 
 	usize const nbPegs = mastermind_get_nb_pieces_per_turn();
 
@@ -334,40 +188,61 @@ static void calculate_board_display( struct ComponentHeader *widget )
 }
 
 
+static void row_v2( screenpos ul, int turnToDisplay )
+{
+	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
+	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
+	struct Pin const *pins = mastermind_get_pins_at_turn( turnToDisplay );
+	u8 const playerTurn = mastermind_get_player_turn();
+	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
+
+	draw_row_pegs( SCREENPOS( ul.x, ul.y + 1 ), pegs, nbPegs, isCurrentTurnDisplayed );
+	if ( playerTurn > turnToDisplay )
+	{
+		draw_row_pins( ul, nbPegs, pins, nbPegs );
+	}
+	draw_row_turn( ul, nbPegs, turnToDisplay, playerTurn );
+}
+
+
 static void on_refresh_callback( struct ComponentHeader const *widget )
 {
-	struct WidgetBoard const *board = (struct WidgetBoard const *)widget;
-	screenpos const ul = rect_get_ul_corner( &board->box );
+	struct ComponentBoard const *board = (struct ComponentBoard const *)widget;
+	screenpos ul = rect_get_ul_corner( &board->box );
+	
+	rect_draw_borders( &board->box, L"Mastermind Board" );
 
-	int x = ul.x + board->spacesBetweenBoard;
-	int y = ul.y;
+	ul.y += 1;
+	ul.x += 2;
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 3 );
 
-	if ( board->lastDisplayedTurn == 3 )
-	{
-		draw_header_board( SCREENPOS( x, y ), board );
-	}
-	else
-	{
-		draw_row( SCREENPOS( x, y ), board->lastDisplayedTurn - 3 );
-	}
+	ul.y += 5;
+	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	draw_character_n_times( L'─', 74 );
+	ul.y += 1;
 
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT ), board->lastDisplayedTurn - 2 );
-	draw_row( SCREENPOS( x, y + ROW_HEIGHT * 2 ), board->lastDisplayedTurn - 1 );
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 2 );
+	ul.y += 5;
+	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	draw_character_n_times( L'─', 74 );
+	ul.y += 1;
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 1 );
+	ul.y += 5;
+	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	draw_character_n_times( L'─', 74 );
+	ul.y += 1;
+	if ( board->lastDisplayedTurn <= mastermind_get_total_turns() )
+	{
+		row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn );
+	}
+	ul.y += 5;
 
-	if ( board->lastDisplayedTurn == mastermind_get_total_turns() + 1 )
-	{
-		style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-		cursor_update_yx( y + ROW_HEIGHT * 3, x );
-		draw_character_n_times( L'#', board->totalBoardWidth );
-		draw_footer_board( SCREENPOS( x, y + ROW_HEIGHT * 3 + 1 ), board );
-	}
-	else
-	{
-		draw_row( SCREENPOS( x, y + ROW_HEIGHT * 3 ), board->lastDisplayedTurn );
-		cursor_update_yx( y + ROW_HEIGHT * 4, x );
-		style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-		draw_character_n_times( L'#', board->totalBoardWidth );
-	}
+	ul.x -= 2;
+	cursor_update_pos( ul );
+	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	term_write( L"%lc", L'├' );
+	draw_character_n_times( L'─', 76 );
+	term_write( L"%lc", L'┤' );
 }
 
 
@@ -376,16 +251,16 @@ static void on_game_update_callback( struct ComponentHeader *widget, enum GameUp
 	if ( type == GameUpdateType_GAME_NEW )
 	{		
 		calculate_board_display( widget );
-		((struct WidgetBoard *)widget)->lastDisplayedTurn = 3;
+		((struct ComponentBoard *)widget)->lastDisplayedTurn = 4;
 		widget->enabled = true;
 		widget->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
 	{
-		((struct WidgetBoard *)widget)->lastDisplayedTurn = mastermind_get_total_turns() + 1;
+		((struct ComponentBoard *)widget)->lastDisplayedTurn = mastermind_get_total_turns() + 1;
 		widget->refreshNeeded = true;
 	}
-	else if ( type == GameUpdateType_SELECTION_BAR_MOVED )
+	else if ( type == GameUpdateType_SELECTION_BAR_MOVED || type == GameUpdateType_PEG_ADDED )
 	{
 		// TODO: Only remove the old selection bar, and display the new one instead of redrawing the whole board.
 		widget->refreshNeeded = true;
@@ -395,13 +270,7 @@ static void on_game_update_callback( struct ComponentHeader *widget, enum GameUp
 
 static bool on_input_received_callback( struct ComponentHeader *widget, enum KeyInput input )
 {
-	struct WidgetBoard *board = (struct WidgetBoard *)widget;
-
-	// TODO:
-	// How do we disable the history buttons of the button widget if we can't go up anymore ? Same question for the down
-	// Perhaps we could enlarge the GameUpdateType Scope to give the possibility to a widget to send an event as well ?
-	// Because here we don't have any relation with the game, it's a widget that needs to change its behaviour because of
-	// another widget, a.k.a disable the history button depending on where we are.
+	struct ComponentBoard *board = (struct ComponentBoard *)widget;
 
 	switch( input )
 	{
@@ -417,14 +286,13 @@ static bool on_input_received_callback( struct ComponentHeader *widget, enum Key
 		}		
 		case KeyInput_ARROW_UP:
 		{
-			if ( board->lastDisplayedTurn > 3 )
+			if ( board->lastDisplayedTurn > 4 )
 			{
 				board->lastDisplayedTurn -= 1;
 				widget->refreshNeeded = true;
 			}
 			return true;
-		}
-	
+		}	
 	}
 	return false;
 }
@@ -432,23 +300,21 @@ static bool on_input_received_callback( struct ComponentHeader *widget, enum Key
 
 struct ComponentHeader *widget_board_create( void )
 {
-    struct WidgetBoard *const board = malloc( sizeof( struct WidgetBoard ) );
-    if ( !board ) return NULL;
-	memset( board, 0, sizeof( *board ) );
+	struct ComponentBoard *const comp = calloc( 1, sizeof( struct ComponentBoard ) );
+    if ( !comp ) return NULL;
 
-	struct ComponentHeader *const widget = &board->header;
+    component_make_header( &comp->header, ComponentId_BOARD, false );
 
-    widget->id = ComponentId_BOARD;
-	widget->enabled = false;
-	widget->refreshNeeded = false;
+    struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
+    callbacks->refreshCb = on_refresh_callback;
+    callbacks->gameUpdateCb = on_game_update_callback;
+    callbacks->inputReceivedCb = on_input_received_callback;
 
-	board->box = rect_make( SCREENPOS( 2, 3 ), VEC2U16( TOTAL_BOARD_SIZE, 25 ) );
 
-	widget->callbacks.refreshCb = on_refresh_callback;
-	widget->callbacks.gameUpdateCb = on_game_update_callback;
-	widget->callbacks.inputReceivedCb = on_input_received_callback;
+	comp->box = rect_make( SCREENPOS( 17, 3 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
+	// Set all the Rect for the pegs emplacements
+	// 
+	comp->lastDisplayedTurn = 4;
 
-	board->lastDisplayedTurn = 3; // Title + 1st turn + 2nd turn
-
-	return (struct ComponentHeader *)board;
+	return (struct ComponentHeader *)comp;
 }
