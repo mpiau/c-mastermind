@@ -17,10 +17,10 @@ struct KeyInputData
 
 static const struct KeyInputData S_KEY_INPUT_DATA[] = 
 {
-    KEY_INPUT_DEF( KeyInput_ARROW_LEFT , VK_LEFT , "Left arrow"  ),
-    KEY_INPUT_DEF( KeyInput_ARROW_RIGHT, VK_RIGHT, "Right arrow" ),
-    KEY_INPUT_DEF( KeyInput_ARROW_UP   , VK_UP   , "Up arrow"    ),
-    KEY_INPUT_DEF( KeyInput_ARROW_DOWN , VK_DOWN , "Down arrow"  ),
+    KEY_INPUT_DEF( KeyInput_ARROW_LEFT , VK_LEFT , "Left"  ),
+    KEY_INPUT_DEF( KeyInput_ARROW_RIGHT, VK_RIGHT, "Right" ),
+    KEY_INPUT_DEF( KeyInput_ARROW_UP   , VK_UP   , "Up"    ),
+    KEY_INPUT_DEF( KeyInput_ARROW_DOWN , VK_DOWN , "Down"  ),
 
     KEY_INPUT_DEF( KeyInput_0, 0x30, "0" ),
     KEY_INPUT_DEF( KeyInput_1, 0x31, "1" ),
@@ -76,11 +76,11 @@ static const struct KeyInputData S_KEY_INPUT_DATA[] =
     KEY_INPUT_DEF( KeyInput_CLEAR     , VK_CLEAR,   "Clear"     ),
     KEY_INPUT_DEF( KeyInput_ENTER     , VK_RETURN,  "Enter"     ),
     KEY_INPUT_DEF( KeyInput_SHIFT     , VK_SHIFT,   "Shift"     ),
-    KEY_INPUT_DEF( KeyInput_CONTROL   , VK_CONTROL, "Control"   ),
+    KEY_INPUT_DEF( KeyInput_CONTROL   , VK_CONTROL, "Ctrl"      ),
     KEY_INPUT_DEF( KeyInput_ALT       , VK_MENU,    "Alt"       ),
     KEY_INPUT_DEF( KeyInput_PAUSE     , VK_PAUSE,   "Pause"     ),
     KEY_INPUT_DEF( KeyInput_CAPSLOCK  , VK_CAPITAL, "Caps lock" ),
-    KEY_INPUT_DEF( KeyInput_ESCAPE    , VK_ESCAPE,  "Escape"    ),
+    KEY_INPUT_DEF( KeyInput_ESCAPE    , VK_ESCAPE,  "Esc"       ),
     KEY_INPUT_DEF( KeyInput_SPACE     , VK_SPACE,   "Space"     ),
     KEY_INPUT_DEF( KeyInput_PAGE_UP   , VK_PRIOR,   "Page Up"   ),
     KEY_INPUT_DEF( KeyInput_PAGE_DOWN , VK_NEXT,    "Page Down" ),
@@ -89,9 +89,9 @@ static const struct KeyInputData S_KEY_INPUT_DATA[] =
     KEY_INPUT_DEF( KeyInput_INSERT    , VK_INSERT,  "Insert"    ),
     KEY_INPUT_DEF( KeyInput_DELETE    , VK_DELETE,  "Delete"    ),
 
-    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_LEFT  , VK_LBUTTON, "Left mouse button"   ),
-    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_RIGHT , VK_RBUTTON, "Right mouse button"  ),
-    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_MIDDLE, VK_MBUTTON, "Middle mouse button" ),
+    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_LEFT  , VK_LBUTTON, "Left click"   ),
+    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_RIGHT , VK_RBUTTON, "Right click"  ),
+    KEY_INPUT_DEF( KeyInput_MOUSE_BTN_MIDDLE, VK_MBUTTON, "Middle click" ),
 };
 #undef KEY_INPUT_DEF
 

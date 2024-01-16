@@ -17,7 +17,6 @@ enum ButtonId
 {
 	// Upper row
 	ButtonId_NEW_GAME,
-	ButtonId_ABANDON_GAME,
 	ButtonId_GAME_RULES,
 	ButtonId_SETTINGS,
 	ButtonId_QUIT,
@@ -27,6 +26,12 @@ enum ButtonId
 	// Special edge case, impl only.
 	ButtonId_Invalid = ButtonId_Count
 };
+
+/*enum ButtonType
+{
+	ButtonType_ONE_LINE,
+	ButtonType_TWO_LINE
+};*/
 
 enum ButtonStatus
 {
@@ -62,15 +67,15 @@ static void button_get_hovered_style( enum ButtonId const id, struct Style *cons
 			*outKeyStyle  = STYLE( FGColor_BRIGHT_GREEN );
 			break;*/
 
-		case ButtonId_ABANDON_GAME:
+//		case ButtonId_SOLUTION:
 //		case ButtonId_RESET:
-			*outTextStyle = STYLE( FGColor_RED );
-			*outKeyStyle  = STYLE( FGColor_BRIGHT_RED );
-			break;
+//			*outTextStyle = STYLE( FGColor_BRIGHT_RED );
+//			*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC );
+//			break;
 
 		default:
 			*outTextStyle = STYLE( FGColor_YELLOW );
-			*outKeyStyle  = STYLE( FGColor_BRIGHT_YELLOW );
+			*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_ITALIC );
 			break;
 	}
 }
@@ -83,23 +88,23 @@ static void button_get_default_style( enum ButtonId const id, struct Style *cons
 			*outKeyStyle = STYLE( FGColor_GREEN );
 			break;*/
 
-		case ButtonId_ABANDON_GAME:
+//		case ButtonId_SOLUTION:
 //		case ButtonId_RESET:
-			*outKeyStyle = STYLE( FGColor_RED );
-			break;
+//			*outTextStyle = STYLE( FGColor_RED );
+//			break;
 
 		default:
-			*outKeyStyle = STYLE( FGColor_YELLOW );
+			*outTextStyle = STYLE( FGColor_WHITE );
 			break;
 	}
 
-	*outTextStyle = STYLE( FGColor_BRIGHT_BLACK );
+	*outKeyStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_ITALIC );
 }
 
 static void button_get_disabled_style( struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
 	*outTextStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
-	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
+	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC );
 }
 
 
@@ -134,22 +139,22 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 
 	if ( type == GameUpdateType_GAME_FINISHED )
 	{
-		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
-		abandonButton->status = ButtonStatus_DISABLED;
-		if ( boardButtons->hoveredButton == ButtonId_ABANDON_GAME )
-		{
-			boardButtons->hoveredButton = ButtonId_Invalid;
-		}
+//		struct Button *abandonButton = &boardButtons->buttons[ButtonId_SOLUTION];
+//		abandonButton->status = ButtonStatus_DISABLED;
+//		if ( boardButtons->hoveredButton == ButtonId_SOLUTION )
+//		{
+//			boardButtons->hoveredButton = ButtonId_Invalid;
+//		}
 		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_NEW )
 	{
-		struct Button *abandonButton = &boardButtons->buttons[ButtonId_ABANDON_GAME];
-		abandonButton->status = ButtonStatus_ENABLED;
-		if ( rect_is_inside( &abandonButton->box, mouse_pos() ) )
-		{
-			boardButtons->hoveredButton = ButtonId_ABANDON_GAME;
-		}
+//		struct Button *abandonButton = &boardButtons->buttons[ButtonId_SOLUTION];
+//		abandonButton->status = ButtonStatus_ENABLED;
+//		if ( rect_is_inside( &abandonButton->box, mouse_pos() ) )
+//		{
+//			boardButtons->hoveredButton = ButtonId_SOLUTION;
+//		}
 		header->refreshNeeded = true;
 	}
 }
@@ -182,40 +187,46 @@ static void on_refresh_callback( struct ComponentHeader const *header )
 		screenpos const ul = rect_get_ul_corner( &button->box );
 		bool const isHovered = ( comp->hoveredButton == idx );
 
-		cursor_update_pos( ul );
+		cursor_update_yx( ul.y, ul.x );
 		if ( button->status == ButtonStatus_ENABLED )
 		{
 			isHovered ? button_get_hovered_style( idx, &textStyle, &keyStyle ) : button_get_default_style( idx, &textStyle, &keyStyle );
 
 			style_update( textStyle );
-			term_write( L"[" );
+			term_write( L"%S", button->text );
 
+			cursor_update_yx( ul.y + 1, ul.x );
 			style_update( keyStyle );
-			term_write( L"%lc", button->text[0] );
-
-			style_update( textStyle );
-			term_write( L"%S]", &button->text[1] );
+			term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
 		}
 		else if ( button->status == ButtonStatus_DISABLED )
 		{
 			button_get_disabled_style( &textStyle, &keyStyle );
+
 			style_update( textStyle );
-			term_write( L"[%S]", button->text );
+			term_write( L"%S", button->text );
+
+			cursor_update_yx( ul.y + 1, ul.x );
+			style_update( keyStyle );
+			term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
 		}
-		else
+/*		else
 		{
+			term_write( L"%s", button->text );
 			term_write( L"%*lc", wcslen( button->text ) + 2, L' ' ); // + 2 for '[' and ']'
-		}
+		}*/
 	}
 }
 
 
-static inline struct Button button_make( screenpos const ul, vec2u16 const size, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
+static inline struct Button button_make( screenpos const ul, utf16 const *const text, enum ButtonStatus const status, enum KeyInput const bindedKey )
 {
 	assert( text != NULL );
 
+	vec2u16 const buttonSize = VEC2U16( wcslen( text ), 2 );
+
 	return (struct Button) {
-		.box = rect_make( ul, size ),
+		.box = rect_make( ul, buttonSize ),
 		.text = text,
 		.status = status,
 		.bindedKey = bindedKey
@@ -229,23 +240,10 @@ static void init_component_data( struct ComponentGameButtons *comp )
 
 	struct Button *buttons = comp->buttons;
 	// Upper row
-	buttons[ButtonId_NEW_GAME]     = button_make( SCREENPOS( 64, 1 ), VEC2U16( 10, 1 ), L"New Game", ButtonStatus_ENABLED, KeyInput_N );
-	buttons[ButtonId_ABANDON_GAME] = button_make( SCREENPOS( 75, 1 ), VEC2U16( 14, 1 ), L"Abandon Game", ButtonStatus_DISABLED, KeyInput_A );
-	buttons[ButtonId_GAME_RULES]   = button_make( SCREENPOS( 90, 1 ), VEC2U16( 12, 1 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_G );
-	buttons[ButtonId_SETTINGS]     = button_make( SCREENPOS( 103, 1 ), VEC2U16( 10, 1 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
-	buttons[ButtonId_QUIT]         = button_make( SCREENPOS( 114, 1 ), VEC2U16( 6, 1 ), L"Quit", ButtonStatus_ENABLED, KeyInput_Q );
-
-	// Bottom row
-/*	buttons[ButtonId_PREVIOUS]       = button_make( SCREENPOS( 1, 30 ), VEC2U16( 7, 1 ), L"←Prev", ButtonStatus_HIDDEN, KeyInput_ARROW_LEFT );
-	buttons[ButtonId_NEXT]           = button_make( SCREENPOS( 8, 30 ), VEC2U16( 7, 1 ), L"→Next", ButtonStatus_HIDDEN, KeyInput_ARROW_RIGHT );
-	buttons[ButtonId_BOARD]          = button_make( SCREENPOS( 19, 30 ), VEC2U16( 8, 1 ), L"↑Board", ButtonStatus_HIDDEN, KeyInput_ARROW_UP );
-	buttons[ButtonId_PEGS]           = button_make( SCREENPOS( 27, 30 ), VEC2U16( 7, 1 ), L"↓Pegs", ButtonStatus_HIDDEN, KeyInput_ARROW_DOWN );
-	buttons[ButtonId_PLACE_SELECT]   = button_make( SCREENPOS( 35, 30 ), VEC2U16( 15, 1 ), L"↳Place/Select", ButtonStatus_HIDDEN, KeyInput_ENTER );
-	buttons[ButtonId_ERASE_UNSELECT] = button_make( SCREENPOS( 50, 30 ), VEC2U16( 16, 1 ), L"Erase/Unselect", ButtonStatus_HIDDEN, KeyInput_E );
-	buttons[ButtonId_VALIDATE]       = button_make( SCREENPOS( 67, 30 ), VEC2U16( 14, 1 ), L"Confirm Turn", ButtonStatus_HIDDEN, KeyInput_C );
-	buttons[ButtonId_RESET]          = button_make( SCREENPOS( 81, 30 ), VEC2U16( 12, 1 ), L"Reset Turn", ButtonStatus_HIDDEN, KeyInput_R );
-	buttons[ButtonId_HISTORY_UP]     = button_make( SCREENPOS( 94, 30 ), VEC2U16( 12, 1 ), L"Up History", ButtonStatus_HIDDEN, KeyInput_U );
-	buttons[ButtonId_HISTORY_DOWN]   = button_make( SCREENPOS( 106, 30 ), VEC2U16( 14, 1 ), L"Down History", ButtonStatus_HIDDEN, KeyInput_D );*/
+	buttons[ButtonId_NEW_GAME]   = button_make( SCREENPOS( 84, 29 ), L"New Game", ButtonStatus_ENABLED, KeyInput_SPACE );
+	buttons[ButtonId_GAME_RULES] = button_make( SCREENPOS( 94, 29 ), L"Game Rules", ButtonStatus_DISABLED, KeyInput_T );
+	buttons[ButtonId_SETTINGS]   = button_make( SCREENPOS( 106, 29 ), L"Settings", ButtonStatus_DISABLED, KeyInput_S );
+	buttons[ButtonId_QUIT]       = button_make( SCREENPOS( 116, 29 ), L"Quit", ButtonStatus_ENABLED, KeyInput_ESCAPE );
 }
 
 struct ComponentHeader *component_game_buttons_create( void )

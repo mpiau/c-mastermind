@@ -80,9 +80,16 @@ void peg_draw( struct Peg const *peg, usize const ulX, usize const ulY )
 }
 
 
-void peg_draw_single_character( struct Peg const *peg, usize const posX, usize const posY )
+void peg_draw_single_character( struct Peg const *peg, usize const posX, usize const posY, bool isFutureTurn )
 {
-    style_update( STYLE( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ) ) );
+    if ( isFutureTurn )
+    {
+        style_update( STYLE_WITH_ATTR( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ), Attr_FAINT ) );
+    }
+    else
+    {
+        style_update( STYLE( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ) ) );
+    }
     cursor_update_yx( posY, posX );
 
     term_write( L"%lc", peg->hidden ? UTF16C_QuestionMark : get_character_from_id( peg->id ) );

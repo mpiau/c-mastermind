@@ -138,7 +138,7 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
             .y = 3
         };
     	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
-	    screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 3 );
+	    screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 2 );
         widget_timer_reset( header );
         widget_timer_start( header );
         struct ComponentTimer *timer = (struct ComponentTimer *)header;

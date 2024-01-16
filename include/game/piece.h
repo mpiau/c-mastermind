@@ -35,7 +35,7 @@ struct Peg
 void peg_draw( struct Peg const *peg, usize ulX, usize ulY );
 
 // Minimalist version of the peg, drawn in a single character
-void peg_draw_single_character( struct Peg const *peg, usize posX, usize posY );
+void peg_draw_single_character( struct Peg const *peg, usize posX, usize posY, bool isFutureTurn );
 
 
 // Pins part

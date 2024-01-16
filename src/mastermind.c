@@ -217,7 +217,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
 {
     switch( input )
     {
-        case KeyInput_N:
+        case KeyInput_SPACE:
         {
             u8 const nbTurns = settings_get_nb_turns();
             u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
@@ -225,7 +225,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             new_game( nbTurns, nbPiecesPerTurn, gameExperience );
             return true;
         }
-        case KeyInput_A:
+        case KeyInput_Q:
         {
             abandon_game();
             return true;
@@ -236,7 +236,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             emit_game_update( GameUpdateType_TURN_RESET );
             return true;
         }
-        case KeyInput_ENTER/*KeyInput_V*/:
+        case KeyInput_ENTER:
         {
             if ( !is_current_turn_valid() ) return true;
 

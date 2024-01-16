@@ -101,7 +101,7 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 //	cursor_update_yx( 1, 16 );
 //	term_write( L"Input: %2u", input );
 
-	if ( input == KeyInput_ESCAPE || input == KeyInput_Q )
+	if ( input == KeyInput_ESCAPE )
 	{
 		s_mainLoop = false;
 		return;
@@ -224,11 +224,11 @@ int main( void )
 		return ExitCode_FAILURE;
 	}
 
-	cursor_update_yx( 30, 104 );
+	cursor_update_yx( 1, 104 );
 	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
 	term_write( L"Development Build" );
 
-	cursor_update_yx( 29, 2 );
+/*	cursor_update_yx( 29, 2 );
 	style_update( STYLE( FGColor_WHITE ) );
 	term_write( L"[New Game]" );
 	cursor_update_yx( 30, 2);
@@ -256,7 +256,7 @@ int main( void )
 	style_update( STYLE_WITH_ATTR( FGColor_YELLOW, Attr_ITALIC ) );
 	term_write( L"ESC" );
 	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
-	term_write( L"|Quit]" );
+	term_write( L"|Quit]" );*/
 
 	while ( s_mainLoop )
 	{

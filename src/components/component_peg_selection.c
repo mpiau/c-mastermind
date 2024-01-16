@@ -228,7 +228,7 @@ struct ComponentHeader *component_peg_selection_create( void )
     comp->hovered = PegId_Empty;
     comp->selected = PegId_Empty;
 
-    screenpos ul = SCREENPOS( /*81*/3, 3 );
+    screenpos ul = SCREENPOS( 3, 2 );
 	comp->box = rect_make( ul, VEC2U16( 14, 27 ) );
     ul.x += 3;
     comp->buttons[PegId_BLACK] = peg_button_make( SCREENPOS( ul.x, ul.y + 2 ), VEC2U16( 8, 2 ) );

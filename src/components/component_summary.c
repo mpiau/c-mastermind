@@ -44,9 +44,13 @@ static void draw_pegs_at_turn( struct ComponentSummary const *comp, usize const 
 	struct Peg const *pegs      = mastermind_get_pegs_at_turn( turn );
 	usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 
+	usize const playerTurn    = mastermind_get_player_turn();
+	bool const isGameFinished = mastermind_is_game_finished();
+	bool const isFutureTurn = !isGameFinished && turn > playerTurn;
+
 	for ( usize idx = 0; idx < nbPiecesPerTurn; ++idx )
 	{
-		peg_draw_single_character( &pegs[idx], ul.x + ( idx * 2 ), ul.y );
+		peg_draw_single_character( &pegs[idx], ul.x + ( idx * 2 ), ul.y, isFutureTurn );
 	}
 }
 
@@ -63,7 +67,7 @@ static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, u
 	}
 	else
 	{
-		style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+		style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
 	}
 
 	screenpos const ul = SCREENPOS( comp->firstTurnRowUL.x, comp->firstTurnRowUL.y + ( turn - 1 ) );
@@ -99,13 +103,12 @@ static void on_refresh_callback( struct ComponentHeader const *header )
 
     for ( int y = 0; y < nbTurns; ++y )
     {
+		bool const notYetPlayedTurn = ( !isGameFinished && y + 1 == currTurn );
 		usize const displayTurn = y + 1;
 		draw_pegs_at_turn( comp, displayTurn );
 		draw_current_turn_nb_at_turn( comp, displayTurn );
 		draw_pins_at_turn( comp, displayTurn );
 
-		// That's a crappy way of doing it now, so we would need to cleanup that by encapsulating that "darker" color in console.h
-//		if ( !isGameFinished && y + 1 == currTurn ) { term_write( L"\x1B[2m" ); }
     }
 
     usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
@@ -114,7 +117,7 @@ static void on_refresh_callback( struct ComponentHeader const *header )
 
     for ( usize x = 0; x < nbPiecesPerTurn; ++x )
     {
-		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y );
+		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y, !isGameFinished );
     }
 }
 
@@ -135,7 +138,7 @@ static void set_component_data( struct ComponentSummary *const comp )
 		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/ + 1
 	};
 	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
-	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 6 );
+	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 5 );
 
 	usize const spacesBeforeSolution = ( boxSize.w - ( ( nbPiecesPerTurn * 2 ) - 1 ) ) / 2;
 

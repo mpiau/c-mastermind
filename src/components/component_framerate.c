@@ -61,7 +61,7 @@ struct ComponentHeader *component_framerate_create( void )
     callbacks->refreshCb = on_refresh_callback;
 
     // Specific to the component 
-    comp->pos = (screenpos) { .x = 2, .y = 1 };
+    comp->pos = (screenpos) { .x = 1, .y = 1 };
     comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
     comp->style = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 

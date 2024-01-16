@@ -118,15 +118,15 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 
 		pegUL.y += PEG_HEIGHT;
 		cursor_update_pos( pegUL );
-/*		if ( currentTurnDisplayed && mastermind_get_selection_bar_index( mastermind_get_instance() ) == pegIdx )
+		if ( currentTurnDisplayed && mastermind_get_selection_bar_index( mastermind_get_instance() ) == pegIdx )
 		{
-			style_update( STYLE( FGColor_BRIGHT_BLUE ) );
-			draw_character_n_times( L'-', PEG_WIDTH );
+			style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+			term_write( L"⊲────⊳" );
 		}
 		else
 		{
-			draw_character_n_times( L' ', PEG_WIDTH );
-		}*/
+			term_write( L"      " );
+		}
 	}
 }
 
@@ -217,18 +217,18 @@ static void on_refresh_callback( struct ComponentHeader const *widget )
 	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 3 );
 
 	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
 	draw_character_n_times( L'─', 74 );
 	ul.y += 1;
 
 	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 2 );
 	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
 	draw_character_n_times( L'─', 74 );
 	ul.y += 1;
 	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 1 );
 	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
 	draw_character_n_times( L'─', 74 );
 	ul.y += 1;
 	if ( board->lastDisplayedTurn <= mastermind_get_total_turns() )
@@ -260,9 +260,8 @@ static void on_game_update_callback( struct ComponentHeader *widget, enum GameUp
 		((struct ComponentBoard *)widget)->lastDisplayedTurn = mastermind_get_total_turns() + 1;
 		widget->refreshNeeded = true;
 	}
-	else if ( type == GameUpdateType_SELECTION_BAR_MOVED || type == GameUpdateType_PEG_ADDED )
+	else if ( type == GameUpdateType_SELECTION_BAR_MOVED || type == GameUpdateType_PEG_ADDED || type == GameUpdateType_NEXT_TURN )
 	{
-		// TODO: Only remove the old selection bar, and display the new one instead of redrawing the whole board.
 		widget->refreshNeeded = true;
 	}
 }
@@ -311,7 +310,7 @@ struct ComponentHeader *widget_board_create( void )
     callbacks->inputReceivedCb = on_input_received_callback;
 
 
-	comp->box = rect_make( SCREENPOS( 17, 3 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
+	comp->box = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
 	// Set all the Rect for the pegs emplacements
 	// 
 	comp->lastDisplayedTurn = 4;
