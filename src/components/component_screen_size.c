@@ -12,12 +12,12 @@ struct ComponentScreenSize
     struct ComponentHeader header;
 	screensize size;
 };
-#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentScreenSize * )( _header ) )
+#define CAST_TO_COMP( _header ) ( ( struct ComponentScreenSize * )( _header ) )
 
 
 static void on_refresh_callback( struct ComponentHeader const *header )
 {
-	struct ComponentScreenSize const *comp = CAST_TO_COMPONENT( header );
+	struct ComponentScreenSize const *comp = CAST_TO_COMP( header );
 	screenpos const ul = (screenpos) { .x = 10, .y = 1 };
 
 	bool const widthSufficient = comp->size.w >= GAME_SIZE_WIDTH;
@@ -68,7 +68,7 @@ static void on_refresh_callback( struct ComponentHeader const *header )
 
 static void on_resize_callback( struct ComponentHeader *const header, screensize const newSize )
 {
-	CAST_TO_COMPONENT( header )->size = newSize;
+	CAST_TO_COMP( header )->size = newSize;
 	header->refreshNeeded = true;
 }
 

@@ -38,3 +38,4 @@ struct ComponentHeader
     bool refreshNeeded;
     struct ComponentCallbacks callbacks;
 };
+#define CAST_TO_COMP_HEADER( _comp ) ( ( struct ComponentHeader * )( _comp ) )

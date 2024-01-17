@@ -15,23 +15,19 @@ struct ComponentMousePosition
     screenpos ul;
     struct Style style;
 };
-#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentMousePosition * )( _header ) )
+#define CAST_TO_COMP( _header ) ( ( struct ComponentMousePosition * )( _header ) )
 
 
 static void on_mouse_move_callback( struct ComponentHeader *header, screenpos const pos )
 {
-    CAST_TO_COMPONENT( header )->pos = pos;
-    header->refreshNeeded = true;
-}
-
-static void on_refresh_callback( struct ComponentHeader const *header )
-{
-    struct ComponentMousePosition const *comp = CAST_TO_COMPONENT( header );
+    struct ComponentMousePosition *comp = CAST_TO_COMP( header );
+    comp->pos = pos;
 
 	cursor_update_pos( comp->ul );
 	style_update( comp->style );
 	term_write( L"Mouse: %ux%u  ", comp->pos.x, comp->pos.y );
 }
+
 
 struct ComponentHeader *component_mouse_position_create( void )
 {
@@ -42,7 +38,6 @@ struct ComponentHeader *component_mouse_position_create( void )
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->mouseMoveCb = on_mouse_move_callback;
-    callbacks->refreshCb = on_refresh_callback;
 
     // Specific to the component 
     comp->ul = (screenpos) { .x = 41, .y = 1 };

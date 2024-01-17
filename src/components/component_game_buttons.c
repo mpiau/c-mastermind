@@ -55,7 +55,7 @@ struct ComponentGameButtons
 	struct Button buttons[ButtonId_Count];
 	enum ButtonId hoveredButton;
 };
-#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentGameButtons * )( _header ) )
+#define CAST_TO_COMP( _header ) ( ( struct ComponentGameButtons * )( _header ) )
 
 
 static void button_get_hovered_style( enum ButtonId const id, struct Style *const outTextStyle, struct Style *const outKeyStyle )
@@ -162,7 +162,7 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 
 static bool on_input_received_callback( struct ComponentHeader *header, enum KeyInput input )
 {
-	struct ComponentGameButtons *buttons = CAST_TO_COMPONENT( header );
+	struct ComponentGameButtons *buttons = CAST_TO_COMP( header );
 	if ( input == KeyInput_MOUSE_BTN_LEFT && buttons->hoveredButton != ButtonId_Invalid )
 	{
 		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );

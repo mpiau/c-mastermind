@@ -43,7 +43,7 @@ struct FPSCounter
 
 static struct FPSCounter s_fpsCounter = {}; // Just to avoid dynamic alloc
 
-static nsecond S_CAPPED_FRAMERATE = FRAMERATE_60_IN_NSEC;
+static nsecond S_CAPPED_FRAMERATE = FRAMERATE_120_IN_NSEC;
 
 
 struct FPSCounter *fpscounter_init( void )

@@ -16,35 +16,25 @@ struct ComponentFramerate
     struct Style style;
 };
 
-#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentFramerate * )( _header ) )
+#define CAST_TO_COMP( _header ) ( ( struct ComponentFramerate * )( _header ) )
 
 #define RETURN_IF_DISABLED( _header )                   \
     do { if ( !_header->enabled ) return; } while ( 0 )
-
-
-static void on_refresh_callback( struct ComponentHeader const *header )
-{
-    RETURN_IF_DISABLED( header );
-
-    struct ComponentFramerate const *comp = CAST_TO_COMPONENT( header );
-
-    cursor_update_pos( comp->pos );
-    style_update( comp->style );
-    term_write( L"%3uFPS", comp->lastAverageFPS );
-}
 
 
 static void frame_callback( struct ComponentHeader *header )
 {
     RETURN_IF_DISABLED( header );
 
-    struct ComponentFramerate *comp = CAST_TO_COMPONENT( header );
+    struct ComponentFramerate *comp = CAST_TO_COMP( header );
 
     usize const lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
     if ( lastAverageFPS != comp->lastAverageFPS )
     {
         comp->lastAverageFPS = lastAverageFPS;
-        header->refreshNeeded = true;
+        cursor_update_pos( comp->pos );
+        style_update( comp->style );
+        term_write( L"%3uFPS", comp->lastAverageFPS );
     }
 }
 
@@ -58,7 +48,6 @@ struct ComponentHeader *component_framerate_create( void )
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
     callbacks->frameCb = frame_callback;
-    callbacks->refreshCb = on_refresh_callback;
 
     // Specific to the component 
     comp->pos = (screenpos) { .x = 1, .y = 1 };

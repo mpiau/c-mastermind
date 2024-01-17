@@ -21,7 +21,7 @@ struct ComponentSummary
 	screenpos firstPinsRowUL;
 	screenpos solutionRowUL;
 };
-#define CAST_TO_COMPONENT( _header ) ( ( struct ComponentSummary * )( _header ) )
+#define CAST_TO_COMP( _header ) ( ( struct ComponentSummary * )( _header ) )
 
 
 static void draw_pin( struct Pin const *pin, bool visible )
@@ -94,7 +94,7 @@ static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const 
 
 static void on_refresh_callback( struct ComponentHeader const *header )
 {
-	struct ComponentSummary const *comp = CAST_TO_COMPONENT( header );
+	struct ComponentSummary const *comp = CAST_TO_COMP( header );
 	rect_draw_borders( &comp->box, L"Summary" );
 
     usize const nbTurns = mastermind_get_total_turns();
@@ -154,7 +154,7 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 {
 	if ( type == GameUpdateType_GAME_NEW )
 	{
-		set_component_data( CAST_TO_COMPONENT( header ) );
+		set_component_data( CAST_TO_COMP( header ) );
 		header->refreshNeeded = true;
 		header->enabled = true;
 	}
