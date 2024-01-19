@@ -100,6 +100,8 @@ static usize draw_optional_border_title( utf16 const *const optTitle, usize cons
 
 void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
 {
+	if ( rect->size.w < 3 || rect->size.h < 3 ) return;
+
     style_update( STYLE( FGColor_BRIGHT_BLACK ) );
 	
 	screenpos const ul = rect_get_ul_corner( rect );

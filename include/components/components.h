@@ -37,5 +37,8 @@ bool components_try_consume_input( enum KeyInput input );
 bool component_exists( enum ComponentId id );
 struct ComponentHeader *component_try_get( enum ComponentId id ); // return NULL if doesn't exist
 
+void component_enable( enum ComponentId id );
+void component_disable( enum ComponentId id );
+
 // This should be internal to all components, but not shared in this header file.
 void component_make_header( struct ComponentHeader *widget, enum ComponentId id, bool enabled );

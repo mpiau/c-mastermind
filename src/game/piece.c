@@ -156,8 +156,13 @@ static termcolor get_piece_color( gamepiece const piece )
 
 static struct Style generate_style( gamepiece const piece )
 {
-    termcolor const color = get_piece_color( piece );
+    termcolor color = get_piece_color( piece );
     enum Attr const attr = is_future_turn( piece ) ? Attr_FAINT : Attr_NONE;
+
+    if ( piece & PieceFlag_SECRET )
+    {
+        color = FGColor_BRIGHT_BLACK;
+    }
 
     return STYLE_WITH_ATTR( color, attr );
 }
@@ -167,6 +172,18 @@ void piece_write_1x1( screenpos const pos, gamepiece const piece )
 {
     style_update( generate_style( piece ) );
     cursor_update_yx( pos.y, pos.x );
+
+    if ( is_pin( piece ) && ( is_future_turn( piece ) || is_current_turn( piece ) ) )
+    {
+        term_write( L" " );
+        return;
+    }
+
+    if ( is_peg( piece ) && ( piece & PieceFlag_SECRET ) )
+    {
+        term_write( L"?" );
+        return;
+    }
 
     if ( is_empty( piece ) )
     {

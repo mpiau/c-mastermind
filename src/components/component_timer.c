@@ -27,7 +27,7 @@ struct ComponentTimer
     enum TimerStatus status;
     nsecond totalDuration;
     nsecond lastUpdateTimestamp;
-    struct Rect box;
+    struct Rect rect;
     screenpos dispPos;
 };
 #define CAST_TO_COMP( _header ) ( ( struct ComponentTimer * )( _header ) )
@@ -128,8 +128,6 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 	{
         widget_timer_reset( header );
         widget_timer_start( header );
-		header->enabled = true;
-        rect_draw_borders( &CAST_TO_COMP( header )->box, L"Timer" );
         write_timer_update( CAST_TO_COMP( header ) );
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
@@ -138,6 +136,19 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 	}
 }
 
+static void enable_callback( struct ComponentHeader *header )
+{
+    struct ComponentTimer *comp = CAST_TO_COMP( header );
+    rect_draw_borders( &CAST_TO_COMP( header )->rect, L"Timer" );
+    write_timer_update( CAST_TO_COMP( header ) );
+}
+
+
+static void disable_callback( struct ComponentHeader *header )
+{
+    struct ComponentTimer *comp = CAST_TO_COMP( header );
+    rect_clear( &comp->rect );
+}
 
 struct ComponentHeader *component_timer_create( void )
 {
@@ -147,11 +158,13 @@ struct ComponentHeader *component_timer_create( void )
 	component_make_header( &comp->header, ComponentId_TIMER, false );
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
+    callbacks->enableCb = enable_callback;
+    callbacks->disableCb = disable_callback;
     callbacks->frameCb = frame_callback;
     callbacks->gameUpdateCb = on_game_update_callback;
 
     screenpos const boxUL = SCREENPOS( 95, 2 );
-    comp->box = rect_make( boxUL, VEC2U16( 25, 3 ) );
+    comp->rect = rect_make( boxUL, VEC2U16( 25, 3 ) );
     comp->dispPos = SCREENPOS( boxUL.x + 8, boxUL.y + 1 );
 
     return CAST_TO_COMP_HEADER( comp );

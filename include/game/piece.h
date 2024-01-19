@@ -21,6 +21,7 @@ enum Piece
 
     Piece_MaskColor = 0b00000111,
     Piece_MaskType  = 0b00001000,
+    Piece_MaskAll   = Piece_MaskType | Piece_MaskColor,
 
     Piece_PIN_CORRECT   = Piece_MaskType | Piece_PEG_RED,
     Piece_PIN_PARTIAL   = Piece_MaskType | Piece_PEG_WHITE,

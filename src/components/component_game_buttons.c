@@ -58,46 +58,15 @@ struct ComponentGameButtons
 #define CAST_TO_COMP( _header ) ( ( struct ComponentGameButtons * )( _header ) )
 
 
-static void button_get_hovered_style( enum ButtonId const id, struct Style *const outTextStyle, struct Style *const outKeyStyle )
+static void button_get_hovered_style( struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
-	switch( id )
-	{
-		/*case ButtonId_VALIDATE:
-			*outTextStyle = STYLE( FGColor_GREEN );
-			*outKeyStyle  = STYLE( FGColor_BRIGHT_GREEN );
-			break;*/
-
-//		case ButtonId_SOLUTION:
-//		case ButtonId_RESET:
-//			*outTextStyle = STYLE( FGColor_BRIGHT_RED );
-//			*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC );
-//			break;
-
-		default:
-			*outTextStyle = STYLE( FGColor_YELLOW );
-			*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_ITALIC );
-			break;
-	}
+	*outTextStyle = STYLE( FGColor_YELLOW );
+	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_ITALIC );
 }
 
-static void button_get_default_style( enum ButtonId const id, struct Style *const outTextStyle, struct Style *const outKeyStyle )
+static void button_get_default_style( struct Style *const outTextStyle, struct Style *const outKeyStyle )
 {
-	switch( id )
-	{
-		/*case ButtonId_VALIDATE:
-			*outKeyStyle = STYLE( FGColor_GREEN );
-			break;*/
-
-//		case ButtonId_SOLUTION:
-//		case ButtonId_RESET:
-//			*outTextStyle = STYLE( FGColor_RED );
-//			break;
-
-		default:
-			*outTextStyle = STYLE( FGColor_WHITE );
-			break;
-	}
-
+	*outTextStyle = STYLE( FGColor_WHITE );
 	*outKeyStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_ITALIC );
 }
 
@@ -105,6 +74,39 @@ static void button_get_disabled_style( struct Style *const outTextStyle, struct 
 {
 	*outTextStyle = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 	*outKeyStyle  = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC );
+}
+
+
+static void write_button( struct Button const *button, bool const isHovered )
+{
+	struct Style textStyle;
+	struct Style keyStyle;
+
+	screenpos const ul = rect_get_ul_corner( &button->box );
+
+	cursor_update_yx( ul.y, ul.x );
+	if ( button->status == ButtonStatus_ENABLED )
+	{
+		isHovered ? button_get_hovered_style( &textStyle, &keyStyle ) : button_get_default_style( &textStyle, &keyStyle );
+
+		style_update( textStyle );
+		term_write( L"%S", button->text );
+
+		cursor_update_yx( ul.y + 1, ul.x );
+		style_update( keyStyle );
+		term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
+	}
+	else if ( button->status == ButtonStatus_DISABLED )
+	{
+		button_get_disabled_style( &textStyle, &keyStyle );
+
+		style_update( textStyle );
+		term_write( L"%S", button->text );
+
+		cursor_update_yx( ul.y + 1, ul.x );
+		style_update( keyStyle );
+		term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
+	}
 }
 
 
@@ -119,7 +121,7 @@ static void on_mouse_move_callback( struct ComponentHeader *const header, screen
 			if ( boardButtons->hoveredButton != idx )
 			{
 				boardButtons->hoveredButton = idx;
-				header->refreshNeeded = true;
+				write_button( &boardButtons->buttons[boardButtons->hoveredButton], true );
 			}
 			return;
 		}
@@ -127,45 +129,18 @@ static void on_mouse_move_callback( struct ComponentHeader *const header, screen
 
 	if ( boardButtons->hoveredButton != ButtonId_Invalid )
 	{
+		write_button( &boardButtons->buttons[boardButtons->hoveredButton], false );
 		boardButtons->hoveredButton = ButtonId_Invalid;
-		header->refreshNeeded = true;
-	}
-}
-
-
-static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
-{
-	struct ComponentGameButtons *boardButtons = (struct ComponentGameButtons *)header;
-
-	if ( type == GameUpdateType_GAME_FINISHED )
-	{
-//		struct Button *abandonButton = &boardButtons->buttons[ButtonId_SOLUTION];
-//		abandonButton->status = ButtonStatus_DISABLED;
-//		if ( boardButtons->hoveredButton == ButtonId_SOLUTION )
-//		{
-//			boardButtons->hoveredButton = ButtonId_Invalid;
-//		}
-		header->refreshNeeded = true;
-	}
-	else if ( type == GameUpdateType_GAME_NEW )
-	{
-//		struct Button *abandonButton = &boardButtons->buttons[ButtonId_SOLUTION];
-//		abandonButton->status = ButtonStatus_ENABLED;
-//		if ( rect_is_inside( &abandonButton->box, mouse_pos() ) )
-//		{
-//			boardButtons->hoveredButton = ButtonId_SOLUTION;
-//		}
-		header->refreshNeeded = true;
 	}
 }
 
 
 static bool on_input_received_callback( struct ComponentHeader *header, enum KeyInput input )
 {
-	struct ComponentGameButtons *buttons = CAST_TO_COMP( header );
-	if ( input == KeyInput_MOUSE_BTN_LEFT && buttons->hoveredButton != ButtonId_Invalid )
+	struct ComponentGameButtons const *comp = CAST_TO_COMP( header );
+	if ( input == KeyInput_MOUSE_BTN_LEFT && comp->hoveredButton != ButtonId_Invalid )
 	{
-		gameloop_emit_key( buttons->buttons[buttons->hoveredButton].bindedKey );
+		gameloop_emit_key( comp->buttons[comp->hoveredButton].bindedKey );
 		return true;
 	}
 
@@ -173,48 +148,26 @@ static bool on_input_received_callback( struct ComponentHeader *header, enum Key
 }
 
 
-static void on_refresh_callback( struct ComponentHeader const *header )
+static void enable_callback( struct ComponentHeader *header )
 {
 	struct ComponentGameButtons const *comp = (struct ComponentGameButtons const *)header;
-
-	struct Style textStyle;
-	struct Style keyStyle;
 
 	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
 	{
 		struct Button const *button = &comp->buttons[idx];
+		write_button( button, idx == comp->hoveredButton );
+	}
+}
 
-		screenpos const ul = rect_get_ul_corner( &button->box );
-		bool const isHovered = ( comp->hoveredButton == idx );
 
-		cursor_update_yx( ul.y, ul.x );
-		if ( button->status == ButtonStatus_ENABLED )
-		{
-			isHovered ? button_get_hovered_style( idx, &textStyle, &keyStyle ) : button_get_default_style( idx, &textStyle, &keyStyle );
+static void disable_callback( struct ComponentHeader *header )
+{
+	struct ComponentGameButtons const *comp = (struct ComponentGameButtons const *)header;
 
-			style_update( textStyle );
-			term_write( L"%S", button->text );
-
-			cursor_update_yx( ul.y + 1, ul.x );
-			style_update( keyStyle );
-			term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
-		}
-		else if ( button->status == ButtonStatus_DISABLED )
-		{
-			button_get_disabled_style( &textStyle, &keyStyle );
-
-			style_update( textStyle );
-			term_write( L"%S", button->text );
-
-			cursor_update_yx( ul.y + 1, ul.x );
-			style_update( keyStyle );
-			term_write( L"[%s]", key_input_get_name( button->bindedKey ) );
-		}
-/*		else
-		{
-			term_write( L"%s", button->text );
-			term_write( L"%*lc", wcslen( button->text ) + 2, L' ' ); // + 2 for '[' and ']'
-		}*/
+	for ( enum ButtonId idx = 0; idx < ButtonId_Count; ++idx )
+	{
+		struct Button const *button = &comp->buttons[idx];
+		rect_clear( &button->box );
 	}
 }
 
@@ -251,13 +204,13 @@ struct ComponentHeader *component_game_buttons_create( void )
     struct ComponentGameButtons *const comp = calloc( 1, sizeof( struct ComponentGameButtons ) );
     if ( !comp ) return NULL;
 
-	component_make_header( &comp->header, ComponentId_GAME_BUTTONS, true );
+	comp->header.id = ComponentId_GAME_BUTTONS;
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
-    callbacks->refreshCb = on_refresh_callback;
+	callbacks->enableCb = enable_callback;
+	callbacks->disableCb = disable_callback;
 	callbacks->mouseMoveCb = on_mouse_move_callback;
 	callbacks->inputReceivedCb = on_input_received_callback;
-	callbacks->gameUpdateCb = on_game_update_callback;
 
 	// Specific data
 	init_component_data( comp );

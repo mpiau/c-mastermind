@@ -224,6 +224,11 @@ int main( void )
 		return ExitCode_FAILURE;
 	}
 
+    component_enable( ComponentId_FRAMERATE );
+    component_enable( ComponentId_SCREEN_SIZE );
+	component_enable( ComponentId_MOUSE_POSITION );
+	component_enable( ComponentId_GAME_BUTTONS );
+
 	cursor_update_yx( 1, 104 );
 	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
 	term_write( L"Development Build" );

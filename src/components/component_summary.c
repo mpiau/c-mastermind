@@ -78,20 +78,15 @@ static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const 
 }
 
 
-static void on_refresh_callback( struct ComponentHeader const *header )
+static void write_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	struct ComponentSummary const *comp = CAST_TO_COMP( header );
-	rect_draw_borders( &comp->box, L"Summary" );
+	draw_pegs_at_turn( comp, turn );
+	draw_current_turn_nb_at_turn( comp, turn );
+	draw_pins_at_turn( comp, turn );
+} 
 
-    usize const nbTurns = mastermind_get_total_turns();
-    for ( int y = 0; y < nbTurns; ++y )
-    {
-		usize const displayTurn = y + 1;
-		draw_pegs_at_turn( comp, displayTurn );
-		draw_current_turn_nb_at_turn( comp, displayTurn );
-		draw_pins_at_turn( comp, displayTurn );
-    }
-
+static void write_solution( struct ComponentSummary const *comp )
+{
     usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
 	gamepiece const *solution = mastermind_get_solution();
 	screenpos solutionPos = comp->solutionRowUL;
@@ -103,6 +98,17 @@ static void on_refresh_callback( struct ComponentHeader const *header )
     }
 }
 
+static void write_board_content( struct ComponentSummary const *comp )
+{
+    usize const nbTurns = mastermind_get_total_turns();
+    for ( int y = 0; y < nbTurns; ++y )
+    {
+		write_turn( comp, y + 1 );
+    }
+	write_solution( comp );
+}
+
+
 // TODO Move it in another file if the usage is approved.
 static inline screenpos screenpos_add( screenpos const lhs, screenpos const rhs )
 {
@@ -112,45 +118,47 @@ static inline screenpos screenpos_add( screenpos const lhs, screenpos const rhs 
 
 static void set_component_data( struct ComponentSummary *const comp )
 {
-    usize const nbTurns = mastermind_get_total_turns();
-    usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
-
 	vec2u16 const boxSize = (vec2u16) {
-		.x = 4 /*borders + space each side*/ + ( nbPiecesPerTurn * 2 ) - 1 /*pegs*/ + 4 /*turn display*/ + nbPiecesPerTurn /*pins*/,
-		.y = 2 /*borders*/ + nbTurns + 1 /*solution*/ + 1
+		.x = 25 ,
+		.y = 24
 	};
 	// We want to keep the board on the right of the screen, whether we have 4 or 6 pegs to display.
 	screenpos const boxUL = SCREENPOS( GAME_SIZE_WIDTH - boxSize.w, 5 );
 
-	usize const spacesBeforeSolution = ( boxSize.w - ( ( nbPiecesPerTurn * 2 ) - 1 ) ) / 2;
+	usize const spacesBeforeSolution = ( boxSize.w - 11 ) / 2;
+
+	usize const nbMissingPieces = Mastermind_MAX_PIECES_PER_TURN - mastermind_get_nb_pieces_per_turn();
 
 	comp->box = rect_make( boxUL, boxSize );
-	comp->firstPegsRowUL = SCREENPOS( boxUL.x + 2, boxUL.y + 1 );
-	comp->firstTurnRowUL = screenpos_add( comp->firstPegsRowUL, SCREENPOS( ( nbPiecesPerTurn * 2 ), 0 ) );
-	comp->firstPinsRowUL = screenpos_add( comp->firstTurnRowUL, SCREENPOS( 3, 0 ) );
-	comp->solutionRowUL = SCREENPOS(  boxUL.x + spacesBeforeSolution, boxUL.y + ( boxSize.y - 2 ) );
+	comp->firstPegsRowUL = SCREENPOS( boxUL.x + 2 + nbMissingPieces, boxUL.y + 1 );
+	comp->firstTurnRowUL = screenpos_add( comp->firstPegsRowUL, SCREENPOS( 12 - nbMissingPieces, 0 ) );
+	comp->firstPinsRowUL = screenpos_add( comp->firstTurnRowUL, SCREENPOS( 3 + nbMissingPieces / 2, 0 ) );
+	comp->solutionRowUL = SCREENPOS(  boxUL.x + spacesBeforeSolution + nbMissingPieces, boxUL.y + ( boxSize.y - 2 ) );
 }
 
 
 static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
 {
+	struct ComponentSummary *comp = CAST_TO_COMP( header );
 	if ( type == GameUpdateType_GAME_NEW )
 	{
-		set_component_data( CAST_TO_COMP( header ) );
-		header->refreshNeeded = true;
-		header->enabled = true;
+		set_component_data( comp );
+		write_board_content( comp );
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
 	{
-		header->refreshNeeded = true;
+		draw_pins_at_turn( comp, mastermind_get_player_turn() );
+		write_solution( comp );
 	}
 	else if ( type == GameUpdateType_NEXT_TURN )
 	{
-		header->refreshNeeded = true;
+		usize const currTurn = mastermind_get_player_turn();
+		write_turn( comp, currTurn - 1 );
+		write_turn( comp, currTurn );
 	}
 	else if ( type == GameUpdateType_PEG_ADDED )
 	{
-		header->refreshNeeded = true;
+		draw_pegs_at_turn( comp, mastermind_get_player_turn() );
 	}
 
 	// TODO to catch:
@@ -159,15 +167,30 @@ static void on_game_update_callback( struct ComponentHeader *header, enum GameUp
 }
 
 
+static void enable_callback( struct ComponentHeader *header )
+{
+	struct ComponentSummary *comp = CAST_TO_COMP( header );
+	set_component_data( comp );
+	rect_draw_borders( &comp->box, L"Summary" );
+	write_board_content( comp );
+}
+
+static void disable_callback( struct ComponentHeader *header )
+{
+	rect_clear( &CAST_TO_COMP( header )->box );
+}
+
+
 struct ComponentHeader *component_summary_create( void )
 {
     struct ComponentSummary *const comp = calloc( 1, sizeof( struct ComponentSummary ) );
     if ( !comp ) return NULL;
 
-	component_make_header( &comp->header, ComponentId_SUMMARY, false );
+	comp->header.id = ComponentId_SUMMARY;
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
-    callbacks->refreshCb = on_refresh_callback;
+	callbacks->enableCb = enable_callback;
+	callbacks->disableCb = disable_callback;
 	callbacks->gameUpdateCb = on_game_update_callback;
 
 	return (struct ComponentHeader *)comp;

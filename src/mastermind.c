@@ -3,6 +3,7 @@
 #include "characters_list.h"
 #include "keyboard_inputs.h"
 #include "settings.h"
+#include "components/components.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -178,13 +179,35 @@ static bool is_current_turn_match_solution( void )
     gamepiece const *pins = mastermind_get_pins_at_turn( s_mastermind.currentTurn );
     for ( usize idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
-        if ( ( pins[idx] & Piece_MaskColor ) != Piece_PIN_CORRECT )
+        if ( ( pins[idx] & Piece_MaskAll ) != Piece_PIN_CORRECT )
         {
             return false;
         }
     }
 
     return true;   
+}
+
+
+static void next_turn( void )
+{
+    gamepiece *currPeg = s_mastermind.pegs[s_mastermind.currentTurn - 1];
+    gamepiece *nextPeg = s_mastermind.pegs[s_mastermind.currentTurn];
+
+    gamepiece *currPin = s_mastermind.pins[s_mastermind.currentTurn - 1];
+    gamepiece *nextPin = s_mastermind.pins[s_mastermind.currentTurn];
+
+    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    {
+        currPeg[idx] = ( currPeg[idx] & ~PieceTurn_MaskAll ) | PieceTurn_PAST;
+        nextPeg[idx] = ( nextPeg[idx] & ~PieceTurn_MaskAll ) | PieceTurn_CURRENT;
+
+        currPin[idx] = ( currPin[idx] & ~PieceTurn_MaskAll ) | PieceTurn_PAST;
+        nextPin[idx] = ( nextPin[idx] & ~PieceTurn_MaskAll ) | PieceTurn_CURRENT;
+    }
+
+    s_mastermind.currentTurn += 1;
+    s_mastermind.selectionBarIdx = 0;   
 }
 
 
@@ -208,6 +231,11 @@ static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
     s_mastermind.nbPiecesPerTurn = nbPiecesPerTurn;
     s_mastermind.gameExperience = gameExperience;
 
+    // Game logic
+    s_mastermind.currentTurn = 1;
+    s_mastermind.selectionBarIdx = 0;
+    s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
+
     // Game data
     for ( int idx = 0; idx < Mastermind_MAX_TURNS; ++idx )
     {
@@ -217,10 +245,8 @@ static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
     generate_new_solution( s_mastermind.solution );
     hide_solution();
 
-    // Game logic
-    s_mastermind.currentTurn = 1;
-    s_mastermind.selectionBarIdx = 0;
-    s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
+    component_enable( ComponentId_SUMMARY );
+    component_enable( ComponentId_TIMER );
 
     emit_game_update( GameUpdateType_GAME_NEW );
     return true;
@@ -270,8 +296,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             }
             else
             {
-                s_mastermind.currentTurn += 1;
-                s_mastermind.selectionBarIdx = 0;
+                next_turn();
                 emit_game_update( GameUpdateType_NEXT_TURN );
             }
             return true;

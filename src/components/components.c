@@ -53,7 +53,7 @@ static void on_game_update_callback( enum GameUpdateType const updateType )
     {
         struct ComponentHeader *header = s_headers[id];
 
-        if ( header && header->callbacks.gameUpdateCb )
+        if ( header && header->enabled && header->callbacks.gameUpdateCb )
         {
             header->callbacks.gameUpdateCb( header, updateType );
         }
@@ -61,21 +61,29 @@ static void on_game_update_callback( enum GameUpdateType const updateType )
 }
 
 
-void enable_component( struct ComponentHeader *header )
+void component_enable( enum ComponentId const id )
 {
-    if ( !header->enabled && header->callbacks.enableCb )
+    struct ComponentHeader *header = s_headers[id];
+    if ( header && !header->enabled )
     {
-        header->callbacks.enableCb( header );
+        if ( header->callbacks.enableCb )
+        {
+            header->callbacks.enableCb( header );
+        }
         header->enabled = true;
     }
 }
 
 
-void disable_component( struct ComponentHeader *header )
+void component_disable( enum ComponentId const id )
 {
-    if ( header->enabled && header->callbacks.disableCb )
+    struct ComponentHeader *header = s_headers[id];
+    if ( header && header->enabled )
     {
-        header->callbacks.disableCb( header );
+        if ( header->callbacks.disableCb )
+        {
+            header->callbacks.disableCb( header );
+        }
         header->enabled = false;
     }
 }
@@ -99,9 +107,6 @@ bool components_init( void )
     mouse_register_on_mouse_move_callback( on_mouse_move_callback );
 	mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
-
-    enable_component( s_headers[ComponentId_FRAMERATE] );
-    enable_component( s_headers[ComponentId_SCREEN_SIZE] );
     return true;
 }
 
@@ -139,14 +144,13 @@ void components_frame( void )
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct ComponentHeader *const header = s_headers[id];
-		if ( header == NULL ) continue;
 
-        if ( header->callbacks.frameCb != NULL )
+        if ( header && header->enabled && header->callbacks.frameCb )
         {
             header->callbacks.frameCb( header );
 		}
 
-		if ( header->refreshNeeded && header->enabled )
+/*		if ( header->enabled && header->refreshNeeded )
 		{
 			if ( header->callbacks.refreshCb != NULL )
 			{
@@ -154,7 +158,7 @@ void components_frame( void )
 			}
 			header->refreshNeeded = false;
 		}
-   }
+*/   }
 }
 
 
