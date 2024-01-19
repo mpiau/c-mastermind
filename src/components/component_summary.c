@@ -24,50 +24,39 @@ struct ComponentSummary
 #define CAST_TO_COMP( _header ) ( ( struct ComponentSummary * )( _header ) )
 
 
-static void draw_pin( struct Pin const *pin, bool visible )
-{
-	if ( !visible )
-	{
-		term_write( L" " );
-		return;
-	}
-
-	style_update( pin_get_style( pin->id ) );
-	utf16 const character = pin->id == PinId_INCORRECT ? UTF16C_SmallDottedCircle : UTF16C_SmallFilledCircle;
-	term_write( L"%lc", character );
-}
-
-
 static void draw_pegs_at_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	screenpos const ul = SCREENPOS( comp->firstPegsRowUL.x, comp->firstPegsRowUL.y + ( turn - 1 ) );
-	struct Peg const *pegs      = mastermind_get_pegs_at_turn( turn );
 	usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
-
-	usize const playerTurn    = mastermind_get_player_turn();
-	bool const isGameFinished = mastermind_is_game_finished();
-	bool const isFutureTurn = !isGameFinished && turn > playerTurn;
+	screenpos ul = SCREENPOS( comp->firstPegsRowUL.x, comp->firstPegsRowUL.y + ( turn - 1 ) );
 
 	for ( usize idx = 0; idx < nbPiecesPerTurn; ++idx )
 	{
-		peg_draw_single_character( &pegs[idx], ul.x + ( idx * 2 ), ul.y, isFutureTurn );
+		piece_write_1x1( ul, mastermind_get_peg( turn, idx ) );
+		ul.x += 2;
 	}
 }
 
 
 static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	usize const playerTurn    = mastermind_get_player_turn();
-	bool const isGameFinished = mastermind_is_game_finished();
+	enum PieceTurn const turnStatus = ( mastermind_get_peg( turn, 0 ) & PieceTurn_MaskAll );
 
-	if ( !isGameFinished && turn <= playerTurn )
+	switch( turnStatus )
 	{
-		bool const isPlayerTurn = ( playerTurn == turn );
-		style_update( STYLE( isPlayerTurn ? FGColor_YELLOW : FGColor_WHITE ) );
-	}
-	else
-	{
-		style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+		case PieceTurn_PAST:
+			style_update( STYLE( FGColor_WHITE ) );
+			break;
+		case PieceTurn_CURRENT:
+			style_update( STYLE( FGColor_YELLOW ) );
+			break;
+		case PieceTurn_FUTURE:
+			style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+			break;
+
+		case PieceTurn_IGNORE:
+		default:
+			style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+			break;
 	}
 
 	screenpos const ul = SCREENPOS( comp->firstTurnRowUL.x, comp->firstTurnRowUL.y + ( turn - 1 ) );
@@ -78,16 +67,13 @@ static void draw_current_turn_nb_at_turn( struct ComponentSummary const *comp, u
 
 static void draw_pins_at_turn( struct ComponentSummary const *comp, usize const turn )
 {
-	screenpos const ul = SCREENPOS( comp->firstPinsRowUL.x, comp->firstPinsRowUL.y + ( turn - 1 ) );
-	struct Pin const *pins      = mastermind_get_pins_at_turn( turn );
+	screenpos ul = SCREENPOS( comp->firstPinsRowUL.x, comp->firstPinsRowUL.y + ( turn - 1 ) );
 	usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
-	usize const playerTurn      = mastermind_get_player_turn();
-	bool const pinVisible       = mastermind_is_game_finished() || turn < playerTurn;
 
-	cursor_update_pos( ul );
 	for ( usize idx = 0; idx < nbPiecesPerTurn; ++idx )
 	{
-		draw_pin( &pins[idx], pinVisible );
+		piece_write_1x1( ul, mastermind_get_pin( turn, idx ) );
+		ul.x += 1;
 	}
 }
 
@@ -98,26 +84,22 @@ static void on_refresh_callback( struct ComponentHeader const *header )
 	rect_draw_borders( &comp->box, L"Summary" );
 
     usize const nbTurns = mastermind_get_total_turns();
-	usize const currTurn = mastermind_get_player_turn();
-	bool const isGameFinished = mastermind_is_game_finished();
-
     for ( int y = 0; y < nbTurns; ++y )
     {
-		bool const notYetPlayedTurn = ( !isGameFinished && y + 1 == currTurn );
 		usize const displayTurn = y + 1;
 		draw_pegs_at_turn( comp, displayTurn );
 		draw_current_turn_nb_at_turn( comp, displayTurn );
 		draw_pins_at_turn( comp, displayTurn );
-
     }
 
     usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
-	struct Peg const *solution = mastermind_get_solution();
-	screenpos const solutionPos = comp->solutionRowUL;
+	gamepiece const *solution = mastermind_get_solution();
+	screenpos solutionPos = comp->solutionRowUL;
 
     for ( usize x = 0; x < nbPiecesPerTurn; ++x )
     {
-		peg_draw_single_character( &solution[x], solutionPos.x + 2 * x, solutionPos.y, !isGameFinished );
+		piece_write_1x1( solutionPos, solution[x] );
+		solutionPos.x += 2;
     }
 }
 

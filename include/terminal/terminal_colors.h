@@ -13,14 +13,16 @@ enum BGColor
     BGColor_CYAN    = 0b00000110,
     BGColor_WHITE   = 0b00000111,
 
-    BGColor_BRIGHT_BLACK   = 0b00001000 | BGColor_BLACK,
-    BGColor_BRIGHT_RED     = 0b00001000 | BGColor_RED,
-    BGColor_BRIGHT_GREEN   = 0b00001000 | BGColor_GREEN,
-    BGColor_BRIGHT_YELLOW  = 0b00001000 | BGColor_YELLOW,
-    BGColor_BRIGHT_BLUE    = 0b00001000 | BGColor_BLUE,
-    BGColor_BRIGHT_MAGENTA = 0b00001000 | BGColor_MAGENTA,
-    BGColor_BRIGHT_CYAN    = 0b00001000 | BGColor_CYAN,
-    BGColor_BRIGHT_WHITE   = 0b00001000 | BGColor_WHITE,
+    BGColor_MaskBright = 0b00001000,
+
+    BGColor_BRIGHT_BLACK   = BGColor_MaskBright | BGColor_BLACK,
+    BGColor_BRIGHT_RED     = BGColor_MaskBright | BGColor_RED,
+    BGColor_BRIGHT_GREEN   = BGColor_MaskBright | BGColor_GREEN,
+    BGColor_BRIGHT_YELLOW  = BGColor_MaskBright | BGColor_YELLOW,
+    BGColor_BRIGHT_BLUE    = BGColor_MaskBright | BGColor_BLUE,
+    BGColor_BRIGHT_MAGENTA = BGColor_MaskBright | BGColor_MAGENTA,
+    BGColor_BRIGHT_CYAN    = BGColor_MaskBright | BGColor_CYAN,
+    BGColor_BRIGHT_WHITE   = BGColor_MaskBright | BGColor_WHITE,
 };
 
 enum FGColor
@@ -34,14 +36,16 @@ enum FGColor
     FGColor_CYAN    = 0b01100000,
     FGColor_WHITE   = 0b01110000,
 
-    FGColor_BRIGHT_BLACK   = 0b10000000 | FGColor_BLACK,
-    FGColor_BRIGHT_RED     = 0b10000000 | FGColor_RED,
-    FGColor_BRIGHT_GREEN   = 0b10000000 | FGColor_GREEN,
-    FGColor_BRIGHT_YELLOW  = 0b10000000 | FGColor_YELLOW,
-    FGColor_BRIGHT_BLUE    = 0b10000000 | FGColor_BLUE,
-    FGColor_BRIGHT_MAGENTA = 0b10000000 | FGColor_MAGENTA,
-    FGColor_BRIGHT_CYAN    = 0b10000000 | FGColor_CYAN,
-    FGColor_BRIGHT_WHITE   = 0b10000000 | FGColor_WHITE,
+    FGColor_MaskBright = 0b10000000,
+
+    FGColor_BRIGHT_BLACK   = FGColor_MaskBright | FGColor_BLACK,
+    FGColor_BRIGHT_RED     = FGColor_MaskBright | FGColor_RED,
+    FGColor_BRIGHT_GREEN   = FGColor_MaskBright | FGColor_GREEN,
+    FGColor_BRIGHT_YELLOW  = FGColor_MaskBright | FGColor_YELLOW,
+    FGColor_BRIGHT_BLUE    = FGColor_MaskBright | FGColor_BLUE,
+    FGColor_BRIGHT_MAGENTA = FGColor_MaskBright | FGColor_MAGENTA,
+    FGColor_BRIGHT_CYAN    = FGColor_MaskBright | FGColor_CYAN,
+    FGColor_BRIGHT_WHITE   = FGColor_MaskBright | FGColor_WHITE,
 };
 
 enum Color

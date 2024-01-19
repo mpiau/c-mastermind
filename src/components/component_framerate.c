@@ -18,14 +18,9 @@ struct ComponentFramerate
 
 #define CAST_TO_COMP( _header ) ( ( struct ComponentFramerate * )( _header ) )
 
-#define RETURN_IF_DISABLED( _header )                   \
-    do { if ( !_header->enabled ) return; } while ( 0 )
-
 
 static void frame_callback( struct ComponentHeader *header )
 {
-    RETURN_IF_DISABLED( header );
-
     struct ComponentFramerate *comp = CAST_TO_COMP( header );
 
     usize const lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
@@ -39,19 +34,36 @@ static void frame_callback( struct ComponentHeader *header )
 }
 
 
+static void enable_callback( struct ComponentHeader *header )
+{
+    struct ComponentFramerate *comp = CAST_TO_COMP( header );
+
+    comp->lastAverageFPS = 0;
+}
+
+
+static void disable_callback( struct ComponentHeader *header )
+{
+    struct ComponentFramerate *comp = CAST_TO_COMP( header );
+
+    cursor_update_pos( comp->pos );
+    term_write( L"      " );
+}
+
+
 struct ComponentHeader *component_framerate_create( void )
 {
     struct ComponentFramerate *const comp = calloc( 1, sizeof( struct ComponentFramerate ) );
     if ( !comp ) return NULL;
 
-    component_make_header( &comp->header, ComponentId_FRAMERATE, true );
+    comp->header.id = ComponentId_FRAMERATE;
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
+    callbacks->enableCb = enable_callback;
+    callbacks->disableCb = disable_callback;
     callbacks->frameCb = frame_callback;
 
-    // Specific to the component 
     comp->pos = (screenpos) { .x = 1, .y = 1 };
-    comp->lastAverageFPS = fpscounter_average_framerate( fpscounter_get_instance() );
     comp->style = STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
 
     return (struct ComponentHeader *)comp;

@@ -37,46 +37,6 @@ enum // Constants
 };
 
 
-static void draw_peg( screenpos const ul, enum PegId const id, bool const hidden )
-{
-	bool const isEmpty = ( id == PegId_Empty );
-
-	if ( hidden )
-	{
-		style_update( STYLE( FGColor_BRIGHT_BLACK ) );
-
-		cursor_update_yx( ul.y, ul.x );
-		term_write( L"\x1B[2m,d||b." );
-		cursor_update_yx( ul.y + 1, ul.x );
-		term_write( L"O ?? O" );
-		cursor_update_yx( ul.y + 2, ul.x );
-		term_write( L"`Y||P'\x1B[0m" );
-	}
-	else
-	{
-		style_update( STYLE( peg_get_color( id, false /* TODO be relevant with the board */ ) ) );
-		cursor_update_yx( ul.y, ul.x );
-		term_write( isEmpty ? L",:'':." : L",d||b." );
-		cursor_update_yx( ul.y + 1, ul.x );
-		term_write( isEmpty ? L":    :" : L"OOOOOO" );
-		cursor_update_yx( ul.y + 2, ul.x );
-		term_write( isEmpty ? L"`:,,:'" : L"`Y||P'" );
-	}
-}
-
-static void draw_pin( screenpos const ul, enum PinId const id )
-{
-	bool const isEmpty = ( id == PinId_INCORRECT );
-
-	style_update( pin_get_style( id ) );
-
-	cursor_update_yx( ul.y, ul.x );
-	term_write( isEmpty ? L".''." : L",db." );
-	cursor_update_yx( ul.y + 1, ul.x );
-	term_write( isEmpty ? L"`,,'" : L"`YP'" );
-}
-
-
 static inline void draw_character_n_times( utf16 const character, usize const nTimes )
 {
 	for ( usize x = 0; x < nTimes; ++x )
@@ -106,7 +66,7 @@ static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn,
 }
 
 
-static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const nbPegs, bool const currentTurnDisplayed )
+static void draw_row_pegs( screenpos const ul, gamepiece const *pegs, u32 const nbPegs, bool const currentTurnDisplayed )
 {
 	for ( u32 pegIdx = 0; pegIdx < nbPegs; ++pegIdx )
 	{
@@ -114,7 +74,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 			.x = ul.x + ( pegIdx * ( PEG_WIDTH + PEG_INTERSPACE ) ),
 			.y = ul.y
 		};
-		draw_peg( pegUL, pegs[pegIdx].id, pegs[pegIdx].hidden );
+		piece_write_6x3( pegUL, pegs[pegIdx] );
 
 		pegUL.y += PEG_HEIGHT;
 		cursor_update_pos( pegUL );
@@ -131,7 +91,7 @@ static void draw_row_pegs( screenpos const ul, struct Peg const *pegs, u32 const
 }
 
 
-static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin const *pins, u32 const nbPins )
+static void draw_row_pins( screenpos const ul, u32 const nbPegs, gamepiece const *pins, u32 const nbPins )
 {
 	bool const oddNbPins = nbPins % 2 != 0; // Need to add a last empty pin manually
 
@@ -142,7 +102,7 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 	u8 const firstRowLimit = ( nbPins + 1 ) / 2;
 	for ( int idx = 0; idx < firstRowLimit; ++idx )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * idx, ulY ), pins[idx].id );
+		piece_write_4x2( SCREENPOS( ulX + 5 * idx, ulY ), pins[idx] );
 	}
 
 	ulY += 3;
@@ -150,12 +110,12 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, struct Pin cons
 	// second row, except the last for odds
 	for ( int idx = firstRowLimit; idx < nbPins; ++idx )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * ( idx - firstRowLimit ), ulY ), pins[idx].id );
+		piece_write_4x2( SCREENPOS( ulX + 5 * ( idx - firstRowLimit ), ulY ), pins[idx] );
 	}
 
 	if ( oddNbPins )
 	{
-		draw_pin( SCREENPOS( ulX + 5 * ( nbPins - firstRowLimit ), ulY ), PinId_INCORRECT );
+		piece_write_4x2( SCREENPOS( ulX + 5 * ( nbPins - firstRowLimit ), ulY ), Piece_PIN_INCORRECT );
 	}
 }
 
@@ -167,7 +127,7 @@ static void draw_solution_pegs( screenpos const ul, struct ComponentBoard const 
 	usize const spacesBetween = ( board->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the board though, hence the decalage.
 	screenpos const ulSolution = SCREENPOS( ul.x + spacesBetween, ul.y + 1 );
 
-	struct Peg const *solution = mastermind_get_solution();
+	gamepiece const *solution = mastermind_get_solution();
 	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pieces_per_turn(), false );
 }
 
@@ -191,8 +151,8 @@ static void calculate_board_display( struct ComponentHeader *widget )
 static void row_v2( screenpos ul, int turnToDisplay )
 {
 	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
-	struct Peg const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
-	struct Pin const *pins = mastermind_get_pins_at_turn( turnToDisplay );
+	gamepiece const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
+	gamepiece const *pins = mastermind_get_pins_at_turn( turnToDisplay );
 	u8 const playerTurn = mastermind_get_player_turn();
 	bool const isCurrentTurnDisplayed = ( playerTurn == turnToDisplay );
 

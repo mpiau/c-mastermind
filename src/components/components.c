@@ -61,6 +61,26 @@ static void on_game_update_callback( enum GameUpdateType const updateType )
 }
 
 
+void enable_component( struct ComponentHeader *header )
+{
+    if ( !header->enabled && header->callbacks.enableCb )
+    {
+        header->callbacks.enableCb( header );
+        header->enabled = true;
+    }
+}
+
+
+void disable_component( struct ComponentHeader *header )
+{
+    if ( header->enabled && header->callbacks.disableCb )
+    {
+        header->callbacks.disableCb( header );
+        header->enabled = false;
+    }
+}
+
+
 bool components_init( void )
 {
     s_headers[ComponentId_FRAMERATE] = component_framerate_create();
@@ -79,6 +99,9 @@ bool components_init( void )
     mouse_register_on_mouse_move_callback( on_mouse_move_callback );
 	mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
+
+    enable_component( s_headers[ComponentId_FRAMERATE] );
+    enable_component( s_headers[ComponentId_SCREEN_SIZE] );
     return true;
 }
 

@@ -13,7 +13,7 @@ enum // Constants
     Mastermind_MIN_PIECES_PER_TURN = 4,
     Mastermind_MAX_PIECES_PER_TURN = 6,
 
-    Mastermind_NB_COLORS = PegId_Count, // 4 to 8 ? We would need to handle duplicate pegs. (could be an option as well)
+    Mastermind_NB_COLORS = ( Piece_MaskColor + 1 ), // 4 to 8 ? We would need to handle duplicate pegs. (could be an option as well)
 
     Mastermind_MAX_CALLBACKS = 4
 };
@@ -66,13 +66,13 @@ usize mastermind_get_total_turns( void );
 usize mastermind_get_nb_pieces_per_turn( void );
 usize mastermind_get_player_turn( void );
 u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
-enum PegId mastermind_get_selected_peg( struct Mastermind const *mastermind );
 bool mastermind_is_game_finished( void );
 bool mastermind_is_game_lost( void );
 bool mastermind_is_game_won( void );
-struct Peg const *mastermind_get_pegs_at_turn( usize turn );
-struct Pin const *mastermind_get_pins_at_turn( usize turn );
-struct Peg const *mastermind_get_solution( void );
 
+gamepiece mastermind_get_peg( usize turn, usize index );
+gamepiece mastermind_get_pin( usize turn, usize index );
 
-termcolor peg_get_color( enum PegId id, bool selected );
+gamepiece const *mastermind_get_pegs_at_turn( usize turn );
+gamepiece const *mastermind_get_pins_at_turn( usize turn );
+gamepiece const *mastermind_get_solution( void );

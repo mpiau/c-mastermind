@@ -8,6 +8,9 @@ enum GameUpdateType;
 enum KeyInput;
 
 // Callbacks definition
+typedef void ( *ComponentCbEnable )( struct ComponentHeader *header );
+typedef void ( *ComponentCbDisable )( struct ComponentHeader *header );
+
 typedef void ( *ComponentCbFrame )( struct ComponentHeader *header );
 typedef void ( *ComponentCbRefresh )( struct ComponentHeader const *header );
 typedef void ( *ComponentCbMouseMove )( struct ComponentHeader *header, screenpos pos );
@@ -20,6 +23,9 @@ typedef bool ( *ComponentCbInputReceived )( struct ComponentHeader *header, enum
 
 struct ComponentCallbacks
 {
+    ComponentCbEnable enableCb;
+    ComponentCbDisable disableCb;
+
     ComponentCbFrame frameCb;
     ComponentCbRefresh refreshCb;
     ComponentCbMouseMove mouseMoveCb;

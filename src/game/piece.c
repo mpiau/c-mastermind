@@ -3,7 +3,7 @@
 #include "terminal/terminal.h"
 #include "settings.h"
 #include "characters_list.h"
-
+/*
 static utf16 const S_PEG_NUM_UTF16[PegId_Count] =
 {
     [PegId_BLACK]   = L'O',
@@ -107,4 +107,115 @@ struct Style pin_get_style( enum PinId const id )
 		case PinId_INCORRECT:         return STYLE( FGColor_BRIGHT_BLACK );
 		default: assert( false );
 	}
+}*/
+
+
+static inline bool is_empty( gamepiece const piece )
+{
+    return ( piece & PieceFlag_EMPTY );
+}
+
+static inline bool is_future_turn( gamepiece const piece )
+{
+    return ( piece & PieceTurn_MaskAll ) == PieceTurn_FUTURE;
+}
+
+static inline bool is_current_turn( gamepiece const piece )
+{
+    return ( piece & PieceTurn_MaskAll ) == PieceTurn_CURRENT;
+}
+
+static inline bool is_past_turn( gamepiece const piece )
+{
+    return ( piece & PieceTurn_MaskAll ) == PieceTurn_PAST;
+}
+
+static inline bool is_peg( gamepiece const piece )
+{
+    return ( piece & Piece_MaskType ) == Piece_TypePeg;
+}
+
+static inline bool is_pin( gamepiece const piece )
+{
+    return ( piece & Piece_MaskType ) == Piece_TypePin;
+}
+
+
+static termcolor get_piece_color( gamepiece const piece )
+{
+    termcolor color = ( piece & Piece_MaskColor ) << 4;
+
+    if ( is_empty( piece ) || color == FGColor_BLACK )
+    {
+        color |= FGColor_MaskBright;
+    }
+
+    return color;
+}
+
+
+static struct Style generate_style( gamepiece const piece )
+{
+    termcolor const color = get_piece_color( piece );
+    enum Attr const attr = is_future_turn( piece ) ? Attr_FAINT : Attr_NONE;
+
+    return STYLE_WITH_ATTR( color, attr );
+}
+
+
+void piece_write_1x1( screenpos const pos, gamepiece const piece )
+{
+    style_update( generate_style( piece ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( is_empty( piece ) )
+    {
+        term_write( L"%lc", UTF16C_SmallDottedCircle );
+        return;
+    }
+
+    utf16 const character = is_peg( piece ) ? UTF16C_BigFilledCircle : UTF16C_SmallFilledCircle;
+    term_write( L"%lc", character );
+}
+
+
+void piece_write_4x2( screenpos const pos, gamepiece const piece )
+{
+    style_update( generate_style( piece ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( is_empty( piece ) )
+    {
+    	term_write( L".''." );
+	    cursor_update_yx( pos.y + 1, pos.x );
+	    term_write( L"`,,'" );
+        return;
+    }
+
+	term_write( L",db." );
+	cursor_update_yx( pos.y + 1, pos.x );
+	term_write( L"`YP'" );
+}
+
+
+void piece_write_6x3( screenpos const pos, gamepiece const piece )
+{
+    style_update( generate_style( piece ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( is_empty( piece ) )
+    {
+        term_write( L",:'':." );
+        cursor_update_yx( pos.y + 1, pos.x );
+        term_write( L":    :" );
+        cursor_update_yx( pos.y + 2, pos.x );
+        term_write( L"`:,,:'" );
+        return;
+    }
+
+	term_write( L",d||b." );
+	cursor_update_yx( pos.y + 1, pos.x );
+	term_write( L"OOOOOO" );
+	cursor_update_yx( pos.y + 2, pos.x );
+	term_write( L"`Y||P'" );
 }
