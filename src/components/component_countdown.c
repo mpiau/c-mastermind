@@ -1,4 +1,4 @@
-#include "widgets/widget_countdown.h"
+#include "components/component_countdown.h"
 
 #include "time_units.h"
 #include "components/component_header.h"
@@ -101,7 +101,7 @@ static void frame_callback( struct ComponentHeader *widget )
 }
 
 
-struct ComponentHeader *widget_countdown_create( void )
+struct ComponentHeader *component_countdown_create( void )
 {
     struct WidgetCountdown *const countdown = malloc( sizeof( struct WidgetCountdown ) );
     if ( !countdown ) return NULL;

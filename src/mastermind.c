@@ -247,6 +247,8 @@ static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
 
     component_enable( ComponentId_SUMMARY );
     component_enable( ComponentId_TIMER );
+    component_enable( ComponentId_PEG_SELECTION );
+    component_enable( ComponentId_BOARD );
 
     emit_game_update( GameUpdateType_GAME_NEW );
     return true;

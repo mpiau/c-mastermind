@@ -1,14 +1,14 @@
 #include "components/components.h"
 #include "components/component_header.h"
 
-#include "widgets/widget_board.h"
+#include "components/component_board.h"
 #include "components/component_game_buttons.h"
 #include "components/component_framerate.h"
 #include "components/component_screen_size.h"
 #include "components/component_summary.h"
 #include "components/component_mouse_position.h"
 #include "components/component_timer.h"
-#include "widgets/widget_countdown.h"
+#include "components/component_countdown.h"
 #include "components/component_peg_selection.h"
 #include "keyboard_inputs.h"
 #include "mastermind.h"
@@ -95,12 +95,12 @@ bool components_init( void )
 	s_headers[ComponentId_SCREEN_SIZE] = component_screen_size_create();
 	s_headers[ComponentId_MOUSE_POSITION] = component_mouse_position_create();
 	s_headers[ComponentId_GAME_BUTTONS] = component_game_buttons_create();
-	s_headers[ComponentId_BOARD] = widget_board_create();
+	s_headers[ComponentId_BOARD] = component_board_create();
     s_headers[ComponentId_TIMER] = component_timer_create();
 	s_headers[ComponentId_SUMMARY] = component_summary_create();
 	s_headers[ComponentId_PEG_SELECTION] = component_peg_selection_create();
 	// boardSummary
-    // s_components[CompId_COUNTDOWN] = widget_countdown_create();
+    // s_components[CompId_COUNTDOWN] = component_countdown_create();
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)

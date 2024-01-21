@@ -7,6 +7,7 @@
 #include "gameloop.h"
 #include "settings.h"
 #include "random.h"
+#include "keybindings.h"
 
 #include "components/components.h"
 #include "terminal/terminal.h"
@@ -29,83 +30,23 @@ enum ExitCode
 
 static bool s_mainLoop = true;
 
-/*char const *get_game_name( void )
+
+void gameloop_emit_event( enum EventType type, struct EventData *data )
 {
-	 // I used https://edukits.co/text-art/ for the ASCII generation.
-	 // I needed to add some backslashes afterwards to not break the output with printf.
-
-	static char buffer[1024] = {};
-
-	if ( buffer[0] == '\0' )
+	switch ( type )
 	{
-		snprintf( buffer, ARR_COUNT( buffer),
-			"%s      __  __           _                      %s_%s           _      \n"
-			"     |  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ %s(_)%s_ __   __| |     \n"
-			"     | |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |     \n"
-			"     | |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |     \n"
-			"     |_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|     \n"
-			"%s\n",
-			S_COLOR_STR[TERM_BOLD_RED], S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED],
-			S_COLOR_STR[TERM_BOLD_GREEN], S_COLOR_STR[TERM_BOLD_RED],
-			S_COLOR_STR_RESET
-		);
+		case EventType_STOP_EXECUTION:
+			s_mainLoop = false;
+			break;
+		default: break;
 	}
-
-	return buffer;
-}*/
-
-
-// https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences Useful
-// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797 
-
-/*
-// https://www.w3schools.com/charsets/ref_utf_box.asp 
-// https://www.compart.com/en/unicode/U+25CF
-
-
-void draw_title( vec2u16 const screenSize )
-{
-	short const totalEmptySpaces = screenSize.x - 56;
-	short const spacesEachSide = (short)( ((float)totalEmptySpaces / 2.0f ) + 0.5f);
-
-	console_color_fg( ConsoleColorFG_RED );
-
-	console_cursor_set_position( 2, spacesEachSide + 1 );
-	wprintf( L" __  __           _                      " );
-	console_color_fg( ConsoleColorFG_GREEN );
-	wprintf( L"_" );
-	console_color_fg( ConsoleColorFG_RED );
-	wprintf( L"           _ " );
-
-	console_cursor_set_position( 3, spacesEachSide + 1 );
-	wprintf( L"|  \\/  | __ _ ___| |_ ___ _ __ _ __ ___ " );
-	console_color_fg( ConsoleColorFG_GREEN );
-	wprintf( L"(_)" );
-	console_color_fg( ConsoleColorFG_RED );
-	wprintf( L"_ __   __| |" );
-
-	console_cursor_set_position( 4, spacesEachSide + 1 );
-	wprintf( L"| |\\/| |/ _` / __| __/ _ \\ '__| '_ ` _ \\| | '_ \\ / _` |" );
-
-	console_cursor_set_position( 5, spacesEachSide + 1 );
-	wprintf( L"| |  | | (_| \\__ \\ ||  __/ |  | | | | | | | | | | (_| |" );
-
-	console_cursor_set_position( 6, spacesEachSide + 1 );
-	wprintf( L"|_|  |_|\\__,_|___/\\__\\___|_|  |_| |_| |_|_|_| |_|\\__,_|" );
 }
-*/
 
 
 static void gameloop_consume_key_input( enum KeyInput const input )
 {
 //	cursor_update_yx( 1, 16 );
 //	term_write( L"Input: %2u", input );
-
-	if ( input == KeyInput_ESCAPE )
-	{
-		s_mainLoop = false;
-		return;
-	}
 
 	if ( components_try_consume_input( input ) )
 	{
@@ -114,6 +55,12 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 
 	if ( mastermind_try_consume_input( input ) )
 	{
+		return;
+	}
+
+	if ( input == keybinding_get_binded_key( KeyBinding_QUIT ) )
+	{
+		gameloop_emit_event( EventType_STOP_EXECUTION, NULL );
 		return;
 	}
 }
@@ -232,36 +179,6 @@ int main( void )
 	cursor_update_yx( 1, 104 );
 	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
 	term_write( L"Development Build" );
-
-/*	cursor_update_yx( 29, 2 );
-	style_update( STYLE( FGColor_WHITE ) );
-	term_write( L"[New Game]" );
-	cursor_update_yx( 30, 2);
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
-	term_write( L"space     " );
-
-	cursor_update_yx( 29, 15 );
-	style_update( STYLE( FGColor_WHITE ) );
-	term_write( L"[Quit]" );
-	cursor_update_yx( 30, 15);
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
-	term_write( L"esc   " );
-
-	cursor_move_right_by( 6 );
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-	term_write( L"[" );
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
-	term_write( L"S" );
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-	term_write( L"|Settings]" );
-
-	cursor_move_right_by( 1 );
-	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
-	term_write( L"[" );
-	style_update( STYLE_WITH_ATTR( FGColor_YELLOW, Attr_ITALIC ) );
-	term_write( L"ESC" );
-	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
-	term_write( L"|Quit]" );*/
 
 	while ( s_mainLoop )
 	{

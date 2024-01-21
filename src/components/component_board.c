@@ -1,13 +1,22 @@
-#include "widgets/widget_board.h"
+#include "components/component_board.h"
 
 #include "components/component_header.h"
 #include "mastermind.h"
 #include "rect.h"
 #include "terminal/terminal.h"
+#include "button.h"
 
 #include <stdlib.h>
 #include <string.h>
 
+enum ButtonId
+{
+	ButtonId_CONFIRM_TURN,
+	ButtonId_RESET_TURN,
+	ButtonId_ABANDON_GAME,
+
+	ButtonId_Count
+};
 
 struct ComponentBoard
 {
@@ -18,10 +27,11 @@ struct ComponentBoard
 	usize spacesBetweenBoard;
 	usize totalPegSize;
 	usize totalPinSize;
-	struct Rect box;
+	struct Rect rect;
 	struct Rect currentTurnPegs[Mastermind_MAX_PIECES_PER_TURN];
+	struct Button buttons[ButtonId_Count];
 };
-
+#define CAST_TO_COMP( _header ) ( ( struct ComponentBoard * )( _header ) )
 
 enum // Constants
 {
@@ -138,7 +148,7 @@ static void calculate_board_display( struct ComponentHeader *widget )
 
 	usize const nbPegs = mastermind_get_nb_pieces_per_turn();
 
-	usize const totalWidth = board->box.size.w;
+	usize const totalWidth = board->rect.size.w;
 	board->totalPegSize = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
 	board->totalPinSize = ( ( nbPegs + 1 ) / 2 ) * ( PIN_WIDTH + PIN_INTERSPACE ) - PIN_INTERSPACE;
 	usize const baseBoardSize =  4 /*leftBoardPart*/ + 7 /*middle part*/ + 5 /*right side*/;
@@ -168,9 +178,9 @@ static void row_v2( screenpos ul, int turnToDisplay )
 static void on_refresh_callback( struct ComponentHeader const *widget )
 {
 	struct ComponentBoard const *board = (struct ComponentBoard const *)widget;
-	screenpos ul = rect_get_ul_corner( &board->box );
+	screenpos ul = rect_get_ul_corner( &board->rect );
 	
-	rect_draw_borders( &board->box, L"Mastermind Board" );
+	rect_draw_borders( &board->rect, L"Mastermind Board" );
 
 	ul.y += 1;
 	ul.x += 2;
@@ -203,6 +213,11 @@ static void on_refresh_callback( struct ComponentHeader const *widget )
 	term_write( L"%lc", L'├' );
 	draw_character_n_times( L'─', 76 );
 	term_write( L"%lc", L'┤' );
+
+	for ( usize idx = 0; idx < ButtonId_Count; ++idx )
+	{
+		button_write( &board->buttons[idx], false );
+	}
 }
 
 
@@ -256,24 +271,42 @@ static bool on_input_received_callback( struct ComponentHeader *widget, enum Key
 	return false;
 }
 
+static void enable_callback( struct ComponentHeader *header )
+{
+	on_refresh_callback( header );
+}
 
-struct ComponentHeader *widget_board_create( void )
+
+static void disable_callback( struct ComponentHeader *header )
+{
+	rect_clear( &CAST_TO_COMP( header )->rect );
+}
+
+
+struct ComponentHeader *component_board_create( void )
 {
 	struct ComponentBoard *const comp = calloc( 1, sizeof( struct ComponentBoard ) );
     if ( !comp ) return NULL;
 
-    component_make_header( &comp->header, ComponentId_BOARD, false );
+	comp->header.id = ComponentId_BOARD;
 
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
-    callbacks->refreshCb = on_refresh_callback;
+	callbacks->enableCb = enable_callback;
+	callbacks->disableCb = disable_callback;
+	callbacks->refreshCb = on_refresh_callback;
     callbacks->gameUpdateCb = on_game_update_callback;
     callbacks->inputReceivedCb = on_input_received_callback;
 
 
-	comp->box = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
+	comp->rect = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
 	// Set all the Rect for the pegs emplacements
 	// 
 	comp->lastDisplayedTurn = 4;
 
+	screenpos const ul = SCREENPOS( 18, 27 );
+    comp->buttons[ButtonId_CONFIRM_TURN] = button_make( L"Confirm Turn", SCREENPOS( ul.x + 5, ul.y ), VEC2U16( 20, 1 ), KeyInput_ENTER, true );
+    comp->buttons[ButtonId_RESET_TURN]   = button_make( L"Reset Turn", SCREENPOS( ul.x + 27, ul.y ), VEC2U16( 13, 1 ), KeyInput_R, true );
+    comp->buttons[ButtonId_ABANDON_GAME] = button_make( L"Abandon Game", SCREENPOS( ul.x + 55, ul.y ), VEC2U16( 15, 1 ), KeyInput_A, true );
+ 
 	return (struct ComponentHeader *)comp;
 }

@@ -3,7 +3,7 @@
 #include "core_types.h"
 #include "time_units.h"
 
-struct ComponentHeader *widget_countdown_create( void );
+struct ComponentHeader *component_countdown_create( void );
 
 void widget_countdown_start( struct ComponentHeader *widget );
 void widget_countdown_pause( struct ComponentHeader *widget );

@@ -92,7 +92,9 @@ enum KeyInput
     KeyInput_MouseBegin       = KeyInput_MOUSE_BTN_LEFT,
     KeyInput_MouseEnd         = KeyInput_MOUSE_BTN_MIDDLE,
 
-    KeyInput_EnumCount // Implementation only.
+    KeyInput_EnumCount, // Implementation only.
+
+    KeyInput_INVALID = KeyInput_EnumCount
 };
 
 
