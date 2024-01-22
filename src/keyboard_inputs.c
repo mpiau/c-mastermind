@@ -169,6 +169,13 @@ bool key_input_is_mouse( enum KeyInput const key )
 }
 
 
+enum KeyInput key_input_from_numpad_to_number( enum KeyInput const key )
+{
+    assert( key_input_is_numpad( key ) );
+    return ( key - KeyInput_NumpadBegin ) + KeyInput_NumberBegin;
+}
+
+
 char key_input_into_letter( enum KeyInput const key )
 {
     assert( key_input_is_letter( key ) );

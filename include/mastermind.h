@@ -43,13 +43,9 @@ struct Mastermind;
 
 enum GameUpdateType
 {
-    GameUpdateType_GAME_NEW,
-    GameUpdateType_GAME_FINISHED,
     GameUpdateType_TURN_RESET,
     GameUpdateType_NEXT_TURN,
     GameUpdateType_SELECTION_BAR_MOVED,
-    GameUpdateType_PEG_ADDED,
-    GameUpdateType_PEG_REMOVED,
     // [...]
 };
 

@@ -122,19 +122,20 @@ void frame_callback( struct ComponentHeader *header )
 }
 
 
-static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
+static void event_received_callback( struct ComponentHeader *header, enum EventType event, struct EventData const *data )
 {
-	if ( type == GameUpdateType_GAME_NEW )
+	if ( event == EventType_NEW_GAME )
 	{
         widget_timer_reset( header );
         widget_timer_start( header );
         write_timer_update( CAST_TO_COMP( header ) );
 	}
-	else if ( type == GameUpdateType_GAME_FINISHED )
+	else if ( event == EventType_GAME_LOST || event == EventType_GAME_WON )
 	{
         widget_timer_pause( header );
 	}
 }
+
 
 static void enable_callback( struct ComponentHeader *header )
 {
@@ -150,6 +151,7 @@ static void disable_callback( struct ComponentHeader *header )
     rect_clear( &comp->rect );
 }
 
+
 struct ComponentHeader *component_timer_create( void )
 {
     struct ComponentTimer *const comp = calloc( 1, sizeof( struct ComponentTimer ) );
@@ -161,7 +163,7 @@ struct ComponentHeader *component_timer_create( void )
     callbacks->enableCb = enable_callback;
     callbacks->disableCb = disable_callback;
     callbacks->frameCb = frame_callback;
-    callbacks->gameUpdateCb = on_game_update_callback;
+    callbacks->eventReceivedCb = event_received_callback;
 
     screenpos const boxUL = SCREENPOS( 95, 2 );
     comp->rect = rect_make( boxUL, VEC2U16( 25, 3 ) );

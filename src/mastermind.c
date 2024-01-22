@@ -4,6 +4,7 @@
 #include "keyboard_inputs.h"
 #include "settings.h"
 #include "components/components.h"
+#include "gameloop.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -217,7 +218,7 @@ static bool abandon_game( void )
     {
         s_mastermind.gameStatus = GameStatus_LOST;
         show_solution();
-        emit_game_update( GameUpdateType_GAME_FINISHED );
+        gameloop_emit_event( EventType_GAME_LOST, NULL );
         return true;
     }
     return false;
@@ -250,7 +251,7 @@ static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
     component_enable( ComponentId_PEG_SELECTION );
     component_enable( ComponentId_BOARD );
 
-    emit_game_update( GameUpdateType_GAME_NEW );
+    gameloop_emit_event( EventType_NEW_GAME, NULL );
     return true;
 }
 
@@ -288,18 +289,18 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             {
                 s_mastermind.gameStatus = GameStatus_WON;
                 show_solution();
-                emit_game_update( GameUpdateType_GAME_FINISHED );
+                gameloop_emit_event( EventType_GAME_WON, NULL );
             }
             else if ( s_mastermind.currentTurn == s_mastermind.nbTurns )
             {
                 s_mastermind.gameStatus = GameStatus_LOST;
                 show_solution();
-                emit_game_update( GameUpdateType_GAME_FINISHED );
+                gameloop_emit_event( EventType_GAME_LOST, NULL );
             }
             else
             {
                 next_turn();
-                emit_game_update( GameUpdateType_NEXT_TURN );
+                gameloop_emit_event( EventType_NEXT_TURN, NULL );
             }
             return true;
         }
@@ -309,6 +310,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             {
                 s_mastermind.selectionBarIdx -= 1;
                 emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
+                // EventType_HOVERED_PEG ?
             }
             return true;
         }
@@ -322,18 +324,27 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             return true;
         }
 
-        case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
+/*        case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
         {
             gamepiece const piece = ( input - KeyInput_NUMPAD_0 ) | Piece_TypePeg | PieceTurn_CURRENT;
             s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
-            emit_game_update( GameUpdateType_PEG_ADDED );
+            gameloop_emit_event( EventType_PEG_ADDED );
             return true;
-        }
-        case KeyInput_0 ... KeyInput_8:
+        }*/
+        case KeyInput_0 ... KeyInput_7:
         {
+            // check first if the peg added is the same or not as before.
             gamepiece const piece = ( input - KeyInput_0 ) | Piece_TypePeg | PieceTurn_CURRENT;
             s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
-            emit_game_update( GameUpdateType_PEG_ADDED );
+            gameloop_emit_event( EventType_PEG_ADDED, NULL );
+            return true;
+        }
+        case KeyInput_BACKSPACE:
+        {
+            // Check first if the peg added is already empty
+            enum PieceTurn const turnStatus = piece_turn_status( s_mastermind.currentTurn );
+            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = Piece_TypePeg | PieceFlag_EMPTY | turnStatus;
+            gameloop_emit_event( EventType_PEG_REMOVED, NULL );
             return true;
         }
     }

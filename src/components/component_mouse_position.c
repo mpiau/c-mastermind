@@ -24,11 +24,13 @@ static void write_mouse_pos( struct ComponentMousePosition *comp, screenpos cons
     term_write( L"M:%ux%u  ", pos.x, pos.y );
 }
 
+
 static void on_mouse_move_callback( struct ComponentHeader *header, screenpos const pos )
 {
     struct ComponentMousePosition *comp = CAST_TO_COMP( header );
 	write_mouse_pos( comp, pos );
 }
+
 
 static void enable_callback( struct ComponentHeader *header )
 {
@@ -42,6 +44,7 @@ static void disable_callback( struct ComponentHeader *header )
     struct ComponentMousePosition *comp = CAST_TO_COMP( header );
     rect_clear( &comp->rect );
 }
+
 
 struct ComponentHeader *component_mouse_position_create( void )
 {

@@ -2,6 +2,7 @@
 
 #include "core_types.h"
 #include "core_unions.h"
+#include "events.h"
 
 enum ComponentId
 {
@@ -31,6 +32,8 @@ void components_uninit( void );
 void components_on_screen_resize( screensize size );
 void components_frame( void );
 bool components_try_consume_input( enum KeyInput input );
+
+bool components_event_received( enum EventType event, struct EventData const *data );
 
 // Functions specific to a component
 

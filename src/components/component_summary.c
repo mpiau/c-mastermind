@@ -85,6 +85,7 @@ static void write_turn( struct ComponentSummary const *comp, usize const turn )
 	draw_pins_at_turn( comp, turn );
 } 
 
+
 static void write_solution( struct ComponentSummary const *comp )
 {
     usize const nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
@@ -97,6 +98,7 @@ static void write_solution( struct ComponentSummary const *comp )
 		solutionPos.x += 2;
     }
 }
+
 
 static void write_board_content( struct ComponentSummary const *comp )
 {
@@ -137,33 +139,30 @@ static void set_component_data( struct ComponentSummary *const comp )
 }
 
 
-static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
+static void event_received_callback( struct ComponentHeader *header, enum EventType event, struct EventData const *data )
 {
 	struct ComponentSummary *comp = CAST_TO_COMP( header );
-	if ( type == GameUpdateType_GAME_NEW )
+
+	if ( event == EventType_NEW_GAME )
 	{
 		set_component_data( comp );
 		write_board_content( comp );
 	}
-	else if ( type == GameUpdateType_GAME_FINISHED )
+	else if ( event == EventType_GAME_LOST || event == EventType_GAME_WON )
 	{
 		draw_pins_at_turn( comp, mastermind_get_player_turn() );
 		write_solution( comp );
 	}
-	else if ( type == GameUpdateType_NEXT_TURN )
+	else if ( event == EventType_NEXT_TURN )
 	{
 		usize const currTurn = mastermind_get_player_turn();
 		write_turn( comp, currTurn - 1 );
 		write_turn( comp, currTurn );
 	}
-	else if ( type == GameUpdateType_PEG_ADDED )
+	else if ( event == EventType_PEG_ADDED || event == EventType_PEG_REMOVED )
 	{
 		draw_pegs_at_turn( comp, mastermind_get_player_turn() );
 	}
-
-	// TODO to catch:
-	// Reset turn
-	// Peg removed from the board
 }
 
 
@@ -174,6 +173,7 @@ static void enable_callback( struct ComponentHeader *header )
 	rect_draw_borders( &comp->box, L"Summary" );
 	write_board_content( comp );
 }
+
 
 static void disable_callback( struct ComponentHeader *header )
 {
@@ -191,7 +191,7 @@ struct ComponentHeader *component_summary_create( void )
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
 	callbacks->enableCb = enable_callback;
 	callbacks->disableCb = disable_callback;
-	callbacks->gameUpdateCb = on_game_update_callback;
+	callbacks->eventReceivedCb = event_received_callback;
 
 	return (struct ComponentHeader *)comp;
 }

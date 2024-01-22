@@ -4,33 +4,54 @@
 #include "mastermind.h"
 #include "rect.h"
 #include "terminal/terminal.h"
-#include "button.h"
+#include "keybindings.h"
+#include "ui.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-enum ButtonId
+enum // Constants
 {
-	ButtonId_CONFIRM_TURN,
-	ButtonId_RESET_TURN,
-	ButtonId_ABANDON_GAME,
-
-	ButtonId_Count
+	ROWS_DISPLAYED = 4
 };
+
+enum ButtonIdx
+{
+	ButtonIdx_CONFIRM_TURN,
+	ButtonIdx_RESET_TURN,
+	ButtonIdx_ABANDON_GAME,
+
+	ButtonIdx_Count
+};
+
+struct BoardRow
+{
+	u8 displayedTurn;
+	struct Rect pegsPos[Mastermind_MAX_PIECES_PER_TURN];
+	screenpos pinsPos[Mastermind_MAX_PIECES_PER_TURN];
+	screenpos turnPos;
+	u8 activeHoveredPegIdx;
+};
+
+static const u8 S_INVALID_IDX = (u8)-1;
+
 
 struct ComponentBoard
 {
 	struct ComponentHeader header;
 
-	u8 lastDisplayedTurn;
-	usize totalBoardWidth;
-	usize spacesBetweenBoard;
-	usize totalPegSize;
-	usize totalPinSize;
-	struct Rect rect;
-	struct Rect currentTurnPegs[Mastermind_MAX_PIECES_PER_TURN];
-	struct Button buttons[ButtonId_Count];
+	struct Rect box;
+	struct BoardRow rows[ROWS_DISPLAYED];
+	u8 nbPiecesPerTurn;
+	u64 buttons[ButtonIdx_Count];
 };
+
+//	struct Rect pegs[ROWS_DISPLAYED][Mastermind_MAX_PIECES_PER_TURN];
+//	struct Rect turns[ROWS_DISPLAYED];
+//	struct Rect pins[ROWS_DISPLAYED][Mastermind_MAX_PIECES_PER_TURN];
+//	u8 firstTurnOnScreen;
+//	u8 lastTurnOnScreen;
+
 #define CAST_TO_COMP( _header ) ( ( struct ComponentBoard * )( _header ) )
 
 enum // Constants
@@ -47,16 +68,80 @@ enum // Constants
 };
 
 
-static inline void draw_character_n_times( utf16 const character, usize const nTimes )
+static inline void draw_character_n_times( utf16 const character, usize const n )
 {
-	for ( usize x = 0; x < nTimes; ++x )
+	for ( usize x = 0; x < n; ++x )
 	{
 		term_write( L"%lc", character );
 	}
 }
 
 
-static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
+/*
+static inline bool is_player_turn_displayed( struct ComponentBoard *const comp, usize const playerTurn )
+{
+	return ( comp->firstTurnOnScreen <= playerTurn && comp->lastTurnOnScreen >= playerTurn );
+}
+
+
+
+
+
+static void calculate_rect_positions( struct ComponentBoard *const comp )
+{
+	screenpos const ul = rect_get_ul_corner( &comp->box );
+	for ( usize y = 0; y < ROWS_DISPLAYED; ++y )
+	{
+		for ( usize x = 0; x < comp->nbPiecesPerTurn; ++x )
+		{
+			struct Rect *rect = &comp->pegs[y][x];
+			screenpos const pos = {
+				.x = ul.x + 8 * x + ( ( Mastermind_MAX_PIECES_PER_TURN - comp->nbPiecesPerTurn ) * 2 ),
+				.y = ul.y + 1 + 6 * y
+			};
+			*rect = rect_make( pos, VEC2U16( 6, 3 ) );
+		}
+
+		// Turns
+		{
+			screenpos const lastPegBR = rect_get_br_corner( &comp->pegs[y][comp->nbPiecesPerTurn - 1] );
+			screenpos turnUL = SCREENPOS( lastPegBR.x + 2, lastPegBR.y - 1 );
+			comp->turns[y] = rect_make( turnUL, VEC2U16( 7, 1 ) );
+		}
+
+		// Pins
+		{
+			screenpos const turnBR = rect_get_br_corner( &comp->turns[y] );
+			screenpos const pinUL = SCREENPOS( turnBR.x + 2, turnBR.y - 1 );
+
+			// first row
+			u8 const firstRowLimit = ( comp->nbPiecesPerTurn + 1 ) / 2;
+			for ( int x = 0; x < firstRowLimit; ++x )
+			{
+				comp->pins[y][x] = rect_make( SCREENPOS( pinUL.x + 5 * x, ul.y ), VEC2U16( 4, 2 ) );
+			}
+			for ( int x = firstRowLimit; x < comp->nbPiecesPerTurn; ++x )
+			{
+				comp->pins[y][x] = rect_make( SCREENPOS( pinUL.x + 5 * x, ul.y + 3 ), VEC2U16( 4, 2 ) );
+			}
+		}
+	}
+}*/
+
+
+/*static void sync_board_with_game_status( struct ComponentBoard *const comp )
+{
+	for ( usize y = 0; y < ARR_COUNT( comp->pieces ); ++y )
+	{
+		for ( usize x = 0; x < comp->nbPiecesPerTurn; ++x )
+		{
+			comp->pieces[y][x] = mastermind_get_peg( comp->firstTurnOnScreen + y, x );
+		}
+	}
+}*/
+
+
+/*static void draw_row_turn( screenpos const ul, u16 const nbPegs, u32 const turn, u32 const playerTurn )
 {
 	if ( turn == playerTurn )
 	{
@@ -131,34 +216,34 @@ static void draw_row_pins( screenpos const ul, u32 const nbPegs, gamepiece const
 
 
 
-static void draw_solution_pegs( screenpos const ul, struct ComponentBoard const *board )
-{
-	usize const pegsSize = board->totalPegSize;
-	usize const spacesBetween = ( board->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the board though, hence the decalage.
+static void draw_solution_pegs( screenpos const ul, struct ComponentBoard const *comp )
+{*/
+/*	usize const pegsSize = comp->totalPegSize;
+	usize const spacesBetween = ( comp->totalBoardWidth - pegsSize ) / 2; // ul.x is not the beginning of the comp though, hence the decalage.
 	screenpos const ulSolution = SCREENPOS( ul.x + spacesBetween, ul.y + 1 );
 
 	gamepiece const *solution = mastermind_get_solution();
-	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pieces_per_turn(), false );
-}
+	draw_row_pegs( ulSolution, solution, mastermind_get_nb_pieces_per_turn(), false );*/
+/*}*/
 
 
-static void calculate_board_display( struct ComponentHeader *widget )
+/*static void calculate_board_display( struct ComponentHeader *header )
 {
-	struct ComponentBoard *board = (struct ComponentBoard *)widget;
+	struct ComponentBoard *comp = (struct ComponentBoard *)header;
 
 	usize const nbPegs = mastermind_get_nb_pieces_per_turn();
 
-	usize const totalWidth = board->rect.size.w;
-	board->totalPegSize = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
-	board->totalPinSize = ( ( nbPegs + 1 ) / 2 ) * ( PIN_WIDTH + PIN_INTERSPACE ) - PIN_INTERSPACE;
-	usize const baseBoardSize =  4 /*leftBoardPart*/ + 7 /*middle part*/ + 5 /*right side*/;
+	usize const totalWidth = comp->box.size.w;
+	comp->totalPegSize = nbPegs * ( PEG_WIDTH + PEG_INTERSPACE ) - PEG_INTERSPACE;
+	comp->totalPinSize = ( ( nbPegs + 1 ) / 2 ) * ( PIN_WIDTH + PIN_INTERSPACE ) - PIN_INTERSPACE;
+	usize const baseBoardSize =  4 + 7 + 5;
 
-	board->totalBoardWidth = baseBoardSize + board->totalPegSize + board->totalPinSize;
-	board->spacesBetweenBoard = ( totalWidth - board->totalBoardWidth ) / 2;
-}
+	comp->totalBoardWidth = baseBoardSize + comp->totalPegSize + comp->totalPinSize;
+	comp->spacesBetweenBoard = ( totalWidth - comp->totalBoardWidth ) / 2;
+}*/
 
 
-static void row_v2( screenpos ul, int turnToDisplay )
+/*static void row_v2( screenpos ul, int turnToDisplay )
 {
 	u8 const nbPegs = mastermind_get_nb_pieces_per_turn();
 	gamepiece const *pegs = mastermind_get_pegs_at_turn( turnToDisplay );
@@ -174,112 +259,263 @@ static void row_v2( screenpos ul, int turnToDisplay )
 	draw_row_turn( ul, nbPegs, turnToDisplay, playerTurn );
 }
 
-
-static void on_refresh_callback( struct ComponentHeader const *widget )
+static void draw_board_peg( struct ComponentBoard const *comp, usize turn, usize index )
 {
-	struct ComponentBoard const *board = (struct ComponentBoard const *)widget;
-	screenpos ul = rect_get_ul_corner( &board->rect );
-	
-	rect_draw_borders( &board->rect, L"Mastermind Board" );
+}
 
-	ul.y += 1;
-	ul.x += 2;
-	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 3 );
 
-	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-	draw_character_n_times( L'─', 74 );
-	ul.y += 1;
+static void draw_board_pegs_row( struct ComponentBoard const *comp, usize playerTurn )
+{
+	int yIndex = playerTurn - comp->firstTurnOnScreen;
+	if ( yIndex < 0 || yIndex >= ARR_COUNT( comp->pegs ) ) return; // Row not in screen
 
-	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 2 );
-	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-	draw_character_n_times( L'─', 74 );
-	ul.y += 1;
-	row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn - 1 );
-	ul.y += 5;
-	cursor_update_pos( ul ); style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-	draw_character_n_times( L'─', 74 );
-	ul.y += 1;
-	if ( board->lastDisplayedTurn <= mastermind_get_total_turns() )
+	for ( usize x = 0; x < comp->nbPiecesPerTurn; ++x )
 	{
-		row_v2( SCREENPOS( ul.x + 1, ul.y ), board->lastDisplayedTurn );
-	}
-	ul.y += 5;
-
-	ul.x -= 2;
-	cursor_update_pos( ul );
-	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
-	term_write( L"%lc", L'├' );
-	draw_character_n_times( L'─', 76 );
-	term_write( L"%lc", L'┤' );
-
-	for ( usize idx = 0; idx < ButtonId_Count; ++idx )
-	{
-		button_write( &board->buttons[idx], false );
+//		draw_board_peg( )
 	}
 }
 
 
-static void on_game_update_callback( struct ComponentHeader *widget, enum GameUpdateType type )
+static void draw_board_content( struct ComponentBoard const *comp )
 {
+	for ( usize y = 0; y < ROWS_DISPLAYED; ++y )
+	{
+		for ( usize x = 0; x < comp->nbPiecesPerTurn; ++x )
+		{
+			screenpos pos = rect_get_ul_corner( &comp->pegs[y][x] );
+			piece_write_6x3( pos, mastermind_get_peg( comp->firstTurnOnScreen + y, x ) );
+		}
+	}
+*/
+/*		{
+			screenpos const lastPegBR = rect_get_br_corner( &comp->pegs[y][comp->nbPiecesPerTurn - 1] );
+			screenpos turnUL = SCREENPOS( lastPegBR.x + 2, lastPegBR.y - 1 );
+			comp->turns[y] = rect_make( turnUL, VEC2U16( 7, 1 ) );
+		}
+
+		// Pins
+		{
+			screenpos const turnBR = rect_get_br_corner( &comp->turns[y] );
+			screenpos const pinUL = SCREENPOS( turnBR.x + 2, turnBR.y - 1 );
+
+			// first row
+			u8 const firstRowLimit = ( comp->nbPiecesPerTurn + 1 ) / 2;
+			for ( int x = 0; x < firstRowLimit; ++x )
+			{
+				comp->pins[y][x] = rect_make( SCREENPOS( pinUL.x + 5 * x, ul.y ), VEC2U16( 4, 2 ) );
+			}
+			for ( int x = firstRowLimit; x < comp->nbPiecesPerTurn; ++x )
+			{
+				comp->pins[y][x] = rect_make( SCREENPOS( pinUL.x + 5 * x, ul.y + 3 ), VEC2U16( 4, 2 ) );
+			}
+		}
+	}*/
+/*	screenpos ul = rect_get_ul_corner( &comp->box );
+	ul.y += 1;
+	ul.x += 2;
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), comp->firstTurnOnScreen );
+	ul.y += 6;
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), comp->firstTurnOnScreen + 1 );
+	ul.y += 6;
+	row_v2( SCREENPOS( ul.x + 1, ul.y ), comp->firstTurnOnScreen + 2 );
+	ul.y += 6;
+	if ( comp->firstTurnOnScreen <= mastermind_get_total_turns() - 3 )
+	{
+		row_v2( SCREENPOS( ul.x + 1, ul.y ), comp->firstTurnOnScreen + 3 );
+	}
+	else
+	{
+		draw_solution_pegs( SCREENPOS( ul.x + 1, ul.y ), comp );
+	}*/
+/*}
+
+
+static void clear_board_content( struct ComponentBoard const *comp )
+{
+
+}
+
+
+static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
+{
+	struct ComponentBoard *comp = (struct ComponentBoard *)header;
+
 	if ( type == GameUpdateType_GAME_NEW )
-	{		
-		calculate_board_display( widget );
-		((struct ComponentBoard *)widget)->lastDisplayedTurn = 4;
-		widget->enabled = true;
-		widget->refreshNeeded = true;
+	{
+		comp->firstTurnOnScreen = 1;
+
+		// check if number of pegs is differents.
+		// if yes, we need to clear everything and calculate position again.
+		if ( comp->nbPiecesPerTurn != mastermind_get_nb_pieces_per_turn() )
+		{
+			comp->nbPiecesPerTurn = mastermind_get_nb_pieces_per_turn();
+			calculate_rect_positions( comp );
+		}
+//		sync_board_with_game_status( comp );
+
+
+//		calculate_board_display( header );
+		for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+		{
+			uibutton_show( comp->buttons[idx] );
+		}
+		header->enabled = true;
+//		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_GAME_FINISHED )
 	{
-		((struct ComponentBoard *)widget)->lastDisplayedTurn = mastermind_get_total_turns() + 1;
-		widget->refreshNeeded = true;
+		comp->firstTurnOnScreen = mastermind_get_total_turns() - 3;
+		for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+		{
+			uibutton_hide( comp->buttons[idx] );
+		}
+//		header->refreshNeeded = true;
 	}
 	else if ( type == GameUpdateType_SELECTION_BAR_MOVED || type == GameUpdateType_PEG_ADDED || type == GameUpdateType_NEXT_TURN )
 	{
-		widget->refreshNeeded = true;
+//		header->refreshNeeded = true;
 	}
 }
 
 
-static bool on_input_received_callback( struct ComponentHeader *widget, enum KeyInput input )
+static bool on_input_received_callback( struct ComponentHeader *header, enum KeyInput input )
 {
-	struct ComponentBoard *board = (struct ComponentBoard *)widget;
+	struct ComponentBoard *comp = (struct ComponentBoard *)header;
 
 	switch( input )
 	{
 		case KeyInput_ARROW_DOWN:
 		{
 			usize const nbTurns = mastermind_get_total_turns();
-			if ( board->lastDisplayedTurn < nbTurns + 1 )
+			if ( comp->firstTurnOnScreen < nbTurns - 3 )
 			{
-				board->lastDisplayedTurn += 1;
-				widget->refreshNeeded = true;
+				comp->firstTurnOnScreen += 1;
+				header->refreshNeeded = true;
 			}
 			return true;
 		}		
 		case KeyInput_ARROW_UP:
 		{
-			if ( board->lastDisplayedTurn > 4 )
+			if ( comp->firstTurnOnScreen > 1 )
 			{
-				board->lastDisplayedTurn -= 1;
-				widget->refreshNeeded = true;
+				comp->firstTurnOnScreen -= 1;
+				header->refreshNeeded = true;
 			}
 			return true;
-		}	
+		}
+		case KeyInput_MOUSE_BTN_LEFT:
+		{
+			for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+			{
+				if ( uibutton_clicked( comp->buttons[idx] ) )
+				{
+					return true;
+				}
+			}
+		}
 	}
 	return false;
 }
 
+*/
+
+
+static void draw_internal_board_lines( struct ComponentBoard *comp )
+{
+	screenpos const ul = rect_get_ul_corner( &comp->box );
+
+	// Lines separating the turns
+	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+	for( usize idx = 0; idx < 3; idx++ )
+	{
+		cursor_update_yx( ul.y + 6 * ( idx + 1 ), ul.x + 2 ); 
+		draw_character_n_times( L'─', TOTAL_BOARD_SIZE - 4 );
+	}
+
+	// Line that separates buttons from the rest of the game
+	cursor_update_yx( ul.y + comp->box.size.h - 3, ul.x );
+	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
+	term_write( L"%lc", L'├' );
+	draw_character_n_times( L'─', TOTAL_BOARD_SIZE - 2 );
+	term_write( L"%lc", L'┤' );
+}
+
+
 static void enable_callback( struct ComponentHeader *header )
 {
-	on_refresh_callback( header );
+	struct ComponentBoard *comp = (struct ComponentBoard *)header;
+	rect_draw_borders( &comp->box, L"Mastermind Board" );
+	draw_internal_board_lines( comp );
+	// TODO: draw_board_content( comp );
+
+	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+	{
+		uibutton_show( comp->buttons[idx] );
+	}
 }
 
 
 static void disable_callback( struct ComponentHeader *header )
 {
-	rect_clear( &CAST_TO_COMP( header )->rect );
+	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+	{
+		uibutton_hide( CAST_TO_COMP( header )->buttons[idx] );
+	}
+	rect_clear( &CAST_TO_COMP( header )->box );
+}
+
+
+static void check_peg_hovered( struct ComponentBoard *comp, struct BoardRow *row, screenpos pos )
+{
+	for ( usize idx = 0; idx < comp->nbPiecesPerTurn; ++idx )
+	{
+		struct Rect *rect = &row->pegsPos[idx];
+		if ( rect_is_inside( rect, pos ) )
+		{
+			if ( row->activeHoveredPegIdx == idx ) return;
+			if ( row->activeHoveredPegIdx != S_INVALID_IDX )
+			{
+				screenpos const ulOldHovered = rect_get_ul_corner( &row->pegsPos[row->activeHoveredPegIdx] );
+				piece_write_6x3( ulOldHovered, mastermind_get_peg( row->displayedTurn, row->activeHoveredPegIdx ), false );
+			}
+			row->activeHoveredPegIdx = idx;
+			piece_write_6x3( rect_get_ul_corner( rect ), mastermind_get_peg( row->displayedTurn, row->activeHoveredPegIdx ), true );
+			return;
+		}
+	}
+
+	// In case no peg is being hovered, but one is marked as hovered.
+	if ( row->activeHoveredPegIdx != S_INVALID_IDX )
+	{
+		struct Rect *rect = &row->pegsPos[row->activeHoveredPegIdx];
+		screenpos ul = rect_get_ul_corner( rect );
+
+		piece_write_6x3( ul, mastermind_get_peg( row->displayedTurn, row->activeHoveredPegIdx ), false );
+		row->activeHoveredPegIdx = S_INVALID_IDX;
+	}
+}
+
+
+static void on_mouse_move_callback( struct ComponentHeader *header, screenpos const pos )
+{
+	struct ComponentBoard *comp = CAST_TO_COMP( header );
+	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+	{
+		if ( uibutton_check_hovered( comp->buttons[idx], pos ) )
+		{
+			break;
+		}
+	}
+
+	for ( usize idx = 0; idx < ARR_COUNT( comp->rows ); ++idx )
+	{
+		struct BoardRow *row = &comp->rows[idx];
+		if ( row->displayedTurn == mastermind_get_player_turn() )
+		{
+			check_peg_hovered( comp, row, pos );
+			break;
+		}
+	}
 }
 
 
@@ -293,20 +529,18 @@ struct ComponentHeader *component_board_create( void )
     struct ComponentCallbacks *const callbacks = &comp->header.callbacks;
 	callbacks->enableCb = enable_callback;
 	callbacks->disableCb = disable_callback;
-	callbacks->refreshCb = on_refresh_callback;
-    callbacks->gameUpdateCb = on_game_update_callback;
-    callbacks->inputReceivedCb = on_input_received_callback;
+    // callbacks->eventReceivedCb = on_game_update_callback;
+    // callbacks->inputReceivedCb = on_input_received_callback;
+	callbacks->mouseMoveCb = on_mouse_move_callback;
 
 
-	comp->rect = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
-	// Set all the Rect for the pegs emplacements
-	// 
-	comp->lastDisplayedTurn = 4;
+	comp->box = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
+	comp->nbPiecesPerTurn = 0;
 
-	screenpos const ul = SCREENPOS( 18, 27 );
-    comp->buttons[ButtonId_CONFIRM_TURN] = button_make( L"Confirm Turn", SCREENPOS( ul.x + 5, ul.y ), VEC2U16( 20, 1 ), KeyInput_ENTER, true );
-    comp->buttons[ButtonId_RESET_TURN]   = button_make( L"Reset Turn", SCREENPOS( ul.x + 27, ul.y ), VEC2U16( 13, 1 ), KeyInput_R, true );
-    comp->buttons[ButtonId_ABANDON_GAME] = button_make( L"Abandon Game", SCREENPOS( ul.x + 55, ul.y ), VEC2U16( 15, 1 ), KeyInput_A, true );
- 
+	screenpos const bul = SCREENPOS( 18, 27 );
+    comp->buttons[ButtonIdx_CONFIRM_TURN] = uibutton_try_register( L"Confirm Turn", SCREENPOS( bul.x + 3, bul.y ), VEC2U16( 19, 1 ), Keybinding_CONFIRM_TURN, true );
+    comp->buttons[ButtonIdx_RESET_TURN]   = uibutton_try_register( L"Reset Turn", SCREENPOS( bul.x + 25, bul.y ), VEC2U16( 13, 1 ), Keybinding_RESET_TURN, true );
+    comp->buttons[ButtonIdx_ABANDON_GAME] = uibutton_try_register( L"Abandon Game", SCREENPOS( bul.x + 58, bul.y ), VEC2U16( 15, 1 ), Keybinding_ABANDON_GAME, true );
+
 	return (struct ComponentHeader *)comp;
 }

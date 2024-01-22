@@ -33,13 +33,13 @@ static bool s_mainLoop = true;
 
 void gameloop_emit_event( enum EventType type, struct EventData *data )
 {
-	switch ( type )
+	if ( type == EventType_STOP_EXECUTION )
 	{
-		case EventType_STOP_EXECUTION:
-			s_mainLoop = false;
-			break;
-		default: break;
+		s_mainLoop = false;
+		return;
 	}
+
+	components_event_received( type, data );
 }
 
 
@@ -96,6 +96,11 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 			enum KeyInput input;
 			if ( key_input_from_u32( recordedInput->Event.KeyEvent.wVirtualKeyCode, &input ) )
 			{
+				// All Numpad and Numbers are the same keys for the game, so convert numpad to its number version.
+				if ( key_input_is_numpad( input ) )
+				{
+					input = key_input_from_numpad_to_number( input );
+				}
 				gameloop_consume_key_input( input );
 			}
 			break;

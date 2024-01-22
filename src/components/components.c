@@ -46,20 +46,20 @@ void components_on_screen_resize( screensize const size )
     }
 }
 
-
+/*
 static void on_game_update_callback( enum GameUpdateType const updateType )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
         struct ComponentHeader *header = s_headers[id];
 
-        if ( header && header->enabled && header->callbacks.gameUpdateCb )
+        if ( header && header->enabled && header->callbacks.eventReceivedCb )
         {
-            header->callbacks.gameUpdateCb( header, updateType );
+            header->callbacks.eventReceivedCb( header, updateType );
         }
     }
 }
-
+*/
 
 void component_enable( enum ComponentId const id )
 {
@@ -105,7 +105,7 @@ bool components_init( void )
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
     mouse_register_on_mouse_move_callback( on_mouse_move_callback );
-	mastermind_register_update_callback( on_game_update_callback );
+	// mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
     return true;
 }
@@ -179,6 +179,19 @@ bool components_try_consume_input( enum KeyInput const input )
 		}
 	}
 	return false;
+}
+
+
+bool components_event_received( enum EventType event, struct EventData const *data )
+{
+    for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
+    {
+        struct ComponentHeader *header = s_headers[id];
+        if ( header && header->enabled && header->callbacks.eventReceivedCb )
+        {
+            header->callbacks.eventReceivedCb( header, event, data );
+        }
+    }
 }
 
 

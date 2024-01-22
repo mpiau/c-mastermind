@@ -7,24 +7,45 @@
 #include "game.h"
 #include "mouse.h"
 #include "button.h"
+#include "ui.h"
+#include "keybindings.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-struct ComponentPegSelection
+enum ButtonIdx
 {
-    struct ComponentHeader header;
+    ButtonIdx_PEG_BLACK,
+    ButtonIdx_PEG_RED,
+    ButtonIdx_PEG_GREEN,
+    ButtonIdx_PEG_YELLOW,
+    ButtonIdx_PEG_CYAN,
+    ButtonIdx_PEG_MAGENTA,
+    ButtonIdx_PEG_BLUE,
+    ButtonIdx_PEG_WHITE,
 
-    enum Piece hovered;
-    enum Piece selected;
-    struct Button buttons[Piece_PEGCount];
-    struct Rect box;
-
-    struct Character dragSave[2][4];
-    screenpos dragPos;
+    ButtonIdx_Count
 };
 
 
+struct ComponentPegSelection
+{
+    struct ComponentHeader header;
+    u64 buttons[ButtonIdx_Count];
+    struct Rect box;
+
+
+//    enum Piece hovered;
+//    enum Piece selected;
+
+//    struct Button buttonsDeprecated[Piece_PEGCount];
+
+//    struct Character dragSave[2][4];
+//    screenpos dragPos;
+};
+#define CAST_TO_COMP( _header ) ( ( struct ComponentPegSelection * )( _header ) )
+
+/*
 static void save_content_at_drag_pos( struct ComponentPegSelection *comp )
 {
     for ( usize y = 0; y < 2 && comp->dragPos.y + y <= GAME_SIZE_HEIGHT; ++y )
@@ -60,9 +81,9 @@ static void write_dragged_peg( struct ComponentPegSelection *comp )
     {
         piece_write_4x2( comp->dragPos, comp->selected );
     }   
-}
+}*/
 
-
+/*
 static void write_peg_button( struct Button const *button, gamepiece const piece, bool const isHovered )
 {
     button_write( button, isHovered );
@@ -71,12 +92,27 @@ static void write_peg_button( struct Button const *button, gamepiece const piece
     ul.x += 6;
     piece_write_4x2( ul, piece );
 }
-
+*/
 
 static bool input_received_callback( struct ComponentHeader *header, enum KeyInput const input )
 {
     struct ComponentPegSelection *comp = (struct ComponentPegSelection *)header;
 
+   	if ( input == KeyInput_MOUSE_BTN_LEFT )
+    {
+        for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+        {
+            if ( uibutton_clicked( CAST_TO_COMP( header )->buttons[idx] ) )
+            {
+                return true;
+            }
+        }
+    }
+
+    // Dragged peg !
+
+    return false;
+/*
     if ( input == KeyInput_MOUSE_BTN_LEFT && comp->hovered != PieceFlag_EMPTY )
     {
         if ( comp->selected != PieceFlag_EMPTY )
@@ -90,56 +126,44 @@ static bool input_received_callback( struct ComponentHeader *header, enum KeyInp
         comp->selected = comp->hovered;
         write_dragged_peg( comp );
         enum Piece idx = comp->selected & Piece_MaskColor;
-        button_disable( &comp->buttons[idx] );
-        button_write( &comp->buttons[idx], false );
+        button_disable( &comp->buttonsDeprecated[idx] );
+        button_write( &comp->buttonsDeprecated[idx], false );
         return true;
     }
     else if ( input == KeyInput_MOUSE_BTN_RIGHT && comp->selected != PieceFlag_EMPTY )
     {
         enum Piece idx = ( comp->selected & Piece_MaskColor );
-        button_enable( &comp->buttons[idx] );
-        button_write( &comp->buttons[idx], false );
+        button_enable( &comp->buttonsDeprecated[idx] );
+        button_write( &comp->buttonsDeprecated[idx], false );
         write_saved_content_at_drag_pos( comp );
         comp->selected = PieceFlag_EMPTY;
         write_dragged_peg( comp );
         return true;
     }
-    return false;
+    return false;*/
 }
 
 
-static void on_game_update_callback( struct ComponentHeader *header, enum GameUpdateType type )
+static void event_received_callback( struct ComponentHeader *header, enum EventType event, struct EventData const *data )
 {
 }
 
 
 static void on_mouse_move_callback( struct ComponentHeader *header, screenpos pos )
 {
-	struct ComponentPegSelection *comp = (struct ComponentPegSelection *)header;
+	struct ComponentPegSelection *comp = CAST_TO_COMP( header );
 
-    bool set = false;
-	for ( enum Piece idx = 0; idx < ARR_COUNT( comp->buttons ); ++idx )
+	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
 	{
-        struct Button *button = &comp->buttons[idx];
-		if ( button_is_hovered_by( button, pos ) )
+		if ( uibutton_check_hovered( CAST_TO_COMP( header )->buttons[idx], pos ) )
 		{
-			if ( comp->hovered != idx )
-			{
-				comp->hovered = idx;
-                write_peg_button( button, idx, true );
-			}
-            set = true;
-			break;
+			return;
 		}
 	}
 
-	if ( !set && comp->hovered != PieceFlag_EMPTY )
-	{
-        enum Piece const idx = ( comp->hovered & Piece_MaskColor );
-        write_peg_button( &comp->buttons[idx], idx, false );
-		comp->hovered = PieceFlag_EMPTY;
-	}
+    // Dragging mechanism
 
+/*
     if ( comp->selected != PieceFlag_EMPTY )
     {
         write_saved_content_at_drag_pos( comp );
@@ -148,6 +172,7 @@ static void on_mouse_move_callback( struct ComponentHeader *header, screenpos po
         save_content_at_drag_pos( comp );
         write_dragged_peg( comp );
     }
+*/
 }
 
 
@@ -155,19 +180,26 @@ static void enable_callback( struct ComponentHeader *header )
 {
     struct ComponentPegSelection *comp = (struct ComponentPegSelection *)header;
     rect_draw_borders( &comp->box, L"Pegs" );
-    screenpos const mousePos = mouse_pos();
-    for ( enum Piece idx = 0; idx < ARR_COUNT( comp->buttons ); ++idx )
-    {
-        struct Button const *button = &comp->buttons[idx];
-        bool const hovered = button_is_hovered_by( button, mousePos );
-        write_peg_button( button, idx, hovered );
-    }
+
+   	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+	{
+		uibutton_show( comp->buttons[idx] );
+	    screenpos ul = rect_get_ul_corner( uibutton_get_box( comp->buttons[idx] ) );
+	    ul.x += 6;
+    	piece_write_4x2( ul, (enum Piece)idx );
+	}
 }
 
 
 static void disable_callback( struct ComponentHeader *header )
 {
     struct ComponentPegSelection *comp = (struct ComponentPegSelection *)header;
+
+   	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+	{
+		uibutton_hide( comp->buttons[idx] );
+	}
+
     rect_clear( &comp->box );
 }
 
@@ -183,28 +215,28 @@ struct ComponentHeader *component_peg_selection_create( void )
     callbacks->enableCb = enable_callback;
     callbacks->disableCb = disable_callback;   
     callbacks->inputReceivedCb = input_received_callback;
-    callbacks->gameUpdateCb = on_game_update_callback;
+    callbacks->eventReceivedCb = event_received_callback;
     callbacks->mouseMoveCb = on_mouse_move_callback;
 
-    // Specific to the header 
-    comp->hovered = PieceFlag_EMPTY;
-    comp->selected = PieceFlag_EMPTY;
+    // Specific to the header
+//    comp->hovered = PieceFlag_EMPTY;
+//    comp->selected = PieceFlag_EMPTY;
 
     screenpos ul = SCREENPOS( 3, 2 );
     vec2u16 const size = VEC2U16( 10, 2 );
 	comp->box = rect_make( ul, VEC2U16( 14, 27 ) );
     ul.x += 2;
-    comp->buttons[Piece_PEG_BLACK]   = button_make( L"Grey", SCREENPOS( ul.x, ul.y + 2 ), size, KeyInput_0, true );
-    comp->buttons[Piece_PEG_RED]     = button_make( L"Red", SCREENPOS( ul.x, ul.y + 5 ), size, KeyInput_1, true );
-    comp->buttons[Piece_PEG_GREEN]   = button_make( L"Green", SCREENPOS( ul.x, ul.y + 8 ), size, KeyInput_2, true );
-    comp->buttons[Piece_PEG_YELLOW]  = button_make( L"Yell.", SCREENPOS( ul.x, ul.y + 11 ), size, KeyInput_3, true );
-    comp->buttons[Piece_PEG_CYAN]    = button_make( L"Cyan", SCREENPOS( ul.x, ul.y + 14 ), size, KeyInput_4, true );
-    comp->buttons[Piece_PEG_MAGENTA] = button_make( L"Purp.", SCREENPOS( ul.x, ul.y + 17 ), size, KeyInput_5, true );
-    comp->buttons[Piece_PEG_BLUE]    = button_make( L"Blue", SCREENPOS( ul.x, ul.y + 20 ), size, KeyInput_6, true );
-    comp->buttons[Piece_PEG_WHITE]   = button_make( L"White", SCREENPOS( ul.x, ul.y + 23 ), size, KeyInput_7, true );
+    comp->buttons[ButtonIdx_PEG_BLACK]   = uibutton_try_register( L"Grey", SCREENPOS( ul.x, ul.y + 2 ), size, KeyBinding_PEG_BLACK, true );
+    comp->buttons[ButtonIdx_PEG_RED]     = uibutton_try_register( L"Red", SCREENPOS( ul.x, ul.y + 5 ), size, KeyBinding_PEG_RED, true );
+    comp->buttons[ButtonIdx_PEG_GREEN]   = uibutton_try_register( L"Green", SCREENPOS( ul.x, ul.y + 8 ), size, KeyBinding_PEG_GREEN, true );
+    comp->buttons[ButtonIdx_PEG_YELLOW]  = uibutton_try_register( L"Yell.", SCREENPOS( ul.x, ul.y + 11 ), size, KeyBinding_PEG_YELLOW, true );
+    comp->buttons[ButtonIdx_PEG_CYAN]    = uibutton_try_register( L"Cyan", SCREENPOS( ul.x, ul.y + 14 ), size, KeyBinding_PEG_CYAN, true );
+    comp->buttons[ButtonIdx_PEG_MAGENTA] = uibutton_try_register( L"Purp.", SCREENPOS( ul.x, ul.y + 17 ), size, KeyBinding_PEG_MAGENTA, true );
+    comp->buttons[ButtonIdx_PEG_BLUE]    = uibutton_try_register( L"Blue", SCREENPOS( ul.x, ul.y + 20 ), size, KeyBinding_PEG_BLUE, true );
+    comp->buttons[ButtonIdx_PEG_WHITE]   = uibutton_try_register( L"White", SCREENPOS( ul.x, ul.y + 23 ), size, KeyBinding_PEG_WHITE, true );
 
-    comp->dragPos = SCREENPOS( 0, 0 );
-    memset( comp->dragSave, 0, sizeof( comp->dragSave ) );
+//    comp->dragPos = SCREENPOS( 0, 0 );
+//    memset( comp->dragSave, 0, sizeof( comp->dragSave ) );
 
     return (struct ComponentHeader *)comp;
 }

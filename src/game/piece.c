@@ -154,14 +154,18 @@ static termcolor get_piece_color( gamepiece const piece )
 }
 
 
-static struct Style generate_style( gamepiece const piece )
+static struct Style generate_style( gamepiece const piece, bool const hovered )
 {
     termcolor color = get_piece_color( piece );
-    enum Attr const attr = is_future_turn( piece ) ? Attr_FAINT : Attr_NONE;
+    enum Attr const attr = is_future_turn( piece ) || ( piece & PieceFlag_EMPTY ) ? Attr_FAINT : Attr_NONE;
 
     if ( piece & PieceFlag_SECRET )
     {
         color = FGColor_BRIGHT_BLACK;
+    }
+    if ( hovered )
+    {
+        color |= FGColor_MaskBright;
     }
 
     return STYLE_WITH_ATTR( color, attr );
@@ -170,7 +174,7 @@ static struct Style generate_style( gamepiece const piece )
 
 void piece_write_1x1( screenpos const pos, gamepiece const piece )
 {
-    style_update( generate_style( piece ) );
+    style_update( generate_style( piece, false ) );
     cursor_update_yx( pos.y, pos.x );
 
     if ( is_pin( piece ) && ( is_future_turn( piece ) || is_current_turn( piece ) ) )
@@ -198,7 +202,7 @@ void piece_write_1x1( screenpos const pos, gamepiece const piece )
 
 void piece_write_4x2( screenpos const pos, gamepiece const piece )
 {
-    style_update( generate_style( piece ) );
+    style_update( generate_style( piece, false ) );
     cursor_update_yx( pos.y, pos.x );
 
     if ( is_empty( piece ) )
@@ -215,9 +219,9 @@ void piece_write_4x2( screenpos const pos, gamepiece const piece )
 }
 
 
-void piece_write_6x3( screenpos const pos, gamepiece const piece )
+void piece_write_6x3( screenpos const pos, gamepiece const piece, bool hovered )
 {
-    style_update( generate_style( piece ) );
+    style_update( generate_style( piece, hovered ) );
     cursor_update_yx( pos.y, pos.x );
 
     if ( is_empty( piece ) )

@@ -113,6 +113,9 @@ bool key_input_is_letter( enum KeyInput key );
 bool key_input_is_special( enum KeyInput key );
 bool key_input_is_mouse( enum KeyInput key );
 
+// Must satisfy key_input_is_numpad.
+enum KeyInput key_input_from_numpad_to_number( enum KeyInput key );
+
 // Must satisfy key_input_is_letter.
 char key_input_into_letter( enum KeyInput key );
 

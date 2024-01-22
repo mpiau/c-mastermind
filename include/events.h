@@ -17,7 +17,9 @@ enum EventType
     EventType_PEG_SELECTED,
     EventType_PEG_UNSELECTED,
     EventType_PEG_ADDED,
-    EventType_PEG_REMOVED
+    EventType_PEG_REMOVED,
+
+    EventType_NEXT_TURN,
 };
 
 

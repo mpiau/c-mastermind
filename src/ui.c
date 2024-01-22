@@ -179,15 +179,16 @@ bool uibutton_is_hovered_by( u64 const id, screenpos const pos )
 
 bool uibutton_check_hovered( u64 id, screenpos pos )
 {
-    // TODO ! shown & enabled are two differents things
-
     if ( !uibutton_is_enabled( id ) || !uibutton_is_shown( id ) || !uibutton_is_hovered_by( id, pos ) )
     {
         // If this button was the one hovered, then update the hover status and redraw it.
         if ( s_activeHoveredId == id )
         {
-            s_activeHoveredId = S_INVALID_ID;
-            button_draw_internal( id );
+            s_activeHoveredId = S_INVALID_ID;            
+            if ( uibutton_is_shown( id ) )
+            {
+                button_draw_internal( id );
+            }
         }
         return false;
     }
@@ -200,11 +201,17 @@ bool uibutton_check_hovered( u64 id, screenpos pos )
     u64 const oldHovered = s_activeHoveredId;
     s_activeHoveredId = id;
 
-    if ( oldHovered != S_INVALID_ID )
+    if ( oldHovered != S_INVALID_ID && uibutton_is_shown( oldHovered ) )
     {
         button_draw_internal( oldHovered ); // Remove the hovering color for the old button
     }
 
     button_draw_internal( id ); // Redraw with the updated status
     return true;
+}
+
+
+struct Rect const *uibutton_get_box( u64 const id )
+{
+    return &get_button_by_id( id )->rect;
 }

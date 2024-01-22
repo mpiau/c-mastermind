@@ -5,11 +5,9 @@
 #include "terminal/terminal.h"
 #include "keybindings.h"
 
-typedef void ( *OnClickCb )( void );
 
 struct UIButton
 {
-    // u64 id;
     bool enabled;
     bool shown;
     struct Rect rect;
@@ -36,6 +34,7 @@ void uibutton_enable( u64 id );
 void uibutton_disable( u64 id );
 bool uibutton_is_hovered_by( u64 id, screenpos pos );
 bool uibutton_check_hovered( u64 id, screenpos pos );
+struct Rect const *uibutton_get_box( u64 id );
 
 void uibutton_show( u64 id );
 void uibutton_hide( u64 id );

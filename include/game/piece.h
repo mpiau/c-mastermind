@@ -51,4 +51,4 @@ typedef byte gamepiece;
 
 void piece_write_1x1( screenpos pos, gamepiece piece );
 void piece_write_4x2( screenpos pos, gamepiece piece );
-void piece_write_6x3( screenpos pos, gamepiece piece );
+void piece_write_6x3( screenpos pos, gamepiece piece, bool hovered );
