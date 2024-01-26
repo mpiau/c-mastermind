@@ -10,6 +10,7 @@ enum WidgetId
     WidgetId_SCREENSIZE,
     WidgetId_MOUSEPOS,
     WidgetId_BUILDVERSION,
+    WidgetId_BOTTOM_NAV,
 
     WidgetId_Count
 };
@@ -40,6 +41,7 @@ bool ui_init( void )
     init_widget( WidgetId_SCREENSIZE, widget_screensize_create );
     init_widget( WidgetId_MOUSEPOS, widget_mousepos_create );
     init_widget( WidgetId_BUILDVERSION, widget_buildversion_create );
+    init_widget( WidgetId_BOTTOM_NAV, widget_bottom_nav_create );
 
     return true;
 }

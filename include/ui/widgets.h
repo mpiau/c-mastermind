@@ -23,3 +23,4 @@ struct Widget *widget_framerate_create( void );
 struct Widget *widget_screensize_create( void );
 struct Widget *widget_mousepos_create( void );
 struct Widget *widget_buildversion_create( void );
+struct Widget *widget_bottom_nav_create( void );

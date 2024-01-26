@@ -9,6 +9,7 @@
 #include "random.h"
 #include "keybindings.h"
 #include "ui/ui.h"
+#include "events.h"
 
 #include "components/components.h"
 #include "terminal/terminal.h"
@@ -160,13 +161,14 @@ bool init_systems( void )
 {
 	bool success = true;
 
+	// TODO Needs to event_register + event_subscribe to the INPUT event for quitting the app on ESC, before the UI
+
 	success = success && random_init();
 	success = success && term_init( "Mastermind", true );
 	success = success && ( fpscounter_init() != NULL );
 	success = success && settings_init();
 	success = success && mouse_init();
 	success = success && ui_init();
-//	success = success && components_init();
 
 	return success;
 }
@@ -175,7 +177,6 @@ bool init_systems( void )
 void uninit_systems( void )
 {
 	ui_uninit();
-//	components_uninit();
 	fpscounter_uninit( fpscounter_get_instance() );
 	term_uninit();
 }

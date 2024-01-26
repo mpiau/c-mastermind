@@ -2,27 +2,27 @@
 
 enum // Constants
 {
-    MAX_WIDGETS_COUNT = 16
+    MAX_SUBSCRIBERS_COUNT = 16
 };
 
-struct WidgetSubscription
+struct Subscription
 {
-    struct Widget *widget;
+    void *subscriber;
     EventTriggeredCb callback;
     enum EventType subscribedEvents;
 };
 
-static struct WidgetSubscription s_subscriptions[MAX_WIDGETS_COUNT];
+static struct Subscription s_subscriptions[MAX_SUBSCRIBERS_COUNT];
 
 
-static struct WidgetSubscription *tryget_existing( struct Widget const *widget )
+static struct Subscription *tryget_existing( void const *subscriber )
 {
-    assert( widget );
+    assert( subscriber );
 
-    for ( usize idx = 0; idx < MAX_WIDGETS_COUNT; ++idx )
+    for ( usize idx = 0; idx < MAX_SUBSCRIBERS_COUNT; ++idx )
     {
-        struct WidgetSubscription *sub = &s_subscriptions[idx];
-        if ( sub->widget == widget )
+        struct Subscription *sub = &s_subscriptions[idx];
+        if ( sub->subscriber == subscriber )
         {
             return sub;
         }
@@ -31,12 +31,12 @@ static struct WidgetSubscription *tryget_existing( struct Widget const *widget )
     return NULL;
 }
 
-static struct WidgetSubscription *tryget_next_available( void )
+static struct Subscription *tryget_next_available( void )
 {
-    for ( usize idx = 0; idx < MAX_WIDGETS_COUNT; ++idx )
+    for ( usize idx = 0; idx < MAX_SUBSCRIBERS_COUNT; ++idx )
     {
-        struct WidgetSubscription *sub = &s_subscriptions[idx];
-        if ( sub->widget == NULL )
+        struct Subscription *sub = &s_subscriptions[idx];
+        if ( sub->subscriber == NULL )
         {
             return sub;
         }
@@ -45,16 +45,16 @@ static struct WidgetSubscription *tryget_next_available( void )
     return NULL;
 }
 
-static struct WidgetSubscription *tryget( struct Widget const *widget )
+static struct Subscription *tryget( void const *subscriber )
 {
-    struct WidgetSubscription *sub = tryget_existing( widget );
+    struct Subscription *sub = tryget_existing( subscriber );
     return sub ? sub : tryget_next_available();
 }
 
 
-bool event_register( struct Widget *widget, EventTriggeredCb const callback )
+bool event_register( void *subscriber, EventTriggeredCb const callback )
 {
-    struct WidgetSubscription *sub = tryget_existing( widget );
+    struct Subscription *sub = tryget_existing( subscriber );
     if ( sub )
     {
         sub->callback = callback;
@@ -64,8 +64,8 @@ bool event_register( struct Widget *widget, EventTriggeredCb const callback )
     sub = tryget_next_available();
     if ( !sub ) return false;
 
-    *sub = (struct WidgetSubscription ) {
-        .widget = widget,
+    *sub = (struct Subscription ) {
+        .subscriber = subscriber,
         .callback = callback,
         .subscribedEvents = EventType_MaskNone
     };
@@ -74,21 +74,21 @@ bool event_register( struct Widget *widget, EventTriggeredCb const callback )
 }
 
 
-void event_unregister( struct Widget *widget )
+void event_unregister( void *subscriber )
 {
-    struct WidgetSubscription *sub = tryget_existing( widget );
+    struct Subscription *sub = tryget_existing( subscriber );
     if ( sub )
     {
-        sub->widget = NULL;
+        sub->subscriber = NULL;
         sub->callback = NULL;
         sub->subscribedEvents = EventType_MaskNone;
     }
 }
 
 
-bool event_subscribe( struct Widget *widget, enum EventType events )
+bool event_subscribe( void *subscriber, enum EventType events )
 {
-    struct WidgetSubscription *sub = tryget( widget );
+    struct Subscription *sub = tryget( subscriber );
     if ( sub )
     {
         sub->subscribedEvents |= events;
@@ -98,9 +98,9 @@ bool event_subscribe( struct Widget *widget, enum EventType events )
 }
 
 
-bool event_subscribe_all( struct Widget *widget )
+bool event_subscribe_all( void *subscriber )
 {
-    struct WidgetSubscription *sub = tryget( widget );
+    struct Subscription *sub = tryget( subscriber );
     if ( sub )
     {
         sub->subscribedEvents |= EventType_MaskAll;
@@ -110,9 +110,9 @@ bool event_subscribe_all( struct Widget *widget )
 }
 
 
-void event_unsubscribe( struct Widget *widget, enum EventType events )
+void event_unsubscribe( void *subscriber, enum EventType const events )
 {
-    struct WidgetSubscription *sub = tryget( widget );
+    struct Subscription *sub = tryget( subscriber );
     if ( sub )
     {
         sub->subscribedEvents &= ~events;
@@ -120,9 +120,9 @@ void event_unsubscribe( struct Widget *widget, enum EventType events )
 }
 
 
-void event_unsubscribe_all( struct Widget *widget )
+void event_unsubscribe_all( void *subscriber )
 {
-    struct WidgetSubscription *sub = tryget( widget );
+    struct Subscription *sub = tryget( subscriber );
     if ( sub )
     {
         sub->subscribedEvents = EventType_MaskNone;
@@ -134,12 +134,15 @@ void event_trigger( struct Event const *event )
 {
     assert( event );
 
-    for ( usize idx = 0; idx < MAX_WIDGETS_COUNT; ++idx )
+    for ( int idx = MAX_SUBSCRIBERS_COUNT - 1; idx >= 0; --idx )
     {
-        struct WidgetSubscription *sub = &s_subscriptions[idx];
-        if ( sub->subscribedEvents & event->type )
-        {
-            sub->callback( sub->widget, event );
-        }
+        struct Subscription *sub = &s_subscriptions[idx];
+        if ( !sub->subscriber || ( sub->subscribedEvents & event->type ) == 0 ) continue;
+
+        assert( sub->callback );
+        assert( sub->subscriber );
+
+        enum EventPropagation const propagate = sub->callback( sub->subscriber, event );
+        if ( propagate == EventPropagation_STOP ) break;
     }    
 }

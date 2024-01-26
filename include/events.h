@@ -23,6 +23,12 @@ enum EventType
     EventType_MaskAll        = 0b0001111111111111
 };
 
+enum EventPropagation 
+{
+    EventPropagation_STOP     = 0,
+    EventPropagation_CONTINUE = 1
+};
+
 
 struct EventPegAdded
 {
@@ -30,20 +36,24 @@ struct EventPegAdded
     // peg
 };
 
+
 struct EventKeyPressed
 {
     enum KeyInput input;
 };
+
 
 struct EventMouseMoved
 {
     screenpos pos;
 };
 
+
 struct EventScreenResized
 {
     screensize size;
 };
+
 
 struct Event
 {
@@ -57,18 +67,18 @@ struct Event
     };
 };
 
+
 struct EventData {};
-struct Widget;
 
-typedef void ( *EventTriggeredCb )( struct Widget *widget, struct Event const *event );
+typedef enum EventPropagation ( *EventTriggeredCb )( void *subscriber, struct Event const *event );
 
-bool event_register( struct Widget *widget, EventTriggeredCb const callback );
-void event_unregister( struct Widget *widget );
+bool event_register( void *subscriber, EventTriggeredCb const callback );
+void event_unregister( void *subscriber );
 
-bool event_subscribe( struct Widget *widget, enum EventType events );
-bool event_subscribe_all( struct Widget *widget );
-void event_unsubscribe( struct Widget *widget, enum EventType events );
-void event_unsubscribe_all( struct Widget *widget );
+bool event_subscribe( void *subscriber, enum EventType events );
+bool event_subscribe_all( void *subscriber );
+void event_unsubscribe( void *subscriber, enum EventType events );
+void event_unsubscribe_all( void *subscriber );
 
 void event_trigger( struct Event const *event );
 

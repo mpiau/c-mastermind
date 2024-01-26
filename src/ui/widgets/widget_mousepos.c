@@ -23,12 +23,14 @@ static void draw_mouse_pos( struct WidgetMousePos *widget, screenpos const pos )
 }
 
 
-static void on_event_callback( struct Widget *widget, struct Event const *event )
+static enum EventPropagation on_event_callback( void *subscriber, struct Event const *event )
 {
     if ( event->type == EventType_MOUSE_MOVED )
     {
-        draw_mouse_pos( (struct WidgetMousePos *)widget, event->mouseMoved.pos );
+        draw_mouse_pos( (struct WidgetMousePos *)subscriber, event->mouseMoved.pos );
     }
+
+    return EventPropagation_CONTINUE;
 }
 
 

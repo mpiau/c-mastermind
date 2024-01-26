@@ -58,12 +58,14 @@ static void write_size_update( struct WidgetScreenSize *widget, screensize const
 }
 
 
-static void on_event_callback( struct Widget *widget, struct Event const *event )
+static enum EventPropagation on_event_callback( void *subscriber, struct Event const *event )
 {
     if ( event->type == EventType_SCREEN_RESIZED )
     {
-        write_size_update( (struct WidgetScreenSize *)widget, event->screenResized.size );
+        write_size_update( (struct WidgetScreenSize *)subscriber, event->screenResized.size );
     }
+
+    return EventPropagation_CONTINUE;
 }
 
 
