@@ -9,7 +9,6 @@ SRC += src/time_units.c
 SRC += src/rect.c
 SRC += src/settings.c
 SRC += src/keybindings.c
-SRC += src/button.c
 SRC += src/components/component_framerate.c
 SRC += src/components/component_game_buttons.c
 SRC += src/components/component_mouse_position.c

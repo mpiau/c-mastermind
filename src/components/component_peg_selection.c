@@ -6,7 +6,6 @@
 #include "rect.h"
 #include "game.h"
 #include "mouse.h"
-#include "button.h"
 #include "ui.h"
 #include "keybindings.h"
 
