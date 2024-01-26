@@ -4,6 +4,7 @@
 #include "keyboard_inputs.h"
 #include "game/piece.h"
 #include "terminal/terminal_colors.h"
+#include "requests.h"
 
 enum // Constants
 {
@@ -37,31 +38,15 @@ enum GameExperience
 struct Mastermind;
 
 
-// Game update are sent by callback
-// Perhaps we could also put some getters for widgets/functions that needs a value on init or anything (like the game status)
-// So only the update by callbacks, and then setters to retrieve the data ?
-
-enum GameUpdateType
-{
-    GameUpdateType_TURN_RESET,
-    GameUpdateType_NEXT_TURN,
-    GameUpdateType_SELECTION_BAR_MOVED,
-    // [...]
-};
-
-typedef void ( * MastermindCallback )( enum GameUpdateType updateType );
-
-bool mastermind_try_consume_input( enum KeyInput input );
-bool mastermind_register_update_callback( MastermindCallback const callback );
+// bool mastermind_try_consume_input( enum KeyInput input );
+// bool mastermind_register_update_callback( MastermindCallback const callback );
 
 // getters 
-
-struct Mastermind const *mastermind_get_instance( void );
 
 usize mastermind_get_total_turns( void );
 usize mastermind_get_nb_pieces_per_turn( void );
 usize mastermind_get_player_turn( void );
-u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind );
+u8 mastermind_get_selection_bar_index( void );
 bool mastermind_is_game_finished( void );
 bool mastermind_is_game_lost( void );
 bool mastermind_is_game_won( void );
@@ -72,3 +57,6 @@ gamepiece mastermind_get_pin( usize turn, usize index );
 gamepiece const *mastermind_get_pegs_at_turn( usize turn );
 gamepiece const *mastermind_get_pins_at_turn( usize turn );
 gamepiece const *mastermind_get_solution( void );
+
+
+enum RequestStatus mastermind_on_request( struct Request const *req );

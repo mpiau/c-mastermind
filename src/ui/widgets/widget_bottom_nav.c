@@ -3,6 +3,7 @@
 #include "keyboard_inputs.h"
 #include "ui.h"
 #include "events.h"
+#include "requests.h"
 
 #include <stdlib.h>
 
@@ -25,7 +26,10 @@ struct WidgetBottomNav
 
 static void on_pressed_new_game( void )
 {
-    // Request new game
+    struct Request request = (struct Request) {
+        .type = RequestType_START_NEW_GAME
+    };
+    request_send( &request );
 }
 
 
@@ -43,7 +47,10 @@ static void on_pressed_settings( void )
 
 static void on_pressed_quit( void )
 {
-    // Request quit game
+    struct Request request = (struct Request) {
+        .type = RequestType_EXIT_APP
+    };
+    request_send( &request );
 }
 
 

@@ -70,6 +70,14 @@ struct Event
 
 struct EventData {};
 
+#define EVENT_INPUT( _input )                   \
+    ( (struct Event) {                          \
+        .type = EventType_USER_INPUT,           \
+        .userInput = (struct EventUserInput) {  \
+            .input = _input                     \
+        }                                       \
+    } )
+
 typedef enum EventPropagation ( *EventTriggeredCb )( void *subscriber, struct Event const *event );
 
 bool event_register( void *subscriber, EventTriggeredCb const callback );
@@ -81,22 +89,3 @@ void event_unsubscribe( void *subscriber, enum EventType events );
 void event_unsubscribe_all( void *subscriber );
 
 void event_trigger( struct Event const *event );
-
-
-
-
-enum RequestType
-{
-    RequestType_START_NEW_GAME,
-    RequestType_ABANDON_GAME,
-
-    RequestType_REVEAL_SOLUTION,
-    RequestType_HIDE_SOLUTION,
-
-    RequestType_EXIT_APP,
-};
-
-void request_send( enum RequestType type );
-
-
-//void event_trigger( enum EventType type, struct EventData *data );

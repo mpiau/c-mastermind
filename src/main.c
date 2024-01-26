@@ -10,6 +10,7 @@
 #include "keybindings.h"
 #include "ui/ui.h"
 #include "events.h"
+#include "requests.h"
 
 #include "components/components.h"
 #include "terminal/terminal.h"
@@ -33,62 +34,19 @@ enum ExitCode
 static bool s_mainLoop = true;
 
 
-void gameloop_emit_event( enum EventType type, struct EventData const *data )
+enum RequestStatus gameloop_on_request( struct Request const *req )
 {
-/*	if ( mastermind_consume_event( type, data ) )
-	{
-		return;
-	}
-*/
-/*	if ( components_consume_event( type, data ) )
-	{
-		return;
-	}
-*/
-	if ( type == EventType_USER_INPUT /*&& data->keyPressedEvent.input == keybinding_get_binded_key( KeyBinding_QUIT )*/ )
+	if ( req->type == RequestType_EXIT_APP )
 	{
 		s_mainLoop = false;
-		return;
+		return RequestStatus_TREATED;
 	}
+
+	return RequestStatus_SKIPPED;
 }
 
 
-static void gameloop_consume_key_input( enum KeyInput const input )
-{
-//	cursor_update_yx( 1, 16 );
-//	term_write( L"Input: %2u", input );
-
-	/*if ( components_try_consume_input( input ) )
-	{
-		return;
-	}*/
-
-	if ( mastermind_try_consume_input( input ) )
-	{
-		return;
-	}
-
-	if ( input == keybinding_get_binded_key( KeyBinding_QUIT ) )
-	{
-		gameloop_emit_event( EventType_STOP_EXECUTION, NULL );
-		return;
-	}
-}
-
-
-void gameloop_emit_key( enum KeyInput const input )
-{
-	struct Event event = (struct Event) {
-		.type = EventType_USER_INPUT,
-		.userInput = (struct EventUserInput) {
-			.input = input
-		}
-	};
-	event_trigger( &event );
-}
-
-
-static void consume_input( INPUT_RECORD const *const recordedInput )
+static void consume_recorded_input( INPUT_RECORD const *const recordedInput )
 {
 	assert( recordedInput );
 
@@ -117,7 +75,8 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 				{
 					input = key_input_from_numpad_to_number( input );
 				}
-				gameloop_emit_key( input );
+				struct Event event = EVENT_INPUT( input );
+				event_trigger( &event );
 			}
 			break;
 		}
@@ -155,7 +114,7 @@ static bool consume_user_inputs( void )
 
 	for ( DWORD idx = 0; idx < nbInputsRead; ++idx )
 	{
-		consume_input( &inputsBuffer[idx] );
+		consume_recorded_input( &inputsBuffer[idx] );
 	}
 
 	return true;

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "core_types.h"
-#include "keyboard_inputs.h"
-#include "events.h"
+#include "requests.h"
 
-void gameloop_emit_key( enum KeyInput const input );
-void gameloop_emit_event( enum EventType type, struct EventData const *data );
+enum RequestStatus gameloop_on_request( struct Request const *req );

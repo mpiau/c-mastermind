@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "components/components.h"
 #include "gameloop.h"
+#include "ui/ui.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -30,17 +31,7 @@ struct Mastermind
 
 
 static struct Mastermind s_mastermind = {};
-static MastermindCallback s_callbacks[Mastermind_MAX_CALLBACKS] = {};
-static u8 s_callbackCount = 0;
 
-
-static void emit_game_update( enum GameUpdateType const type )
-{
-    for ( int idx = 0; idx < s_callbackCount; ++idx )
-    {
-        s_callbacks[idx]( type );
-    }
-}
 
 static enum PieceTurn piece_turn_status( usize turn )
 {
@@ -58,6 +49,7 @@ static enum PieceTurn piece_turn_status( usize turn )
     }
 }
 
+
 static void reset_pegs_row( byte *const pegs, usize const turn )
 {
     for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
@@ -67,6 +59,7 @@ static void reset_pegs_row( byte *const pegs, usize const turn )
     }
 }
 
+
 static void reset_pins_row( byte *const pins, usize const turn )
 {
     for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
@@ -75,6 +68,7 @@ static void reset_pins_row( byte *const pins, usize const turn )
         pins[idx] = Piece_TypePin | PieceFlag_EMPTY | turnStatus;
     }
 }
+
 
 static void generate_new_solution( byte *const pegs )
 {
@@ -225,7 +219,7 @@ static bool abandon_game( void )
 }
 
 
-static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExperience const gameExperience )
+static void new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExperience const gameExperience )
 {
     // Settings
     s_mastermind.nbTurns = nbTurns;
@@ -246,17 +240,17 @@ static bool new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
     generate_new_solution( s_mastermind.solution );
     hide_solution();
 
-    component_enable( ComponentId_SUMMARY );
-    component_enable( ComponentId_TIMER );
-    component_enable( ComponentId_PEG_SELECTION );
-    component_enable( ComponentId_BOARD );
+    ui_change_scene( UIScene_IN_GAME );
 
-    gameloop_emit_event( EventType_NEW_GAME, NULL );
-    return true;
+    struct Event event = (struct Event) {
+        .type = EventType_NEW_GAME
+        // Data = turns, pieces per turn, ... ?
+    };
+    event_trigger( &event );
 }
 
 
-bool mastermind_try_consume_input( enum KeyInput const input )
+/*bool mastermind_try_consume_input( enum KeyInput const input )
 {
     switch( input )
     {
@@ -276,7 +270,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
         case KeyInput_R:
         {
             reset_pegs_row( s_mastermind.pegs[s_mastermind.currentTurn - 1], s_mastermind.currentTurn );
-            emit_game_update( GameUpdateType_TURN_RESET );
+            //emit_game_update( GameUpdateType_TURN_RESET );
             return true;
         }
         case KeyInput_ENTER:
@@ -309,7 +303,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             if ( s_mastermind.selectionBarIdx > 0 )
             {
                 s_mastermind.selectionBarIdx -= 1;
-                emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
+                //emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
                 // EventType_HOVERED_PEG ?
             }
             return true;
@@ -319,18 +313,18 @@ bool mastermind_try_consume_input( enum KeyInput const input )
             if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPiecesPerTurn )
             {
                 s_mastermind.selectionBarIdx += 1;
-                emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
+                //emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
             }
             return true;
         }
 
-/*        case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
+        case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
         {
             gamepiece const piece = ( input - KeyInput_NUMPAD_0 ) | Piece_TypePeg | PieceTurn_CURRENT;
             s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
             gameloop_emit_event( EventType_PEG_ADDED );
             return true;
-        }*/
+        }
         case KeyInput_0 ... KeyInput_7:
         {
             // check first if the peg added is the same or not as before.
@@ -349,18 +343,7 @@ bool mastermind_try_consume_input( enum KeyInput const input )
         }
     }
     return false;
-}
-
-
-bool mastermind_register_update_callback( MastermindCallback const callback )
-{
-    if ( callback == NULL )                            return false;
-    if ( s_callbackCount == Mastermind_MAX_CALLBACKS ) return false;
-
-    s_callbacks[s_callbackCount] = callback;
-    s_callbackCount++;
-    return true;    
-}
+}*/
 
 
 usize mastermind_get_total_turns( void )
@@ -378,9 +361,9 @@ usize mastermind_get_player_turn( void )
     return s_mastermind.currentTurn;
 }
 
-u8 mastermind_get_selection_bar_index( struct Mastermind const *mastermind )
+u8 mastermind_get_selection_bar_index( void )
 {
-    return mastermind->selectionBarIdx;
+    return s_mastermind.selectionBarIdx;
 }
 
 bool mastermind_is_game_finished( void )
@@ -396,11 +379,6 @@ bool mastermind_is_game_lost( void )
 bool mastermind_is_game_won( void )
 {
     return s_mastermind.gameStatus == GameStatus_WON;
-}
-
-struct Mastermind const *mastermind_get_instance( void )
-{
-    return &s_mastermind;
 }
 
 
@@ -429,4 +407,22 @@ gamepiece const *mastermind_get_pins_at_turn( usize const turn )
 gamepiece const *mastermind_get_solution( void )
 {
     return s_mastermind.solution;
+}
+
+
+enum RequestStatus mastermind_on_request( struct Request const *req )
+{
+    switch ( req->type )
+    {
+        case RequestType_START_NEW_GAME:
+        {
+            u8 const nbTurns = settings_get_nb_turns();
+            u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
+            enum GameExperience gameExperience = settings_get_game_experience();
+            new_game( nbTurns, nbPiecesPerTurn, gameExperience );
+            return RequestStatus_TREATED;
+        }
+    }
+
+    return RequestStatus_SKIPPED;
 }
