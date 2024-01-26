@@ -17,7 +17,7 @@ struct ComponentMousePosition
 #define CAST_TO_COMP( _header ) ( ( struct ComponentMousePosition * )( _header ) )
 
 
-static void write_mouse_pos( struct ComponentMousePosition *comp, screenpos const pos )
+static void draw_mouse_pos( struct ComponentMousePosition *comp, screenpos const pos )
 {
 	cursor_update_pos( rect_get_ul_corner( &comp->rect ) );
 	style_update( comp->style );
@@ -25,17 +25,23 @@ static void write_mouse_pos( struct ComponentMousePosition *comp, screenpos cons
 }
 
 
+static void event_mouse_moved( struct ComponentHeader *header, struct EventMouseMoved const *event )
+{
+    draw_mouse_pos( CAST_TO_COMP( header ), event->pos );
+}
+
+
 static void on_mouse_move_callback( struct ComponentHeader *header, screenpos const pos )
 {
     struct ComponentMousePosition *comp = CAST_TO_COMP( header );
-	write_mouse_pos( comp, pos );
+	draw_mouse_pos( comp, pos );
 }
 
 
 static void enable_callback( struct ComponentHeader *header )
 {
     struct ComponentMousePosition *comp = CAST_TO_COMP( header );
-    write_mouse_pos( comp, SCREENPOS( 0, 0 ) );
+    draw_mouse_pos( comp, SCREENPOS( 0, 0 ) );
 }
 
 
@@ -64,3 +70,4 @@ struct ComponentHeader *component_mouse_position_create( void )
 
     return (struct ComponentHeader *)comp;
 }
+

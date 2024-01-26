@@ -1,12 +1,15 @@
 #include "ui.h"
 #include "gameloop.h"
 #include "keybindings.h"
+
 #include <stdlib.h>
+
 
 enum UIObjType
 {
     UIObjType_BUTTON
 };
+
 
 struct UIObj
 {

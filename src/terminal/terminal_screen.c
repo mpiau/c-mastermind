@@ -2,6 +2,7 @@
 #include "terminal/internal/terminal_sequence.h"
 #include "terminal/terminal_character.h"
 #include "game.h"
+#include "events.h"
 
 #include "components/components.h"
 
@@ -202,7 +203,15 @@ void term_on_resize( screensize const newSize )
 
     s_screenInfo.size = newSize;
     s_screenInfo.supportedGameSize = game_size_from_screen( newSize );
-    components_on_screen_resize( s_screenInfo.size );
+
+    struct Event screenResized = (struct Event) {
+        .type = EventType_SCREEN_RESIZED,
+        .screenResized = (struct EventScreenResized) {
+            .size = s_screenInfo.size
+        }
+    };
+    event_trigger( &screenResized );
+//    components_on_screen_resize( s_screenInfo.size );
 }
 
 

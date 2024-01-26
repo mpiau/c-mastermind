@@ -149,16 +149,7 @@ void components_frame( void )
         {
             header->callbacks.frameCb( header );
 		}
-
-/*		if ( header->enabled && header->refreshNeeded )
-		{
-			if ( header->callbacks.refreshCb != NULL )
-			{
-				header->callbacks.refreshCb( header );
-			}
-			header->refreshNeeded = false;
-		}
-*/   }
+   }
 }
 
 
@@ -182,7 +173,7 @@ bool components_try_consume_input( enum KeyInput const input )
 }
 
 
-bool components_event_received( enum EventType event, struct EventData const *data )
+/*bool components_consume_event( enum EventType event, struct EventData const *data )
 {
     for ( enum ComponentId id = 0; id < ComponentId_Count; ++id )
     {
@@ -192,12 +183,12 @@ bool components_event_received( enum EventType event, struct EventData const *da
             header->callbacks.eventReceivedCb( header, event, data );
         }
     }
-}
+}*/
 
 
 void component_make_header( struct ComponentHeader *const header, enum ComponentId const id, bool const enabled )
 {
 	header->id = id;
 	header->enabled = enabled;
-	header->refreshNeeded = enabled;
+	// header->refreshNeeded = enabled;
 }

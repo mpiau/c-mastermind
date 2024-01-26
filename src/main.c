@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "random.h"
 #include "keybindings.h"
+#include "ui/ui.h"
 
 #include "components/components.h"
 #include "terminal/terminal.h"
@@ -31,15 +32,23 @@ enum ExitCode
 static bool s_mainLoop = true;
 
 
-void gameloop_emit_event( enum EventType type, struct EventData *data )
+void gameloop_emit_event( enum EventType type, struct EventData const *data )
 {
-	if ( type == EventType_STOP_EXECUTION )
+/*	if ( mastermind_consume_event( type, data ) )
+	{
+		return;
+	}
+*/
+/*	if ( components_consume_event( type, data ) )
+	{
+		return;
+	}
+*/
+	if ( type == EventType_KEY_PRESSED /*&& data->keyPressedEvent.input == keybinding_get_binded_key( KeyBinding_QUIT )*/ )
 	{
 		s_mainLoop = false;
 		return;
 	}
-
-	components_event_received( type, data );
 }
 
 
@@ -48,10 +57,10 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 //	cursor_update_yx( 1, 16 );
 //	term_write( L"Input: %2u", input );
 
-	if ( components_try_consume_input( input ) )
+	/*if ( components_try_consume_input( input ) )
 	{
 		return;
-	}
+	}*/
 
 	if ( mastermind_try_consume_input( input ) )
 	{
@@ -68,7 +77,8 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 
 void gameloop_emit_key( enum KeyInput const input )
 {
-	gameloop_consume_key_input( input );
+    struct EventKeyPressed const event = ( struct EventKeyPressed ) { .input = input };
+    gameloop_emit_event( EventType_KEY_PRESSED, (struct EventData const *)&event );
 }
 
 
@@ -155,7 +165,8 @@ bool init_systems( void )
 	success = success && ( fpscounter_init() != NULL );
 	success = success && settings_init();
 	success = success && mouse_init();
-	success = success && components_init();
+	success = success && ui_init();
+//	success = success && components_init();
 
 	return success;
 }
@@ -163,7 +174,8 @@ bool init_systems( void )
 
 void uninit_systems( void )
 {
-	components_uninit();
+	ui_uninit();
+//	components_uninit();
 	fpscounter_uninit( fpscounter_get_instance() );
 	term_uninit();
 }
@@ -176,19 +188,12 @@ int main( void )
 		return ExitCode_FAILURE;
 	}
 
-    component_enable( ComponentId_FRAMERATE );
-    component_enable( ComponentId_SCREEN_SIZE );
-	component_enable( ComponentId_MOUSE_POSITION );
-	component_enable( ComponentId_GAME_BUTTONS );
-
-	cursor_update_yx( 1, 104 );
-	style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
-	term_write( L"Development Build" );
+	ui_change_scene( UIScene_MAIN_MENU );
 
 	while ( s_mainLoop )
 	{
 		consume_user_inputs();
-		components_frame();
+		ui_frame();
 		term_refresh();
 		// Last function call in the loop
 		fpscounter_frame( fpscounter_get_instance() );

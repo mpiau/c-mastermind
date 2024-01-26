@@ -1,6 +1,7 @@
 #include "mouse.h"
 
 #include "gameloop.h"
+#include "events.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -37,10 +38,18 @@ static void mouse_moved( vec2u16 const mousePos )
 
     s_mouseInfo.position = newPos;
 
-    for ( u32 idx = 0; idx < s_mouseInfo.moveCallbackCount; ++idx )
+    struct Event mouseMoved = (struct Event) {
+        .type = EventType_MOUSE_MOVED,
+        .mouseMoved = (struct EventMouseMoved) {
+            .pos = s_mouseInfo.position
+        }
+    };
+    event_trigger( &mouseMoved );
+
+/*    for ( u32 idx = 0; idx < s_mouseInfo.moveCallbackCount; ++idx )
     {
         s_mouseInfo.moveCallbacks[idx]( s_mouseInfo.position );
-    }
+    }*/
 }
 
 

@@ -33,7 +33,7 @@ void components_on_screen_resize( screensize size );
 void components_frame( void );
 bool components_try_consume_input( enum KeyInput input );
 
-bool components_event_received( enum EventType event, struct EventData const *data );
+//bool components_consume_event( enum EventType event, struct EventData const *data );
 
 // Functions specific to a component
 

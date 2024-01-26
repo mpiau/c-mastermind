@@ -30,6 +30,12 @@ SRC += src/terminal/terminal_colors.c
 SRC += src/terminal/terminal_style.c
 SRC += src/terminal/terminal.c
 
+SRC += src/events.c
+SRC += src/ui/ui.c
+SRC += src/ui/widgets/widget_buildversion.c
+SRC += src/ui/widgets/widget_framerate.c
+SRC += src/ui/widgets/widget_mousepos.c
+SRC += src/ui/widgets/widget_screensize.c
 
 CFLAGS += -Iinclude
 
