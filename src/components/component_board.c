@@ -407,7 +407,7 @@ static bool on_input_received_callback( struct ComponentHeader *header, enum Key
 		{
 			for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
 			{
-				if ( uibutton_clicked( comp->buttons[idx] ) )
+				if ( uibutton_check_pressed( comp->buttons[idx] ) )
 				{
 					return true;
 				}
@@ -538,9 +538,9 @@ struct ComponentHeader *component_board_create( void )
 	comp->nbPiecesPerTurn = 0;
 
 	screenpos const bul = SCREENPOS( 18, 27 );
-    comp->buttons[ButtonIdx_CONFIRM_TURN] = uibutton_try_register( L"Confirm Turn", SCREENPOS( bul.x + 3, bul.y ), VEC2U16( 19, 1 ), Keybinding_CONFIRM_TURN, true );
-    comp->buttons[ButtonIdx_RESET_TURN]   = uibutton_try_register( L"Reset Turn", SCREENPOS( bul.x + 25, bul.y ), VEC2U16( 13, 1 ), Keybinding_RESET_TURN, true );
-    comp->buttons[ButtonIdx_ABANDON_GAME] = uibutton_try_register( L"Abandon Game", SCREENPOS( bul.x + 58, bul.y ), VEC2U16( 15, 1 ), Keybinding_ABANDON_GAME, true );
+    comp->buttons[ButtonIdx_CONFIRM_TURN] = uibutton_register( L"Confirm Turn", SCREENPOS( bul.x + 3, bul.y ), VEC2U16( 19, 1 ), Keybinding_CONFIRM_TURN, NULL, true );
+    comp->buttons[ButtonIdx_RESET_TURN]   = uibutton_register( L"Reset Turn", SCREENPOS( bul.x + 25, bul.y ), VEC2U16( 13, 1 ), Keybinding_RESET_TURN, NULL, true );
+    comp->buttons[ButtonIdx_ABANDON_GAME] = uibutton_register( L"Abandon Game", SCREENPOS( bul.x + 58, bul.y ), VEC2U16( 15, 1 ), Keybinding_ABANDON_GAME, NULL, true );
 
 	return (struct ComponentHeader *)comp;
 }

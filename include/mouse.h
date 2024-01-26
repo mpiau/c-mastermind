@@ -16,4 +16,3 @@ bool mouse_init( void );
 // This function transform the mouse coordinates into screenpos to simplify its usage
 screenpos mouse_pos();
 void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent );
-bool mouse_register_on_mouse_move_callback( OnMouseMoveCallback const callback );

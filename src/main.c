@@ -45,7 +45,7 @@ void gameloop_emit_event( enum EventType type, struct EventData const *data )
 		return;
 	}
 */
-	if ( type == EventType_KEY_PRESSED /*&& data->keyPressedEvent.input == keybinding_get_binded_key( KeyBinding_QUIT )*/ )
+	if ( type == EventType_USER_INPUT /*&& data->keyPressedEvent.input == keybinding_get_binded_key( KeyBinding_QUIT )*/ )
 	{
 		s_mainLoop = false;
 		return;
@@ -78,8 +78,13 @@ static void gameloop_consume_key_input( enum KeyInput const input )
 
 void gameloop_emit_key( enum KeyInput const input )
 {
-    struct EventKeyPressed const event = ( struct EventKeyPressed ) { .input = input };
-    gameloop_emit_event( EventType_KEY_PRESSED, (struct EventData const *)&event );
+	struct Event event = (struct Event) {
+		.type = EventType_USER_INPUT,
+		.userInput = (struct EventUserInput) {
+			.input = input
+		}
+	};
+	event_trigger( &event );
 }
 
 
@@ -112,7 +117,7 @@ static void consume_input( INPUT_RECORD const *const recordedInput )
 				{
 					input = key_input_from_numpad_to_number( input );
 				}
-				gameloop_consume_key_input( input );
+				gameloop_emit_key( input );
 			}
 			break;
 		}

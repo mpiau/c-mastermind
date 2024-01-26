@@ -5,14 +5,16 @@
 #include "terminal/terminal.h"
 #include "keybindings.h"
 
+typedef void ( *OnPressedCb )( void );
 
 struct UIButton
 {
-    bool enabled;
+    bool active;
     bool shown;
     struct Rect rect;
     utf16 const *text;
     enum KeyBinding keybinding;
+    OnPressedCb onPressedCb;
 };
 
 struct UIPiece
@@ -27,11 +29,11 @@ struct UISimpleText
 };
 
 
-u64 uibutton_try_register( utf16 const *text, screenpos pos, vec2u16 size, enum KeyBinding keybinding, bool enabled );
-bool uibutton_clicked( u64 id );
-bool uibutton_is_enabled( u64 id );
-void uibutton_enable( u64 id );
-void uibutton_disable( u64 id );
+u64  uibutton_register( utf16 const *text, screenpos pos, vec2u16 size, enum KeyBinding keybinding, OnPressedCb onPressedCb, bool active );
+bool uibutton_check_pressed( u64 id, enum KeyInput input );
+bool uibutton_is_active( u64 id );
+void uibutton_activate( u64 id );
+void uibutton_desactivate( u64 id );
 bool uibutton_is_hovered_by( u64 id, screenpos pos );
 bool uibutton_check_hovered( u64 id, screenpos pos );
 struct Rect const *uibutton_get_box( u64 id );

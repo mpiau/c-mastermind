@@ -15,7 +15,7 @@ enum EventType
     EventType_PEG_UNSELECTED = 0b0000000010000000,
     EventType_PEG_ADDED      = 0b0000000100000000,
     EventType_PEG_REMOVED    = 0b0000001000000000,
-    EventType_KEY_PRESSED    = 0b0000010000000000,
+    EventType_USER_INPUT     = 0b0000010000000000,
     EventType_MOUSE_MOVED    = 0b0000100000000000,
     EventType_NEXT_TURN      = 0b0001000000000000,
 
@@ -37,7 +37,7 @@ struct EventPegAdded
 };
 
 
-struct EventKeyPressed
+struct EventUserInput
 {
     enum KeyInput input;
 };
@@ -61,7 +61,7 @@ struct Event
     union
     {
         struct EventPegAdded pegAddedEvent;
-        struct EventKeyPressed keyPressedEvent;
+        struct EventUserInput userInput;
         struct EventMouseMoved mouseMoved;
         struct EventScreenResized screenResized;
     };

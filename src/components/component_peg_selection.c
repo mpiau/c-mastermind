@@ -101,7 +101,7 @@ static bool input_received_callback( struct ComponentHeader *header, enum KeyInp
     {
         for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
         {
-            if ( uibutton_clicked( CAST_TO_COMP( header )->buttons[idx] ) )
+            if ( uibutton_check_pressed( CAST_TO_COMP( header )->buttons[idx], input ) )
             {
                 return true;
             }
@@ -225,14 +225,14 @@ struct ComponentHeader *component_peg_selection_create( void )
     vec2u16 const size = VEC2U16( 10, 2 );
 	comp->box = rect_make( ul, VEC2U16( 14, 27 ) );
     ul.x += 2;
-    comp->buttons[ButtonIdx_PEG_BLACK]   = uibutton_try_register( L"Grey", SCREENPOS( ul.x, ul.y + 2 ), size, KeyBinding_PEG_BLACK, true );
-    comp->buttons[ButtonIdx_PEG_RED]     = uibutton_try_register( L"Red", SCREENPOS( ul.x, ul.y + 5 ), size, KeyBinding_PEG_RED, true );
-    comp->buttons[ButtonIdx_PEG_GREEN]   = uibutton_try_register( L"Green", SCREENPOS( ul.x, ul.y + 8 ), size, KeyBinding_PEG_GREEN, true );
-    comp->buttons[ButtonIdx_PEG_YELLOW]  = uibutton_try_register( L"Yell.", SCREENPOS( ul.x, ul.y + 11 ), size, KeyBinding_PEG_YELLOW, true );
-    comp->buttons[ButtonIdx_PEG_CYAN]    = uibutton_try_register( L"Cyan", SCREENPOS( ul.x, ul.y + 14 ), size, KeyBinding_PEG_CYAN, true );
-    comp->buttons[ButtonIdx_PEG_MAGENTA] = uibutton_try_register( L"Purp.", SCREENPOS( ul.x, ul.y + 17 ), size, KeyBinding_PEG_MAGENTA, true );
-    comp->buttons[ButtonIdx_PEG_BLUE]    = uibutton_try_register( L"Blue", SCREENPOS( ul.x, ul.y + 20 ), size, KeyBinding_PEG_BLUE, true );
-    comp->buttons[ButtonIdx_PEG_WHITE]   = uibutton_try_register( L"White", SCREENPOS( ul.x, ul.y + 23 ), size, KeyBinding_PEG_WHITE, true );
+    comp->buttons[ButtonIdx_PEG_BLACK]   = uibutton_register( L"Grey", SCREENPOS( ul.x, ul.y + 2 ), size, KeyBinding_PEG_BLACK, NULL, true );
+    comp->buttons[ButtonIdx_PEG_RED]     = uibutton_register( L"Red", SCREENPOS( ul.x, ul.y + 5 ), size, KeyBinding_PEG_RED, NULL, true );
+    comp->buttons[ButtonIdx_PEG_GREEN]   = uibutton_register( L"Green", SCREENPOS( ul.x, ul.y + 8 ), size, KeyBinding_PEG_GREEN, NULL, true );
+    comp->buttons[ButtonIdx_PEG_YELLOW]  = uibutton_register( L"Yell.", SCREENPOS( ul.x, ul.y + 11 ), size, KeyBinding_PEG_YELLOW, NULL, true );
+    comp->buttons[ButtonIdx_PEG_CYAN]    = uibutton_register( L"Cyan", SCREENPOS( ul.x, ul.y + 14 ), size, KeyBinding_PEG_CYAN, NULL, true );
+    comp->buttons[ButtonIdx_PEG_MAGENTA] = uibutton_register( L"Purp.", SCREENPOS( ul.x, ul.y + 17 ), size, KeyBinding_PEG_MAGENTA, NULL, true );
+    comp->buttons[ButtonIdx_PEG_BLUE]    = uibutton_register( L"Blue", SCREENPOS( ul.x, ul.y + 20 ), size, KeyBinding_PEG_BLUE, NULL, true );
+    comp->buttons[ButtonIdx_PEG_WHITE]   = uibutton_register( L"White", SCREENPOS( ul.x, ul.y + 23 ), size, KeyBinding_PEG_WHITE, NULL, true );
 
 //    comp->dragPos = SCREENPOS( 0, 0 );
 //    memset( comp->dragSave, 0, sizeof( comp->dragSave ) );

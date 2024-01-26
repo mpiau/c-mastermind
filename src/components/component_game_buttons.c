@@ -44,7 +44,7 @@ static bool on_input_received_callback( struct ComponentHeader *header, enum Key
 
 	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
 	{
-		if ( uibutton_clicked( CAST_TO_COMP( header )->buttons[idx] ) )
+		if ( uibutton_check_pressed( CAST_TO_COMP( header )->buttons[idx], input ) )
 		{
 			return true;
 		}
@@ -87,10 +87,10 @@ struct ComponentHeader *component_game_buttons_create( void )
 
 	// Specific data
 	u64 *ids = comp->buttons;
-	ids[ButtonIdx_NEW_GAME]   = uibutton_try_register( L"New Game", SCREENPOS( 84, 29 ), VEC2U16( 8, 2 ), Keybinding_NEW_GAME, true );
-	ids[ButtonIdx_GAME_RULES] = uibutton_try_register( L"Game Rules", SCREENPOS( 94, 29 ), VEC2U16( 10, 2 ), KeyBinding_OPEN_GAME_RULES, false );
-	ids[ButtonIdx_SETTINGS]   = uibutton_try_register( L"Settings", SCREENPOS( 106, 29 ), VEC2U16( 8, 2 ), KeyBinding_OPEN_SETTINGS_MENU, false );
-	ids[ButtonIdx_QUIT]       = uibutton_try_register( L"Quit", SCREENPOS( 116, 29 ), VEC2U16( 4, 2 ), KeyBinding_QUIT, true );
+	ids[ButtonIdx_NEW_GAME]   = uibutton_register( L"New Game", SCREENPOS( 84, 29 ), VEC2U16( 8, 2 ), Keybinding_NEW_GAME, NULL, true );
+	ids[ButtonIdx_GAME_RULES] = uibutton_register( L"Game Rules", SCREENPOS( 94, 29 ), VEC2U16( 10, 2 ), KeyBinding_OPEN_GAME_RULES, NULL, false );
+	ids[ButtonIdx_SETTINGS]   = uibutton_register( L"Settings", SCREENPOS( 106, 29 ), VEC2U16( 8, 2 ), KeyBinding_OPEN_SETTINGS_MENU, NULL, false );
+	ids[ButtonIdx_QUIT]       = uibutton_register( L"Quit", SCREENPOS( 116, 29 ), VEC2U16( 4, 2 ), KeyBinding_QUIT, NULL, true );
 
 	return (struct ComponentHeader *)comp;
 }

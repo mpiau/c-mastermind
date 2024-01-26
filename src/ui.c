@@ -54,7 +54,7 @@ static inline struct UIButton *get_button_by_id( u64 const id )
 
 struct Style ui_style_button_text( u64 const id, struct UIButton const *button )
 {
-    if ( !button->enabled )
+    if ( !button->active )
     {
         return STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
     }
@@ -70,7 +70,7 @@ struct Style ui_style_button_text( u64 const id, struct UIButton const *button )
 
 struct Style ui_style_button_keybind( struct UIButton const *button )
 {
-    if ( !button->enabled )
+    if ( !button->active )
     {
         return STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC );
     }
@@ -104,7 +104,7 @@ static void button_draw_internal( u64 const id )
 
 
 
-u64 uibutton_try_register( utf16 const *text, screenpos const pos, vec2u16 const size, enum KeyBinding keybinding, bool enabled )
+u64 uibutton_register( utf16 const *text, screenpos const pos, vec2u16 const size, enum KeyBinding keybinding, OnPressedCb onPressedCb, bool active )
 {
     struct UIObj *obj = register_object( UIObjType_BUTTON );
     if ( !obj ) return S_INVALID_ID;
@@ -112,46 +112,53 @@ u64 uibutton_try_register( utf16 const *text, screenpos const pos, vec2u16 const
     assert( text );
 
     obj->button = (struct UIButton ) {
-        .enabled = enabled,
+        .active = active,
         .shown = false,
         .text = text,
         .keybinding = keybinding,
+        .onPressedCb = onPressedCb,
         .rect = rect_make( pos, size )
     };
     return obj->id;
 }
 
 
-bool uibutton_clicked( u64 const id )
+bool uibutton_check_pressed( u64 const id, enum KeyInput const input )
 {
-    if ( s_activeHoveredId != id ) return false;
-
     struct UIButton *button = get_button_by_id( id );
-    if ( !button ) return false;
+    if ( !button || !button->active ) return false;
 
-    enum KeyInput const input = keybinding_get_binded_key( button->keybinding );
-    if ( input == KeyInput_INVALID ) return false;
+    enum KeyInput const keybind = keybinding_get_binded_key( button->keybinding );
+    assert( keybind != KeyInput_INVALID );
 
-    gameloop_emit_key( input );
-    return true;
+    if ( ( input == KeyInput_MOUSE_BTN_LEFT && s_activeHoveredId == id ) || input == keybind )
+    {
+        if ( button->onPressedCb )
+        {
+            button->onPressedCb();
+        }
+        return true;
+    }
+
+    return false;
 }
 
 
-bool uibutton_is_enabled( u64 const id )
+bool uibutton_is_active( u64 const id )
 {
-    return get_button_by_id( id )->enabled;
+    return get_button_by_id( id )->active;
 }
 
 
-void uibutton_enable( u64 const id )
+void uibutton_activate( u64 const id )
 {
-    get_button_by_id( id )->enabled = true;
+    get_button_by_id( id )->active = true;
 }
 
 
-void uibutton_disable( u64 const id )
+void uibutton_desactivate( u64 const id )
 {
-    get_button_by_id( id )->enabled = false;
+    get_button_by_id( id )->active = false;
 }
 
 
@@ -182,7 +189,7 @@ bool uibutton_is_hovered_by( u64 const id, screenpos const pos )
 
 bool uibutton_check_hovered( u64 id, screenpos pos )
 {
-    if ( !uibutton_is_enabled( id ) || !uibutton_is_shown( id ) || !uibutton_is_hovered_by( id, pos ) )
+    if ( !uibutton_is_active( id ) || !uibutton_is_shown( id ) || !uibutton_is_hovered_by( id, pos ) )
     {
         // If this button was the one hovered, then update the hover status and redraw it.
         if ( s_activeHoveredId == id )

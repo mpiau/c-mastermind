@@ -104,7 +104,7 @@ bool components_init( void )
     // Init others widgets [...]
 
     // Register the widgets on event based updates (mouse, keyboard, resize, ...)
-    mouse_register_on_mouse_move_callback( on_mouse_move_callback );
+//    mouse_register_on_mouse_move_callback( on_mouse_move_callback );
 	// mastermind_register_update_callback( on_game_update_callback );
     // TODO add keyboard input
     return true;

@@ -6,25 +6,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-enum // Constants
-{
-    CALLBACKS_MAX_COUNT = 4
-};
-
-struct MouseInfo
-{
-    screenpos position;
-
-    OnMouseMoveCallback moveCallbacks[CALLBACKS_MAX_COUNT];
-    u32 moveCallbackCount;
-};
-
-static struct MouseInfo s_mouseInfo = {};
+static screenpos s_currPosition = {};
 
 
 screenpos mouse_pos()
 {
-    return s_mouseInfo.position;
+    return s_currPosition;
 }
 
 
@@ -36,20 +23,15 @@ static void mouse_moved( vec2u16 const mousePos )
 	if ( oldPos.x == newPos.x && oldPos.y == newPos.y )
         return;
 
-    s_mouseInfo.position = newPos;
+    s_currPosition = newPos;
 
     struct Event mouseMoved = (struct Event) {
         .type = EventType_MOUSE_MOVED,
         .mouseMoved = (struct EventMouseMoved) {
-            .pos = s_mouseInfo.position
+            .pos = s_currPosition
         }
     };
     event_trigger( &mouseMoved );
-
-/*    for ( u32 idx = 0; idx < s_mouseInfo.moveCallbackCount; ++idx )
-    {
-        s_mouseInfo.moveCallbacks[idx]( s_mouseInfo.position );
-    }*/
 }
 
 
@@ -87,19 +69,8 @@ void mouse_consume_event( struct _MOUSE_EVENT_RECORD const *mouseEvent )
 }
 
 
-bool mouse_register_on_mouse_move_callback( OnMouseMoveCallback const callback )
-{
-    if ( callback == NULL )                                     return false;
-    if ( s_mouseInfo.moveCallbackCount == CALLBACKS_MAX_COUNT ) return false;
-
-    s_mouseInfo.moveCallbacks[s_mouseInfo.moveCallbackCount] = callback;
-    s_mouseInfo.moveCallbackCount++;
-    return true;
-}
-
-
 bool mouse_init( void )
 {
-	s_mouseInfo = (struct MouseInfo) {};
+	s_currPosition = (screenpos) {};
     return true;
 }
