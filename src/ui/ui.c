@@ -11,6 +11,10 @@ enum WidgetId
     WidgetId_MOUSEPOS,
     WidgetId_BUILDVERSION,
     WidgetId_BOTTOM_NAV,
+    WidgetId_GAME_SUMMARY,
+    WidgetId_TIMER,
+    WidgetId_PEG_SELECTOR,
+    WidgetId_GAME_BOARD,
 
     WidgetId_Count
 };
@@ -42,6 +46,10 @@ bool ui_init( void )
     init_widget( WidgetId_MOUSEPOS, widget_mousepos_create );
     init_widget( WidgetId_BUILDVERSION, widget_buildversion_create );
     init_widget( WidgetId_BOTTOM_NAV, widget_bottom_nav_create );
+    init_widget( WidgetId_GAME_SUMMARY, widget_game_summary_create );
+    init_widget( WidgetId_TIMER, widget_timer_create );
+    init_widget( WidgetId_PEG_SELECTOR, widget_peg_selector_create );
+    init_widget( WidgetId_GAME_BOARD, widget_game_board_create );
 
     return true;
 }
@@ -65,7 +73,7 @@ void ui_frame( void )
     for ( usize idx = 0; idx < WidgetId_Count; ++idx )
     {
         struct Widget *widget = s_widgets[idx];
-        if ( widget && widget->frameCb )
+        if ( widget && s_widgetsEnabled[idx] && widget->frameCb )
         {
             widget->frameCb( widget );
         }

@@ -5,7 +5,7 @@
 #include "terminal/terminal.h"
 #include "keybindings.h"
 
-typedef void ( *OnPressedCb )( void );
+typedef void ( *OnButtonTriggerCb )( bool clicked );
 
 struct UIButton
 {
@@ -14,7 +14,7 @@ struct UIButton
     struct Rect rect;
     utf16 const *text;
     enum KeyBinding keybinding;
-    OnPressedCb onPressedCb;
+    OnButtonTriggerCb onTriggerCb;
 };
 
 struct UIPiece
@@ -29,8 +29,8 @@ struct UISimpleText
 };
 
 
-u64  uibutton_register( utf16 const *text, screenpos pos, vec2u16 size, enum KeyBinding keybinding, OnPressedCb onPressedCb, bool active );
-bool uibutton_check_pressed( u64 id, enum KeyInput input );
+u64  uibutton_register( utf16 const *text, screenpos pos, vec2u16 size, enum KeyBinding keybinding, OnButtonTriggerCb onTriggerCb, bool active );
+bool uibutton_check_interaction( u64 id, enum KeyInput input );
 bool uibutton_is_active( u64 id );
 void uibutton_activate( u64 id );
 void uibutton_desactivate( u64 id );

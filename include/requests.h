@@ -1,5 +1,7 @@
 #pragma once 
 
+#include "game/piece.h"
+
 
 enum RequestType
 {
@@ -8,6 +10,18 @@ enum RequestType
 
     RequestType_REVEAL_SOLUTION,
     RequestType_HIDE_SOLUTION,
+
+    RequestType_PEG_SELECT,
+    RequestType_PEG_UNSELECT,
+
+    RequestType_PEG_ADD,
+    RequestType_PEG_REMOVE,
+
+    RequestType_CONFIRM_TURN,
+    RequestType_RESET_TURN,
+
+    RequestType_NEXT,
+    RequestType_PREVIOUS,
 
     RequestType_EXIT_APP,
 };
@@ -18,10 +32,24 @@ enum RequestStatus
     RequestStatus_TREATED
 };
 
+struct RequestPegSelect
+{
+    gamepiece piece;
+};
+
+struct RequestPegAdd
+{
+    gamepiece piece;
+};
 
 struct Request
 {
     enum RequestType type;
+    union
+    {
+        struct RequestPegSelect pegSelect;
+        struct RequestPegAdd pegAdd;
+    };
 };
 
 void request_send( struct Request const *request );

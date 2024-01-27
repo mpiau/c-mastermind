@@ -124,7 +124,7 @@ void frame_callback( struct ComponentHeader *header )
 
 static void event_received_callback( struct ComponentHeader *header, enum EventType event, struct EventData const *data )
 {
-	if ( event == EventType_NEW_GAME )
+	if ( event == EventType_GAME_NEW )
 	{
         widget_timer_reset( header );
         widget_timer_start( header );

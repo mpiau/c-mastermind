@@ -39,7 +39,6 @@ struct Widget *widget_buildversion_create( void )
 
     widget->base.name = "BuildVersion";
     widget->base.enabledScenes = UIScene_ALL;
-
     widget->base.enableCb = enable_callback;
     widget->base.disableCb = disable_callback;
 

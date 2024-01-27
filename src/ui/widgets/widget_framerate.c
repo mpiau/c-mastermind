@@ -55,7 +55,6 @@ struct Widget *widget_framerate_create( void )
 
     widget->base.name = "Framerate";
     widget->base.enabledScenes = UIScene_ALL;
-
     widget->base.enableCb = enable_callback;
     widget->base.disableCb = disable_callback;
     widget->base.frameCb = frame_callback;

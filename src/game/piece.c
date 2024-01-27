@@ -159,7 +159,7 @@ static struct Style generate_style( gamepiece const piece, bool const hovered )
     termcolor color = get_piece_color( piece );
     enum Attr const attr = is_future_turn( piece ) || ( piece & PieceFlag_EMPTY ) ? Attr_FAINT : Attr_NONE;
 
-    if ( piece & PieceFlag_SECRET )
+    if ( piece & PieceFlag_SECRET || piece & PieceFlag_EMPTY )
     {
         color = FGColor_BRIGHT_BLACK;
     }

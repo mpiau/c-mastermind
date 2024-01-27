@@ -24,7 +24,7 @@ struct WidgetBottomNav
 };
 
 
-static void on_pressed_new_game( void )
+static void on_trigger_new_game( bool )
 {
     struct Request request = (struct Request) {
         .type = RequestType_START_NEW_GAME
@@ -33,19 +33,19 @@ static void on_pressed_new_game( void )
 }
 
 
-static void on_pressed_game_rules( void )
+static void on_trigger_game_rules( bool )
 {
     // Do nothing for now
 }
 
 
-static void on_pressed_settings( void )
+static void on_trigger_settings( bool )
 {
     // Do nothing for now
 }
 
 
-static void on_pressed_quit( void )
+static void on_trigger_quit( bool )
 {
     struct Request request = (struct Request) {
         .type = RequestType_EXIT_APP
@@ -71,7 +71,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
     {
         for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
         {
-            if ( uibutton_check_pressed( widget->buttons[idx], event->userInput.input ) )
+            if ( uibutton_check_interaction( widget->buttons[idx], event->userInput.input ) )
             {
                 return EventPropagation_STOP;
             }
@@ -107,15 +107,14 @@ struct Widget *widget_bottom_nav_create( void )
 
     widget->base.name = "BottomNavigation";
     widget->base.enabledScenes = UIScene_ALL;
-
     widget->base.enableCb = enable_callback;
     widget->base.disableCb = disable_callback;
 
 	u64 *ids = widget->buttons;
-	ids[ButtonIdx_NEW_GAME]   = uibutton_register( L"New Game", SCREENPOS( 84, 29 ), VEC2U16( 8, 2 ), Keybinding_NEW_GAME, on_pressed_new_game, true );
-	ids[ButtonIdx_GAME_RULES] = uibutton_register( L"Game Rules", SCREENPOS( 94, 29 ), VEC2U16( 10, 2 ), KeyBinding_OPEN_GAME_RULES, on_pressed_game_rules, false );
-	ids[ButtonIdx_SETTINGS]   = uibutton_register( L"Settings", SCREENPOS( 106, 29 ), VEC2U16( 8, 2 ), KeyBinding_OPEN_SETTINGS_MENU, on_pressed_settings, false );
-	ids[ButtonIdx_QUIT]       = uibutton_register( L"Quit", SCREENPOS( 116, 29 ), VEC2U16( 4, 2 ), KeyBinding_QUIT, on_pressed_quit, true );
+	ids[ButtonIdx_NEW_GAME]   = uibutton_register( L"New Game", SCREENPOS( 84, 29 ), VEC2U16( 8, 2 ), Keybinding_NEW_GAME, on_trigger_new_game, true );
+	ids[ButtonIdx_GAME_RULES] = uibutton_register( L"Game Rules", SCREENPOS( 94, 29 ), VEC2U16( 10, 2 ), KeyBinding_OPEN_GAME_RULES, on_trigger_game_rules, false );
+	ids[ButtonIdx_SETTINGS]   = uibutton_register( L"Settings", SCREENPOS( 106, 29 ), VEC2U16( 8, 2 ), KeyBinding_OPEN_SETTINGS_MENU, on_trigger_settings, false );
+	ids[ButtonIdx_QUIT]       = uibutton_register( L"Quit", SCREENPOS( 116, 29 ), VEC2U16( 4, 2 ), KeyBinding_QUIT, on_trigger_quit, true );
 
     event_register( widget, on_event_callback );
     event_subscribe( widget, EventType_MOUSE_MOVED | EventType_USER_INPUT );

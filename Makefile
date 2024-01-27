@@ -32,11 +32,15 @@ SRC += src/terminal/terminal.c
 SRC += src/events.c
 SRC += src/ui/ui.c
 SRC += src/requests.c
+SRC += src/ui/widgets/widget_bottom_nav.c
 SRC += src/ui/widgets/widget_buildversion.c
 SRC += src/ui/widgets/widget_framerate.c
+SRC += src/ui/widgets/widget_game_board.c
+SRC += src/ui/widgets/widget_game_summary.c
 SRC += src/ui/widgets/widget_mousepos.c
+SRC += src/ui/widgets/widget_peg_selector.c
 SRC += src/ui/widgets/widget_screensize.c
-SRC += src/ui/widgets/widget_bottom_nav.c
+SRC += src/ui/widgets/widget_timer.c
 
 CFLAGS += -Iinclude
 

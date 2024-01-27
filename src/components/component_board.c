@@ -64,7 +64,7 @@ enum // Constants
 	PIN_INTERSPACE = 1,
 	ROW_HEIGHT = 6,
 
-	TOTAL_BOARD_SIZE = 78,
+	TOTAL_BOARD_WIDTH = 78,
 };
 
 
@@ -429,14 +429,14 @@ static void draw_internal_board_lines( struct ComponentBoard *comp )
 	for( usize idx = 0; idx < 3; idx++ )
 	{
 		cursor_update_yx( ul.y + 6 * ( idx + 1 ), ul.x + 2 ); 
-		draw_character_n_times( L'─', TOTAL_BOARD_SIZE - 4 );
+		draw_character_n_times( L'─', TOTAL_BOARD_WIDTH - 4 );
 	}
 
 	// Line that separates buttons from the rest of the game
 	cursor_update_yx( ul.y + comp->box.size.h - 3, ul.x );
 	style_update( STYLE( FGColor_BRIGHT_BLACK ) );
 	term_write( L"%lc", L'├' );
-	draw_character_n_times( L'─', TOTAL_BOARD_SIZE - 2 );
+	draw_character_n_times( L'─', TOTAL_BOARD_WIDTH - 2 );
 	term_write( L"%lc", L'┤' );
 }
 
@@ -534,7 +534,7 @@ struct ComponentHeader *component_board_create( void )
 	callbacks->mouseMoveCb = on_mouse_move_callback;
 
 
-	comp->box = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_SIZE, 27 ) );
+	comp->box = rect_make( SCREENPOS( 17, 2 ), VEC2U16( TOTAL_BOARD_WIDTH, 27 ) );
 	comp->nbPiecesPerTurn = 0;
 
 	screenpos const bul = SCREENPOS( 18, 27 );

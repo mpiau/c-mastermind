@@ -44,7 +44,7 @@ static bool on_input_received_callback( struct ComponentHeader *header, enum Key
 
 	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
 	{
-		if ( uibutton_check_pressed( CAST_TO_COMP( header )->buttons[idx], input ) )
+		if ( uibutton_check_interaction( CAST_TO_COMP( header )->buttons[idx], input ) )
 		{
 			return true;
 		}

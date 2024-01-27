@@ -206,21 +206,29 @@ static void next_turn( void )
 }
 
 
-static bool abandon_game( void )
+static enum RequestStatus on_request_abandon_game( void )
 {
     if ( s_mastermind.gameStatus == GameStatus_IN_PROGRESS )
     {
         s_mastermind.gameStatus = GameStatus_LOST;
         show_solution();
-        gameloop_emit_event( EventType_GAME_LOST, NULL );
-        return true;
+        // Emit a show solution event
+        struct Event const event = (struct Event) {
+            .type = EventType_GAME_LOST
+        };
+        event_trigger( &event );
+        return RequestStatus_TREATED;
     }
-    return false;
+    return RequestStatus_SKIPPED;
 }
 
 
-static void new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExperience const gameExperience )
+static enum RequestStatus on_request_start_new_game( void )
 {
+    u8 const nbTurns = settings_get_nb_turns();
+    u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
+    enum GameExperience gameExperience = settings_get_game_experience();
+
     // Settings
     s_mastermind.nbTurns = nbTurns;
     s_mastermind.nbPiecesPerTurn = nbPiecesPerTurn;
@@ -243,10 +251,71 @@ static void new_game( u8 const nbTurns, u8 const nbPiecesPerTurn, enum GameExper
     ui_change_scene( UIScene_IN_GAME );
 
     struct Event event = (struct Event) {
-        .type = EventType_NEW_GAME
-        // Data = turns, pieces per turn, ... ?
+        .type = EventType_GAME_NEW,
+        .newGame = (struct EventGameNew) {
+            .nbTurns = s_mastermind.nbTurns,
+            .nbPegsPerTurn = s_mastermind.nbPiecesPerTurn
+        }
     };
     event_trigger( &event );
+
+    return RequestStatus_TREATED;
+}
+
+
+static enum RequestStatus on_request_remove_peg( usize const turn, usize const idx )
+{
+    gamepiece const piece = s_mastermind.pegs[turn - 1][idx];
+    if ( piece & PieceFlag_EMPTY ) return RequestStatus_SKIPPED;
+
+    s_mastermind.pegs[turn - 1][idx] |= PieceFlag_EMPTY;
+
+    struct Event event = (struct Event) {
+        .type = EventType_PEG_REMOVED,
+        .pegRemoved = (struct EventPegRemoved) {
+            .index = idx,
+            .turn = turn,
+            .piece = s_mastermind.pegs[turn - 1][idx]
+        }
+    };
+    event_trigger( &event );
+    return RequestStatus_TREATED;
+}
+
+
+static enum RequestStatus on_request_add_peg( gamepiece const pieceColor )
+{
+    gamepiece piece = s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx];
+    if ( ( piece & PieceFlag_EMPTY ) == 0 )
+    {
+        on_request_remove_peg( s_mastermind.currentTurn, s_mastermind.selectionBarIdx );
+    }
+
+    piece = pieceColor | Piece_TypePeg | PieceTurn_CURRENT;
+    s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
+
+    struct Event event = (struct Event) {
+        .type = EventType_PEG_ADDED,
+        .pegAdded = (struct EventPegAdded) {
+            .index = s_mastermind.selectionBarIdx,
+            .turn = s_mastermind.currentTurn,
+            .piece = piece
+        }
+    };
+    event_trigger( &event );
+    return RequestStatus_TREATED;
+}
+
+
+static enum RequestStatus on_request_reset_turn( void )
+{
+    gamepiece const *pegsTurn = mastermind_get_pegs_at_turn( s_mastermind.currentTurn );
+
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
+    {
+        on_request_remove_peg( s_mastermind.currentTurn, idx );
+    }
+    return RequestStatus_TREATED;
 }
 
 
@@ -414,13 +483,36 @@ enum RequestStatus mastermind_on_request( struct Request const *req )
 {
     switch ( req->type )
     {
-        case RequestType_START_NEW_GAME:
+        case RequestType_START_NEW_GAME: return on_request_start_new_game();
+        case RequestType_ABANDON_GAME: return on_request_abandon_game();
+
+        case RequestType_PEG_SELECT:
+        { /* TODO */ }
+        case RequestType_PEG_UNSELECT:
+        { /* TODO */ }
+        case RequestType_PEG_ADD: return on_request_add_peg( req->pegAdd.piece );
+        case RequestType_PEG_REMOVE: return on_request_remove_peg( s_mastermind.currentTurn, s_mastermind.selectionBarIdx );
+
+        case RequestType_RESET_TURN: return on_request_reset_turn();
+        case RequestType_NEXT:
         {
-            u8 const nbTurns = settings_get_nb_turns();
-            u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
-            enum GameExperience gameExperience = settings_get_game_experience();
-            new_game( nbTurns, nbPiecesPerTurn, gameExperience );
-            return RequestStatus_TREATED;
+            if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPiecesPerTurn )
+            {
+                s_mastermind.selectionBarIdx += 1;
+                // TODO Event
+                return RequestStatus_TREATED;
+            }
+            break;
+        }
+        case RequestType_PREVIOUS:
+        {
+            if ( s_mastermind.selectionBarIdx > 0 )
+            {
+                s_mastermind.selectionBarIdx -= 1;
+                // TODO Event
+                return RequestStatus_TREATED;
+            }
+            break;
         }
     }
 

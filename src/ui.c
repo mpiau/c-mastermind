@@ -104,7 +104,7 @@ static void button_draw_internal( u64 const id )
 
 
 
-u64 uibutton_register( utf16 const *text, screenpos const pos, vec2u16 const size, enum KeyBinding keybinding, OnPressedCb onPressedCb, bool active )
+u64 uibutton_register( utf16 const *text, screenpos const pos, vec2u16 const size, enum KeyBinding keybinding, OnButtonTriggerCb onPressedCb, bool active )
 {
     struct UIObj *obj = register_object( UIObjType_BUTTON );
     if ( !obj ) return S_INVALID_ID;
@@ -116,14 +116,14 @@ u64 uibutton_register( utf16 const *text, screenpos const pos, vec2u16 const siz
         .shown = false,
         .text = text,
         .keybinding = keybinding,
-        .onPressedCb = onPressedCb,
+        .onTriggerCb = onPressedCb,
         .rect = rect_make( pos, size )
     };
     return obj->id;
 }
 
 
-bool uibutton_check_pressed( u64 const id, enum KeyInput const input )
+bool uibutton_check_interaction( u64 const id, enum KeyInput const input )
 {
     struct UIButton *button = get_button_by_id( id );
     if ( !button || !button->active ) return false;
@@ -131,11 +131,14 @@ bool uibutton_check_pressed( u64 const id, enum KeyInput const input )
     enum KeyInput const keybind = keybinding_get_binded_key( button->keybinding );
     assert( keybind != KeyInput_INVALID );
 
-    if ( ( input == KeyInput_MOUSE_BTN_LEFT && s_activeHoveredId == id ) || input == keybind )
+    bool const pressed = ( input == keybind );
+    bool const clicked = ( input == KeyInput_MOUSE_BTN_LEFT && s_activeHoveredId == id );
+
+    if ( pressed || clicked )
     {
-        if ( button->onPressedCb )
+        if ( button->onTriggerCb )
         {
-            button->onPressedCb();
+            button->onTriggerCb( clicked );
         }
         return true;
     }
@@ -153,12 +156,14 @@ bool uibutton_is_active( u64 const id )
 void uibutton_activate( u64 const id )
 {
     get_button_by_id( id )->active = true;
+    button_draw_internal( id );
 }
 
 
 void uibutton_desactivate( u64 const id )
 {
     get_button_by_id( id )->active = false;
+    button_draw_internal( id );
 }
 
 

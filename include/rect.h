@@ -29,3 +29,5 @@ bool rect_is_inside( struct Rect const *rect, screenpos pos );
 
 void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle );
 void rect_clear( struct Rect const *rect );
+void rect_clear_content( struct Rect const *rect );
+void rect_clear_borders( struct Rect const *rect );

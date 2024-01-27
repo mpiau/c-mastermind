@@ -144,3 +144,34 @@ void rect_clear( struct Rect const *rect )
 		term_write( L"%*lc", rect->size.w, L' ' );
     }
 }
+
+
+void rect_clear_content( struct Rect const *rect )
+{
+	screenpos const ul = rect_get_ul_corner( rect );
+    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    {
+        cursor_update_yx( ul.y + y, ul.x + 1 );
+		term_write( L"%*lc", rect->size.w - 2, L' ' );
+    }
+}
+
+
+void rect_clear_borders( struct Rect const *rect )
+{
+	screenpos const ul = rect_get_ul_corner( rect );
+
+	cursor_update_yx( ul.y, ul.x );
+	term_write( L"%*lc", rect->size.w, L' ' );
+
+    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    {
+        cursor_update_yx( ul.y + y, ul.x );
+		term_write( L" " );
+		cursor_move_right_by( rect->size.w - 2 );
+		term_write( L" " );
+    }	
+
+	cursor_update_yx( ul.y + rect->size.h, ul.x );
+	term_write( L"%*lc", rect->size.w, L' ' );
+}

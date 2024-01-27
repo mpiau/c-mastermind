@@ -21,6 +21,9 @@ enum KeyInput keybinding_get_binded_key( enum KeyBinding keybinding )
         case KeyBinding_PEG_BLUE:           return KeyInput_6;
         case KeyBinding_PEG_WHITE:          return KeyInput_7;
 
+        case KeyBinding_PREVIOUS:           return KeyInput_ARROW_LEFT;
+        case KeyBinding_NEXT:               return KeyInput_ARROW_RIGHT;
+
         default:                            return KeyInput_INVALID;
     }
 }

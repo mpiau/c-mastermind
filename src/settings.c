@@ -10,6 +10,7 @@ struct Settings
     usize gameNbPiecesPerTurn;
     enum GameExperience gameExperience;
     bool colorBlindMode;
+    bool duplicateAllowed;
 };
 
 struct Settings s_settings = {};
@@ -26,6 +27,7 @@ bool settings_init( void )
     result &= settings_set_nb_pieces_per_turn( 4 );
     result &= settings_set_game_experience( GameExperience_NORMAL );
     result &= settings_set_color_blind_mode( false );
+    result &= settings_set_duplicate_allowed( false );
 
     assert( result );
     return result;
@@ -66,6 +68,13 @@ bool settings_set_color_blind_mode( bool enabled )
     return true;
 }
 
+bool settings_set_duplicate_allowed( bool allowed )
+{
+    s_settings.duplicateAllowed = allowed;
+    return true;
+}
+
+
 // 
 
 usize settings_get_nb_turns( void )
@@ -87,4 +96,10 @@ enum GameExperience settings_get_game_experience( void )
 bool settings_is_color_blind_mode_enabled( void )
 {
     return s_settings.colorBlindMode;
+}
+
+
+bool settings_is_duplicate_allowed( void )
+{
+    return s_settings.duplicateAllowed;
 }

@@ -143,7 +143,7 @@ static void event_received_callback( struct ComponentHeader *header, enum EventT
 {
 	struct ComponentSummary *comp = CAST_TO_COMP( header );
 
-	if ( event == EventType_NEW_GAME )
+	if ( event == EventType_GAME_NEW )
 	{
 		set_component_data( comp );
 		write_board_content( comp );
