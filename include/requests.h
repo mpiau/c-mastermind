@@ -32,12 +32,7 @@ enum RequestStatus
     RequestStatus_TREATED
 };
 
-struct RequestPegSelect
-{
-    gamepiece piece;
-};
-
-struct RequestPegAdd
+struct RequestPeg
 {
     gamepiece piece;
 };
@@ -47,8 +42,7 @@ struct Request
     enum RequestType type;
     union
     {
-        struct RequestPegSelect pegSelect;
-        struct RequestPegAdd pegAdd;
+        struct RequestPeg peg;
     };
 };
 

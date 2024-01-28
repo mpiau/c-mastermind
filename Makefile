@@ -39,6 +39,7 @@ SRC += src/ui/widgets/widget_game_board.c
 SRC += src/ui/widgets/widget_game_summary.c
 SRC += src/ui/widgets/widget_mousepos.c
 SRC += src/ui/widgets/widget_peg_selector.c
+SRC += src/ui/widgets/widget_peg_tracking.c
 SRC += src/ui/widgets/widget_screensize.c
 SRC += src/ui/widgets/widget_timer.c
 

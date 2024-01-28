@@ -27,6 +27,7 @@ struct Mastermind
     u8 currentTurn;
     u8 selectionBarIdx;
     enum GameStatus gameStatus;
+    gamepiece selected;
 };
 
 
@@ -258,6 +259,7 @@ static enum RequestStatus on_request_start_new_game( void )
 
     // Game logic
     s_mastermind.currentTurn = 1;
+    s_mastermind.selected = PieceFlag_EMPTY;
     s_mastermind.selectionBarIdx = 0;
     s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
 
@@ -328,6 +330,24 @@ static enum RequestStatus on_request_add_peg( gamepiece const pieceColor )
 }
 
 
+static enum RequestStatus on_request_select_peg( gamepiece const pieceColor )
+{
+    struct Event const event = EVENT_PEG( EventType_PEG_SELECTED, s_mastermind.currentTurn, s_mastermind.selectionBarIdx, pieceColor );
+    event_trigger( &event );
+
+    return RequestStatus_TREATED;
+}
+
+
+static enum RequestStatus on_request_unselect_peg( gamepiece const pieceColor )
+{
+    struct Event const event = EVENT_PEG( EventType_PEG_UNSELECTED, s_mastermind.currentTurn, s_mastermind.selectionBarIdx, pieceColor );
+    event_trigger( &event );
+
+    return RequestStatus_TREATED;
+}
+
+
 static enum RequestStatus on_request_reset_turn( void )
 {
     for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
@@ -374,101 +394,6 @@ static enum RequestStatus on_request_confirm_turn( void )
 
     return RequestStatus_TREATED;
 }
-
-/*bool mastermind_try_consume_input( enum KeyInput const input )
-{
-    switch( input )
-    {
-        case KeyInput_SPACE:
-        {
-            u8 const nbTurns = settings_get_nb_turns();
-            u8 const nbPiecesPerTurn = settings_get_nb_pieces_per_turn();
-            enum GameExperience gameExperience = settings_get_game_experience();
-            new_game( nbTurns, nbPiecesPerTurn, gameExperience );
-            return true;
-        }
-        case KeyInput_Q:
-        {
-            abandon_game();
-            return true;
-        }
-        case KeyInput_R:
-        {
-            reset_pegs_row( s_mastermind.pegs[s_mastermind.currentTurn - 1], s_mastermind.currentTurn );
-            //emit_game_update( GameUpdateType_TURN_RESET );
-            return true;
-        }
-        case KeyInput_ENTER:
-        {
-            if ( !is_current_turn_valid() ) return true;
-
-            generate_feedback_on_current_turn();
-
-            if ( is_current_turn_match_solution() )
-            {
-                s_mastermind.gameStatus = GameStatus_WON;
-                show_solution();
-                gameloop_emit_event( EventType_GAME_WON, NULL );
-            }
-            else if ( s_mastermind.currentTurn == s_mastermind.nbTurns )
-            {
-                s_mastermind.gameStatus = GameStatus_LOST;
-                show_solution();
-                gameloop_emit_event( EventType_GAME_LOST, NULL );
-            }
-            else
-            {
-                next_turn();
-                gameloop_emit_event( EventType_NEXT_TURN, NULL );
-            }
-            return true;
-        }
-        case KeyInput_ARROW_LEFT:
-        {
-            if ( s_mastermind.selectionBarIdx > 0 )
-            {
-                s_mastermind.selectionBarIdx -= 1;
-                //emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
-                // EventType_HOVERED_PEG ?
-            }
-            return true;
-        }
-        case KeyInput_ARROW_RIGHT:
-        {
-            if ( s_mastermind.selectionBarIdx + 1 < s_mastermind.nbPiecesPerTurn )
-            {
-                s_mastermind.selectionBarIdx += 1;
-                //emit_game_update( GameUpdateType_SELECTION_BAR_MOVED );
-            }
-            return true;
-        }
-
-        case KeyInput_NUMPAD_0 ... KeyInput_NUMPAD_8:
-        {
-            gamepiece const piece = ( input - KeyInput_NUMPAD_0 ) | Piece_TypePeg | PieceTurn_CURRENT;
-            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
-            gameloop_emit_event( EventType_PEG_ADDED );
-            return true;
-        }
-        case KeyInput_0 ... KeyInput_7:
-        {
-            // check first if the peg added is the same or not as before.
-            gamepiece const piece = ( input - KeyInput_0 ) | Piece_TypePeg | PieceTurn_CURRENT;
-            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
-            gameloop_emit_event( EventType_PEG_ADDED, NULL );
-            return true;
-        }
-        case KeyInput_BACKSPACE:
-        {
-            // Check first if the peg added is already empty
-            enum PieceTurn const turnStatus = piece_turn_status( s_mastermind.currentTurn );
-            s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = Piece_TypePeg | PieceFlag_EMPTY | turnStatus;
-            gameloop_emit_event( EventType_PEG_REMOVED, NULL );
-            return true;
-        }
-    }
-    return false;
-}*/
 
 
 usize mastermind_get_total_turns( void )
@@ -542,12 +467,10 @@ enum RequestStatus mastermind_on_request( struct Request const *req )
         case RequestType_START_NEW_GAME: return on_request_start_new_game();
         case RequestType_ABANDON_GAME:   return on_request_abandon_game();
 
-        case RequestType_PEG_SELECT:
-        { /* TODO */ }
-        case RequestType_PEG_UNSELECT:
-        { /* TODO */ }
+        case RequestType_PEG_SELECT: return on_request_select_peg( req->peg.piece );
+        case RequestType_PEG_UNSELECT: return on_request_unselect_peg( req->peg.piece );
 
-        case RequestType_PEG_ADD: return on_request_add_peg( req->pegAdd.piece );
+        case RequestType_PEG_ADD: return on_request_add_peg( req->peg.piece );
         case RequestType_PEG_REMOVE: return on_request_remove_peg( s_mastermind.currentTurn, s_mastermind.selectionBarIdx );
 
         case RequestType_RESET_TURN: return on_request_reset_turn();

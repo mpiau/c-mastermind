@@ -38,26 +38,12 @@ struct WidgetPegSelector
 
 static void create_peg_request( gamepiece const piece, bool const clicked )
 {
-    struct Request req;
-    if ( clicked )
-    {
-        req = (struct Request) {
-            .type = RequestType_PEG_SELECT,
-            .pegSelect = (struct RequestPegSelect) {
-                .piece = piece
-            }
-        };
-    }
-    else
-    {
-        req = (struct Request) {
-            .type = RequestType_PEG_ADD,
-            .pegAdd = (struct RequestPegAdd) {
-                .piece = piece
-            }
-        };
-    }
-
+    struct Request req = (struct Request) {
+        .type = clicked ? RequestType_PEG_SELECT : RequestType_PEG_ADD,
+        .peg = (struct RequestPeg) {
+            .piece = piece
+        }
+    };
     request_send( &req );
 }
 
@@ -129,6 +115,17 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         }
         case EventType_USER_INPUT:
         {
+            if ( event->userInput.input == KeyInput_MOUSE_BTN_RIGHT )
+            {
+                struct Request req = (struct Request) {
+                    .type = RequestType_PEG_UNSELECT,
+                    .peg = (struct RequestPeg) {
+                        .piece = PieceFlag_EMPTY
+                    }
+                };
+                request_send( &req );
+                return EventPropagation_STOP;
+            }
             for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
             {
                 if ( uibutton_check_interaction( widget->buttons[idx], event->userInput.input ) )

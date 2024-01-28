@@ -28,3 +28,4 @@ struct Widget *widget_game_summary_create( void );
 struct Widget *widget_timer_create( void );
 struct Widget *widget_peg_selector_create( void );
 struct Widget *widget_game_board_create( void );
+struct Widget *widget_peg_tracking_create( void );

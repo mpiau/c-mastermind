@@ -15,6 +15,7 @@ enum WidgetId
     WidgetId_TIMER,
     WidgetId_PEG_SELECTOR,
     WidgetId_GAME_BOARD,
+    WidgetId_PEG_TRACKING,
 
     WidgetId_Count
 };
@@ -50,6 +51,7 @@ bool ui_init( void )
     init_widget( WidgetId_TIMER, widget_timer_create );
     init_widget( WidgetId_PEG_SELECTOR, widget_peg_selector_create );
     init_widget( WidgetId_GAME_BOARD, widget_game_board_create );
+    init_widget( WidgetId_PEG_TRACKING, widget_peg_tracking_create );
 
     return true;
 }
