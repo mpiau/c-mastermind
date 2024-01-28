@@ -52,20 +52,26 @@ static enum PieceTurn piece_turn_status( usize turn )
 
 static void reset_pegs_row( byte *const pegs, usize const turn )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         enum PieceTurn const turnStatus = piece_turn_status( turn );
         pegs[idx] = Piece_TypePeg | PieceFlag_EMPTY | turnStatus;
+
+        struct Event const event = EVENT_PEG( EventType_PEG_REMOVED, turn, idx, pegs[idx] );
+        event_trigger( &event );
     }
 }
 
 
 static void reset_pins_row( byte *const pins, usize const turn )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         enum PieceTurn const turnStatus = piece_turn_status( turn );
         pins[idx] = Piece_TypePin | PieceFlag_EMPTY | turnStatus;
+
+//        struct Event const event = EVENT_PEG( EventType_PIN_REMOVED, turn, idx, pegs[idx] );
+//        event_trigger( &event );
     }
 }
 
@@ -76,7 +82,7 @@ static void generate_new_solution( byte *const pegs )
     // So this generation is explicitly checking to have unique pegs in the generated solution.
     bool pegsUsed[Mastermind_NB_COLORS] = {};
 
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         do
 		{
@@ -90,18 +96,28 @@ static void generate_new_solution( byte *const pegs )
 
 static void hide_solution( void )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
-        s_mastermind.solution[idx] |= PieceFlag_SECRET;
+        if ( ( s_mastermind.solution[idx] & PieceFlag_SECRET ) == 0 )
+        {
+            s_mastermind.solution[idx] |= PieceFlag_SECRET;
+            struct Event const event = EVENT_PEG( EventType_PEG_HIDDEN, Mastermind_SOLUTION_TURN, idx, s_mastermind.solution[idx] );
+            event_trigger( &event );
+        }
     }
 }
 
 
-static void show_solution( void )
+static void reveal_solution( void )
 {
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
+    for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
-        s_mastermind.solution[idx] &= ~PieceFlag_SECRET;
+        if ( s_mastermind.solution[idx] & PieceFlag_SECRET )
+        {
+            s_mastermind.solution[idx] &= ~PieceFlag_SECRET;
+            struct Event const event = EVENT_PEG( EventType_PEG_REVEALED, Mastermind_SOLUTION_TURN, idx, s_mastermind.solution[idx] );
+            event_trigger( &event );
+        }
     }
 }
 
@@ -210,8 +226,8 @@ static enum RequestStatus on_request_abandon_game( void )
 {
     if ( s_mastermind.gameStatus == GameStatus_IN_PROGRESS )
     {
+        reveal_solution();
         s_mastermind.gameStatus = GameStatus_LOST;
-        show_solution();
         // Emit a show solution event
         struct Event const event = (struct Event) {
             .type = EventType_GAME_LOST
@@ -239,25 +255,20 @@ static enum RequestStatus on_request_start_new_game( void )
     s_mastermind.selectionBarIdx = 0;
     s_mastermind.gameStatus = GameStatus_IN_PROGRESS;
 
+    ui_change_scene( UIScene_IN_GAME );
+
+    struct Event const event = EVENT_GAME_NEW( s_mastermind.nbTurns, s_mastermind.nbPiecesPerTurn );
+    event_trigger( &event );
+
     // Game data
     for ( int idx = 0; idx < Mastermind_MAX_TURNS; ++idx )
     {
         reset_pegs_row( s_mastermind.pegs[idx], idx + 1 );
         reset_pins_row( s_mastermind.pins[idx], idx + 1 );
     }
+
     generate_new_solution( s_mastermind.solution );
     hide_solution();
-
-    ui_change_scene( UIScene_IN_GAME );
-
-    struct Event event = (struct Event) {
-        .type = EventType_GAME_NEW,
-        .newGame = (struct EventGameNew) {
-            .nbTurns = s_mastermind.nbTurns,
-            .nbPegsPerTurn = s_mastermind.nbPiecesPerTurn
-        }
-    };
-    event_trigger( &event );
 
     return RequestStatus_TREATED;
 }
@@ -265,20 +276,16 @@ static enum RequestStatus on_request_start_new_game( void )
 
 static enum RequestStatus on_request_remove_peg( usize const turn, usize const idx )
 {
-    gamepiece const piece = s_mastermind.pegs[turn - 1][idx];
+    gamepiece piece = s_mastermind.pegs[turn - 1][idx];
     if ( piece & PieceFlag_EMPTY ) return RequestStatus_SKIPPED;
 
-    s_mastermind.pegs[turn - 1][idx] |= PieceFlag_EMPTY;
+    piece |= PieceFlag_EMPTY;
 
-    struct Event event = (struct Event) {
-        .type = EventType_PEG_REMOVED,
-        .pegRemoved = (struct EventPegRemoved) {
-            .index = idx,
-            .turn = turn,
-            .piece = s_mastermind.pegs[turn - 1][idx]
-        }
-    };
+    s_mastermind.pegs[turn - 1][idx] = piece;
+
+    struct Event const event = EVENT_PEG( EventType_PEG_REMOVED, turn, idx, piece );
     event_trigger( &event );
+
     return RequestStatus_TREATED;
 }
 
@@ -286,31 +293,25 @@ static enum RequestStatus on_request_remove_peg( usize const turn, usize const i
 static enum RequestStatus on_request_add_peg( gamepiece const pieceColor )
 {
     gamepiece piece = s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx];
-    if ( ( piece & PieceFlag_EMPTY ) == 0 )
+    if ( !( piece & PieceFlag_EMPTY ) )
     {
         on_request_remove_peg( s_mastermind.currentTurn, s_mastermind.selectionBarIdx );
     }
 
-    piece = pieceColor | Piece_TypePeg | PieceTurn_CURRENT;
+    piece &= ~( Piece_MaskColor | PieceFlag_EMPTY );
+    piece |= pieceColor;
+
     s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx] = piece;
 
-    struct Event event = (struct Event) {
-        .type = EventType_PEG_ADDED,
-        .pegAdded = (struct EventPegAdded) {
-            .index = s_mastermind.selectionBarIdx,
-            .turn = s_mastermind.currentTurn,
-            .piece = piece
-        }
-    };
+    struct Event const event = EVENT_PEG( EventType_PEG_ADDED, s_mastermind.currentTurn, s_mastermind.selectionBarIdx, piece );
     event_trigger( &event );
+
     return RequestStatus_TREATED;
 }
 
 
 static enum RequestStatus on_request_reset_turn( void )
 {
-    gamepiece const *pegsTurn = mastermind_get_pegs_at_turn( s_mastermind.currentTurn );
-
     for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
         on_request_remove_peg( s_mastermind.currentTurn, idx );

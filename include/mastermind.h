@@ -16,7 +16,9 @@ enum // Constants
 
     Mastermind_NB_COLORS = ( Piece_MaskColor + 1 ), // 4 to 8 ? We would need to handle duplicate pegs. (could be an option as well)
 
-    Mastermind_MAX_CALLBACKS = 4
+    Mastermind_MAX_CALLBACKS = 4,
+
+    Mastermind_SOLUTION_TURN = 0
 };
 
 enum GameStatus

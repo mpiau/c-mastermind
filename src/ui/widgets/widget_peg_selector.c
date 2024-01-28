@@ -142,7 +142,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         {
             if ( !settings_is_duplicate_allowed() )
             {
-                enum Piece const idx = event->pegAdded.piece & Piece_MaskColor;
+                enum Piece const idx = ( event->peg.piece & Piece_MaskColor );
                 uibutton_desactivate( widget->buttons[idx] );
             }
             break;
@@ -151,7 +151,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         {
             if ( !settings_is_duplicate_allowed() )
             {
-                enum Piece const idx = event->pegRemoved.piece & Piece_MaskColor;
+                enum Piece const idx = ( event->peg.piece & Piece_MaskColor );
                 uibutton_activate( widget->buttons[idx] );
             }
             break;

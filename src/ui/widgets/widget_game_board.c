@@ -130,6 +130,13 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
                 };
                 request_send( &req );
             }
+            else if ( event->userInput.input == keybinding_get_binded_key( KeyBinding_CLEAR_PEG ) )
+            {
+                struct Request req = (struct Request) {
+                    .type = RequestType_PEG_REMOVE
+                };
+                request_send( &req );
+            }
 
             break;
         }

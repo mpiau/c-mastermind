@@ -22,6 +22,8 @@ enum KeyBinding
     KeyBinding_PEG_BLUE,
     KeyBinding_PEG_WHITE,
 
+    KeyBinding_CLEAR_PEG,
+
     KeyBinding_PREVIOUS,
     KeyBinding_NEXT,
 

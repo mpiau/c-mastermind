@@ -75,7 +75,7 @@ static void consume_recorded_input( INPUT_RECORD const *const recordedInput )
 				{
 					input = key_input_from_numpad_to_number( input );
 				}
-				struct Event event = EVENT_INPUT( input );
+				struct Event const event = EVENT_INPUT( input );
 				event_trigger( &event );
 			}
 			break;
