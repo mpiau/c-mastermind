@@ -17,13 +17,17 @@ enum KeyBinding
     KeyBinding_PEG_RED,
     KeyBinding_PEG_GREEN,
     KeyBinding_PEG_YELLOW,
-    KeyBinding_PEG_CYAN,
-    KeyBinding_PEG_MAGENTA,
     KeyBinding_PEG_BLUE,
+    KeyBinding_PEG_MAGENTA,
+    KeyBinding_PEG_CYAN,
     KeyBinding_PEG_WHITE,
+
 
     KeyBinding_CLEAR_PEG,
 
+    KeyBinding_HISTORY_UP,
+    KeyBinding_HISTORY_DOWN,
+    
     KeyBinding_PREVIOUS,
     KeyBinding_NEXT,
 

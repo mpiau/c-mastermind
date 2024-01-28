@@ -16,12 +16,15 @@ enum KeyInput keybinding_get_binded_key( enum KeyBinding keybinding )
         case KeyBinding_PEG_RED:            return KeyInput_1;
         case KeyBinding_PEG_GREEN:          return KeyInput_2;
         case KeyBinding_PEG_YELLOW:         return KeyInput_3;
-        case KeyBinding_PEG_CYAN:           return KeyInput_4;
+        case KeyBinding_PEG_BLUE:           return KeyInput_4;
         case KeyBinding_PEG_MAGENTA:        return KeyInput_5;
-        case KeyBinding_PEG_BLUE:           return KeyInput_6;
+        case KeyBinding_PEG_CYAN:           return KeyInput_6;
         case KeyBinding_PEG_WHITE:          return KeyInput_7;
 
         case KeyBinding_CLEAR_PEG:          return KeyInput_BACKSPACE;
+
+        case KeyBinding_HISTORY_UP:         return KeyInput_ARROW_UP;
+        case KeyBinding_HISTORY_DOWN:       return KeyInput_ARROW_DOWN;
 
         case KeyBinding_PREVIOUS:           return KeyInput_ARROW_LEFT;
         case KeyBinding_NEXT:               return KeyInput_ARROW_RIGHT;

@@ -27,8 +27,8 @@ enum ButtonIdx
 struct BoardRow
 {
 	u8 displayedTurn;
-	struct Rect pegsPos[Mastermind_MAX_PIECES_PER_TURN];
-	screenpos pinsPos[Mastermind_MAX_PIECES_PER_TURN];
+	struct Rect pegs[Mastermind_MAX_PIECES_PER_TURN];
+	screenpos pins[Mastermind_MAX_PIECES_PER_TURN];
 	screenpos turnPos;
 	u8 activeHoveredPegIdx;
 };
@@ -469,13 +469,13 @@ static void check_peg_hovered( struct ComponentBoard *comp, struct BoardRow *row
 {
 	for ( usize idx = 0; idx < comp->nbPiecesPerTurn; ++idx )
 	{
-		struct Rect *rect = &row->pegsPos[idx];
+		struct Rect *rect = &row->pegs[idx];
 		if ( rect_is_inside( rect, pos ) )
 		{
 			if ( row->activeHoveredPegIdx == idx ) return;
 			if ( row->activeHoveredPegIdx != S_INVALID_IDX )
 			{
-				screenpos const ulOldHovered = rect_get_ul_corner( &row->pegsPos[row->activeHoveredPegIdx] );
+				screenpos const ulOldHovered = rect_get_ul_corner( &row->pegs[row->activeHoveredPegIdx] );
 				piece_write_6x3( ulOldHovered, mastermind_get_peg( row->displayedTurn, row->activeHoveredPegIdx ), false );
 			}
 			row->activeHoveredPegIdx = idx;
@@ -487,7 +487,7 @@ static void check_peg_hovered( struct ComponentBoard *comp, struct BoardRow *row
 	// In case no peg is being hovered, but one is marked as hovered.
 	if ( row->activeHoveredPegIdx != S_INVALID_IDX )
 	{
-		struct Rect *rect = &row->pegsPos[row->activeHoveredPegIdx];
+		struct Rect *rect = &row->pegs[row->activeHoveredPegIdx];
 		screenpos ul = rect_get_ul_corner( rect );
 
 		piece_write_6x3( ul, mastermind_get_peg( row->displayedTurn, row->activeHoveredPegIdx ), false );

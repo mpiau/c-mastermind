@@ -12,10 +12,10 @@ struct WidgetGameSummary
 {
     struct Widget base;
 
+   	// Component Specific Data
     usize nbPegsPerTurn;
     usize nbTurns;
 
-   	// Component Specific Data
 	struct Rect box;
 	screenpos firstPegsRowUL;
 	screenpos firstTurnRowUL;
@@ -100,9 +100,9 @@ static void draw_solution( struct WidgetGameSummary *widget, gamepiece const *so
 
 static void draw_turn_at( struct WidgetGameSummary *widget, usize const turn )
 {
-    	screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + turn - 1 );
-    	cursor_update_pos( ul );
-	    term_write( L"%02u", turn );
+    screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + turn - 1 );
+    cursor_update_pos( ul );
+	term_write( L"%02u", turn );
 }
 
 

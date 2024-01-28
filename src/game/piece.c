@@ -205,6 +205,14 @@ void piece_write_4x2( screenpos const pos, gamepiece const piece )
     style_update( generate_style( piece, false ) );
     cursor_update_yx( pos.y, pos.x );
 
+    if ( is_pin( piece ) && ( ( piece & Piece_MaskAll ) == Piece_PIN_INCORRECT ) )
+    {
+        term_write( L"    " );
+	    cursor_update_yx( pos.y + 1, pos.x );
+        term_write( L"    " );
+        return;
+    }
+
     if ( is_empty( piece ) )
     {
     	term_write( L".''." );

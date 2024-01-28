@@ -24,7 +24,7 @@ bool settings_init( void )
     bool result = true;
 
     result &= settings_set_nb_turns( Mastermind_MAX_TURNS );
-    result &= settings_set_nb_pieces_per_turn( 4 );
+    result &= settings_set_nb_pieces_per_turn( 6 );
     result &= settings_set_game_experience( GameExperience_NORMAL );
     result &= settings_set_color_blind_mode( false );
     result &= settings_set_duplicate_allowed( false );

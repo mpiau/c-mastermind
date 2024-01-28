@@ -20,6 +20,12 @@ static void enable_callback( struct Widget *base )
 {
     struct WidgetFramerate *widget = (struct WidgetFramerate *)base;
 
+    screenpos ul = rect_get_ul_corner( &widget->rect );
+    ul.x += 3;
+    cursor_update_pos( ul );
+    style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
+    term_write( L"FPS" );
+
     widget->lastAverageFPS = 0;
 }
 
@@ -41,7 +47,7 @@ static void frame_callback( struct Widget *base )
     {
         cursor_update_pos( rect_get_ul_corner( &widget->rect ) );
         style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-        term_write( L"%3uFPS", lastAverageFPS );
+        term_write( L"%3u", lastAverageFPS );
 
         widget->lastAverageFPS = lastAverageFPS;
     }

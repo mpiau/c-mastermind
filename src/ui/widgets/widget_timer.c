@@ -161,5 +161,5 @@ struct Widget *widget_timer_create( void )
     event_register( widget, on_event_callback );
     event_subscribe( widget, EventType_GAME_NEW | EventType_GAME_LOST | EventType_GAME_WON );
 
-    return (struct Widget *)widget;    
+    return (struct Widget *)widget;
 }
