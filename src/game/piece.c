@@ -157,7 +157,7 @@ static termcolor get_piece_color( gamepiece const piece )
 static struct Style generate_style( gamepiece const piece, bool const hovered )
 {
     termcolor color = get_piece_color( piece );
-    enum Attr const attr = is_future_turn( piece ) || ( piece & PieceFlag_EMPTY ) ? Attr_FAINT : Attr_NONE;
+    enum Attr const attr = /*is_future_turn( piece ) ||*/ ( piece & PieceFlag_EMPTY ) ? Attr_FAINT : Attr_NONE;
 
     if ( piece & PieceFlag_SECRET || piece & PieceFlag_EMPTY )
     {
@@ -177,7 +177,7 @@ void piece_write_1x1( screenpos const pos, gamepiece const piece )
     style_update( generate_style( piece, false ) );
     cursor_update_yx( pos.y, pos.x );
 
-    if ( is_pin( piece ) && ( is_future_turn( piece ) || is_current_turn( piece ) ) )
+    if ( is_pin( piece ) && ( ( piece & Piece_MaskAll ) == Piece_PIN_INCORRECT ) )
     {
         term_write( L" " );
         return;

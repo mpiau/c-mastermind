@@ -153,7 +153,7 @@ static void event_received_callback( struct ComponentHeader *header, enum EventT
 		draw_pins_at_turn( comp, mastermind_get_player_turn() );
 		write_solution( comp );
 	}
-	else if ( event == EventType_NEXT_TURN )
+	else if ( event == EventType_NEW_TURN )
 	{
 		usize const currTurn = mastermind_get_player_turn();
 		write_turn( comp, currTurn - 1 );

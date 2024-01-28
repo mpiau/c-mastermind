@@ -14,7 +14,6 @@ struct WidgetGameSummary
 
     usize nbPegsPerTurn;
     usize nbTurns;
-    usize currTurn;
 
    	// Component Specific Data
 	struct Rect box;
@@ -31,7 +30,6 @@ static void init_widget_data( struct WidgetGameSummary *widget )
 	usize const spacesBeforeSolution = ( widget->box.size.w - 11 ) / 2;
     screenpos const boxUL = rect_get_ul_corner( &widget->box );
 
-    widget->currTurn = 1;
 	widget->firstPegsRowUL = SCREENPOS( boxUL.x + 2 + nbMissingPieces, boxUL.y + 1 );
 	widget->firstTurnRowUL = SCREENPOS( widget->firstPegsRowUL.x + 12 - nbMissingPieces, boxUL.y + 1 );
 	widget->firstPinsRowUL = SCREENPOS( widget->firstTurnRowUL.x + 3 + nbMissingPieces / 2, boxUL.y + 1 );
@@ -49,7 +47,7 @@ static void draw_peg_at( struct WidgetGameSummary const *widget, usize const tur
 }
 
 
-static void draw_current_turn_nb_at( struct WidgetGameSummary *widget, usize const turn )
+/*static void draw_current_turn_nb_at( struct WidgetGameSummary *widget, usize const turn )
 {
     if ( widget->currTurn > turn )
     {
@@ -67,18 +65,15 @@ static void draw_current_turn_nb_at( struct WidgetGameSummary *widget, usize con
 	screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + ( turn - 1 ) );
 	cursor_update_pos( ul );
 	term_write( L"%02u", turn );
-}
+}*/
 
 
-static void draw_pins_at_turn( struct WidgetGameSummary *widget, usize const turn )
+static void draw_pin_at( struct WidgetGameSummary *widget, usize const turn, usize const index, gamepiece const piece )
 {
 	screenpos ul = SCREENPOS( widget->firstPinsRowUL.x, widget->firstPinsRowUL.y + ( turn - 1 ) );
+    ul.x += ( index * 1 );
 
-	for ( usize idx = 0; idx < widget->nbPegsPerTurn; ++idx )
-	{
-		piece_write_1x1( ul, mastermind_get_pin( turn, idx ) );
-		ul.x += 1;
-	}
+	piece_write_1x1( ul, piece );
 }
 
 
@@ -103,11 +98,20 @@ static void draw_solution( struct WidgetGameSummary *widget, gamepiece const *so
 }
 
 
-static void draw_summary( struct WidgetGameSummary *widget )
+static void draw_turn_at( struct WidgetGameSummary *widget, usize const turn )
 {
+    	screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + turn - 1 );
+    	cursor_update_pos( ul );
+	    term_write( L"%02u", turn );
+}
+
+
+static void draw_turns( struct WidgetGameSummary *widget )
+{
+    style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
     for ( int y = 0; y < widget->nbTurns; ++y )
     {
-    	draw_current_turn_nb_at( widget, y + 1 );
+        draw_turn_at( widget, y + 1 );
     }
 }
 
@@ -127,7 +131,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
                 widget->nbTurns = event->newGame.nbTurns;
             }
             init_widget_data( widget );
-            draw_summary( widget );
+            draw_turns( widget );
             break;
         }
 
@@ -148,7 +152,26 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             break;
         }
 
-//        case EventType_PIN_ADDED:
+        case EventType_PIN_ADDED:
+        case EventType_PIN_REMOVED:
+        {
+            struct EventPin const *evPin = &event->pin;
+            draw_pin_at( widget, evPin->turn, evPin->index, evPin->piece );
+            break;
+        }
+
+        case EventType_NEW_TURN:
+        {
+            usize newTurn = event->newTurn.turn;
+            if ( newTurn > 1 )
+            {
+                style_update( STYLE( FGColor_WHITE ) );
+                draw_turn_at( widget, newTurn - 1 );
+            }
+            style_update( STYLE( FGColor_YELLOW ) );
+            draw_turn_at( widget, newTurn );
+            break;
+        }
 
     // turn next / reset
     };

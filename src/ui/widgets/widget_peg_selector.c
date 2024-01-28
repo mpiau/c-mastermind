@@ -156,6 +156,26 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             }
             break;
         }
+
+        case EventType_NEW_TURN:
+        case EventType_GAME_NEW:
+        {
+           	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+        	{
+    		    uibutton_activate( widget->buttons[idx] );
+            }
+            break;
+        }
+
+        case EventType_GAME_LOST:
+        case EventType_GAME_WON:
+        {
+           	for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
+        	{
+    		    uibutton_desactivate( widget->buttons[idx] );
+            }
+            break;
+        }
     }
 
     return EventPropagation_CONTINUE;

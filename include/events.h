@@ -17,14 +17,14 @@ enum EventType
     EventType_PEG_REMOVED       = 0b0000000100000000,
     EventType_USER_INPUT        = 0b0000001000000000,
     EventType_MOUSE_MOVED       = 0b0000010000000000,
-    EventType_NEXT_TURN         = 0b0000100000000000,
-    EventType_SOLUTION_REVEALED = 0b0001000000000000,
-    EventType_SOLUTION_HIDDEN   = 0b0010000000000000,
+    EventType_NEW_TURN          = 0b0000100000000000,
+    EventType_PIN_ADDED         = 0b0001000000000000,
+    EventType_PIN_REMOVED       = 0b0010000000000000,
     EventType_PEG_REVEALED      = 0b0100000000000000,
     EventType_PEG_HIDDEN        = 0b1000000000000000,
 
-    EventType_MaskNone        = 0b0000000000000000,
-    EventType_MaskAll         = 0b1111111111111111
+    EventType_MaskNone          = 0b0000000000000000,
+    EventType_MaskAll           = 0b1111111111111111
 };
 
 enum EventPropagation 
@@ -72,6 +72,17 @@ struct EventPeg
     gamepiece piece;
 };
 
+struct EventPin
+{
+    usize turn;
+    usize index;
+    gamepiece piece;
+};
+
+struct EventNewTurn
+{
+    usize turn;
+};
 
 struct Event
 {
@@ -79,6 +90,8 @@ struct Event
     union
     {
         struct EventPeg peg;
+        struct EventPin pin;
+        struct EventNewTurn newTurn;
         struct EventUserInput userInput;
         struct EventMouseMoved mouseMoved;
         struct EventScreenResized screenResized;
@@ -117,6 +130,15 @@ struct EventData {};
         }                                          \
     } )
 
+#define EVENT_PIN( _event, _turn, _index, _piece ) \
+    ( (struct Event) {                             \
+        .type = _event,                            \
+        .pin = (struct EventPin) {                 \
+            .turn = _turn,                         \
+            .index = _index,                       \
+            .piece = _piece                        \
+        }                                          \
+    } )
 
 typedef enum EventPropagation ( *EventTriggeredCb )( void *subscriber, struct Event const *event );
 
