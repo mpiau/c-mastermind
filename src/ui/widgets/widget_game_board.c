@@ -296,6 +296,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         {
             for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
             {
+                //check_hovered_peg( widget, event->mouseMoved.pos );
                 if ( uibutton_check_hovered( widget->buttons[idx], event->mouseMoved.pos ) )
                 {
                     break;

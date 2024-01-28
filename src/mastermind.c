@@ -313,6 +313,24 @@ static enum RequestStatus on_request_add_peg( gamepiece const pieceColor )
     if ( mastermind_is_game_finished() ) return RequestStatus_SKIPPED;
 
     gamepiece piece = s_mastermind.pegs[s_mastermind.currentTurn - 1][s_mastermind.selectionBarIdx];
+    // The peg is already on the position.
+    if ( pieceColor == ( piece & Piece_MaskColor ) ) return RequestStatus_SKIPPED;
+
+    if ( !settings_is_duplicate_allowed() )
+    {
+        for ( usize idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
+        {
+            if ( idx == s_mastermind.selectionBarIdx ) continue;
+
+            gamepiece pieceOnBoard = s_mastermind.pegs[s_mastermind.currentTurn - 1][idx];
+            if ( pieceColor == ( pieceOnBoard & Piece_MaskColor ) && !( pieceOnBoard & PieceFlag_EMPTY ) )
+            {
+                on_request_remove_peg( s_mastermind.currentTurn, idx );
+                break;
+            }
+        }
+    }
+
     if ( !( piece & PieceFlag_EMPTY ) )
     {
         on_request_remove_peg( s_mastermind.currentTurn, s_mastermind.selectionBarIdx );

@@ -137,20 +137,20 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         }
         case EventType_PEG_ADDED:
         {
-            if ( !settings_is_duplicate_allowed() )
+/*            if ( !settings_is_duplicate_allowed() )
             {
                 enum Piece const idx = ( event->peg.piece & Piece_MaskColor );
                 uibutton_desactivate( widget->buttons[idx] );
-            }
+            }*/
             break;
         }
         case EventType_PEG_REMOVED:
         {
-            if ( !settings_is_duplicate_allowed() )
+/*            if ( !settings_is_duplicate_allowed() )
             {
                 enum Piece const idx = ( event->peg.piece & Piece_MaskColor );
                 uibutton_activate( widget->buttons[idx] );
-            }
+            }*/
             break;
         }
 
