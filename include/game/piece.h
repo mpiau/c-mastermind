@@ -3,6 +3,11 @@
 #include "core/core.h"
 #include "terminal/terminal_colors.h"
 
+enum PieceId
+{
+    
+};
+
 enum Piece
 {
     Piece_PEG_BLACK   = 0b00000000,
@@ -27,16 +32,6 @@ enum Piece
     Piece_PIN_PARTIAL   = Piece_MaskType | Piece_PEG_WHITE,
     Piece_PIN_INCORRECT = Piece_MaskType | Piece_PEG_BLACK,
 
-};
-
-enum PieceTurn
-{
-    PieceTurn_IGNORE  = 0b00000000,
-    PieceTurn_PAST    = 0b00010000,
-    PieceTurn_CURRENT = 0b00100000,
-    PieceTurn_FUTURE  = 0b00110000,
-
-    PieceTurn_MaskAll = 0b00110000
 };
 
 enum PieceFlag

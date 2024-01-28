@@ -1,4 +1,4 @@
-#include "components/component_countdown.h"
+/*#include "components/component_countdown.h"
 
 #include "time_units.h"
 #include "components/component_header.h"
@@ -7,7 +7,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+*/
+/*
 
 enum CountdownStatus
 {
@@ -68,7 +69,7 @@ static void on_refresh_callback( struct ComponentHeader const *widget )
     {
         style_update( STYLE( FGColor_RED ) );
     }
-    else if ( remainingTimeNsec < ( countdown->totalDuration * 60 ) / 100 /* <40% */ )
+    else if ( remainingTimeNsec < ( countdown->totalDuration * 60 ) / 100 )
     {
         style_update( STYLE( FGColor_YELLOW ) );
     }
@@ -183,3 +184,4 @@ void widget_countdown_set_duration( struct ComponentHeader *widget, second const
 	countdown->totalDuration = time_sec_to_nsec( duration );
 }
 
+*/

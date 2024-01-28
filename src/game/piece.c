@@ -115,21 +115,6 @@ static inline bool is_empty( gamepiece const piece )
     return ( piece & PieceFlag_EMPTY );
 }
 
-static inline bool is_future_turn( gamepiece const piece )
-{
-    return ( piece & PieceTurn_MaskAll ) == PieceTurn_FUTURE;
-}
-
-static inline bool is_current_turn( gamepiece const piece )
-{
-    return ( piece & PieceTurn_MaskAll ) == PieceTurn_CURRENT;
-}
-
-static inline bool is_past_turn( gamepiece const piece )
-{
-    return ( piece & PieceTurn_MaskAll ) == PieceTurn_PAST;
-}
-
 static inline bool is_peg( gamepiece const piece )
 {
     return ( piece & Piece_MaskType ) == Piece_TypePeg;

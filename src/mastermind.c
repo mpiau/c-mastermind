@@ -3,7 +3,7 @@
 #include "characters_list.h"
 #include "keyboard_inputs.h"
 #include "settings.h"
-#include "components/components.h"
+#include "events.h"
 #include "gameloop.h"
 #include "ui/ui.h"
 
@@ -34,28 +34,10 @@ struct Mastermind
 static struct Mastermind s_mastermind = {};
 
 
-static enum PieceTurn piece_turn_status( usize turn )
-{
-    if ( turn == s_mastermind.currentTurn )
-    {
-        return PieceTurn_CURRENT;
-    }
-    else if ( turn > s_mastermind.currentTurn )
-    {
-        return PieceTurn_FUTURE;
-    }
-    else
-    {
-        return PieceTurn_PAST;
-    }
-}
-
-
 static void reset_pegs_row( byte *const pegs, usize const turn )
 {
     for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
-//        enum PieceTurn const turnStatus = piece_turn_status( turn );
         pegs[idx] = Piece_TypePeg | PieceFlag_EMPTY;// | turnStatus;
 
         struct Event const event = EVENT_PEG( EventType_PEG_REMOVED, turn, idx, pegs[idx] );
@@ -68,7 +50,6 @@ static void reset_pins_row( byte *const pins, usize const turn )
 {
     for ( int idx = 0; idx < s_mastermind.nbPiecesPerTurn; ++idx )
     {
-//        enum PieceTurn const turnStatus = piece_turn_status( turn );
         pins[idx] = Piece_TypePin | Piece_PIN_INCORRECT;// | turnStatus;
 
         struct Event const event = EVENT_PIN( EventType_PIN_REMOVED, turn, idx, pins[idx] );
@@ -204,28 +185,6 @@ static bool is_current_turn_match_solution( void )
     }
 
     return true;   
-}
-
-
-static void next_turn( void )
-{
-    gamepiece *currPeg = s_mastermind.pegs[s_mastermind.currentTurn - 1];
-    gamepiece *nextPeg = s_mastermind.pegs[s_mastermind.currentTurn];
-
-    gamepiece *currPin = s_mastermind.pins[s_mastermind.currentTurn - 1];
-    gamepiece *nextPin = s_mastermind.pins[s_mastermind.currentTurn];
-
-    for ( int idx = 0; idx < Mastermind_MAX_PIECES_PER_TURN; ++idx )
-    {
-        currPeg[idx] = ( currPeg[idx] & ~PieceTurn_MaskAll ) | PieceTurn_PAST;
-        nextPeg[idx] = ( nextPeg[idx] & ~PieceTurn_MaskAll ) | PieceTurn_CURRENT;
-
-        currPin[idx] = ( currPin[idx] & ~PieceTurn_MaskAll ) | PieceTurn_PAST;
-        nextPin[idx] = ( nextPin[idx] & ~PieceTurn_MaskAll ) | PieceTurn_CURRENT;
-    }
-
-    s_mastermind.currentTurn += 1;
-    s_mastermind.selectionBarIdx = 0;   
 }
 
 

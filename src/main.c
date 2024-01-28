@@ -12,7 +12,6 @@
 #include "events.h"
 #include "requests.h"
 
-#include "components/components.h"
 #include "terminal/terminal.h"
 
 #include <fcntl.h>
@@ -124,8 +123,6 @@ static bool consume_user_inputs( void )
 bool init_systems( void )
 {
 	bool success = true;
-
-	// TODO Needs to event_register + event_subscribe to the INPUT event for quitting the app on ESC, before the UI
 
 	success = success && random_init();
 	success = success && term_init( "Mastermind", true );
