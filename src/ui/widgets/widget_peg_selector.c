@@ -36,12 +36,12 @@ struct WidgetPegSelector
 };
 
 
-static void create_peg_request( gamepiece const piece, bool const clicked )
+static void create_peg_request( enum PegId const id, bool const clicked )
 {
     struct Request req = (struct Request) {
         .type = clicked ? RequestType_PEG_SELECT : RequestType_PEG_ADD,
         .peg = (struct RequestPeg) {
-            .piece = piece
+            .id = id
         }
     };
     request_send( &req );
@@ -50,49 +50,49 @@ static void create_peg_request( gamepiece const piece, bool const clicked )
 
 static void on_trigger_black_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_BLACK, clicked );
+    create_peg_request( PegId_BLACK, clicked );
 }
 
 
 static void on_trigger_red_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_RED, clicked );
+    create_peg_request( PegId_RED, clicked );
 }
 
 
 static void on_trigger_green_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_GREEN, clicked );
+    create_peg_request( PegId_GREEN, clicked );
 }
 
 
 static void on_trigger_yellow_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_YELLOW, clicked );
-}
-
-
-static void on_trigger_cyan_peg( bool const clicked )
-{
-    create_peg_request( Piece_PEG_CYAN, clicked );
-}
-
-
-static void on_trigger_magenta_peg( bool const clicked )
-{
-    create_peg_request( Piece_PEG_MAGENTA, clicked );
+    create_peg_request( PegId_YELLOW, clicked );
 }
 
 
 static void on_trigger_blue_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_BLUE, clicked );
+    create_peg_request( PegId_BLUE, clicked );
+}
+
+
+static void on_trigger_magenta_peg( bool const clicked )
+{
+    create_peg_request( PegId_MAGENTA, clicked );
+}
+
+
+static void on_trigger_cyan_peg( bool const clicked )
+{
+    create_peg_request( PegId_CYAN, clicked );
 }
 
 
 static void on_trigger_white_peg( bool const clicked )
 {
-    create_peg_request( Piece_PEG_WHITE, clicked );
+    create_peg_request( PegId_WHITE, clicked );
 }
 
 
@@ -120,7 +120,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
                 struct Request req = (struct Request) {
                     .type = RequestType_PEG_UNSELECT,
                     .peg = (struct RequestPeg) {
-                        .piece = PieceFlag_EMPTY
+                        .id = PegId_EMPTY
                     }
                 };
                 request_send( &req );
@@ -189,7 +189,14 @@ static void enable_callback( struct Widget *base )
 		uibutton_show( widget->buttons[idx] );
 	    screenpos ul = rect_get_ul_corner( uibutton_get_box( widget->buttons[idx] ) );
 	    ul.x += 6;
-    	piece_write_4x2( ul, (enum Piece)idx );
+        struct Piece const piece = (struct Piece) {
+            .type = PieceType_PEG,
+            .peg = (struct Peg) {
+                .hidden = false,
+                .id = (enum PegId)idx
+            }
+        };
+    	piece_write_4x2( ul, piece );
 	}    
 }
 

@@ -14,8 +14,7 @@ struct WidgetPegTracking
     struct Character charactersSave[2][4];
     struct Character pegSave[2][4];
     screenpos pos;
-    gamepiece piece;
-    bool active;
+    struct Peg peg;
 };
 
 
@@ -68,26 +67,31 @@ static void update_tracking( struct WidgetPegTracking *widget, screenpos pos )
     widget->pos = pos;
 
     save_content_at_pos( widget, true );
-    piece_write_4x2( widget->pos, widget->piece );
-}
-
-
-static void enable_tracking( struct WidgetPegTracking *widget, gamepiece piece )
-{
-    widget->pos = mouse_pos();
-    widget->piece = piece;
-    widget->active = true;
-
-    save_content_at_pos( widget, true );
-    piece_write_4x2( widget->pos, widget->piece );
-    save_content_at_pos( widget, false );
+    peg_write_4x2( widget->pos, widget->peg );
 }
 
 
 static void disable_tracking( struct WidgetPegTracking *widget )
 {
-    widget->active = false;
+    if ( widget->peg.id == PegId_EMPTY ) return;
+
+    widget->peg.id = PegId_EMPTY;
     write_saved_content_at_pos( widget );
+}
+
+
+static void enable_tracking( struct WidgetPegTracking *widget, struct Peg const peg )
+{
+    if ( widget->peg.id != PegId_EMPTY )
+    {
+        disable_tracking( widget );
+    }
+    widget->pos = mouse_pos();
+    widget->peg = peg;
+
+    save_content_at_pos( widget, true );
+    peg_write_4x2( widget->pos, widget->peg );
+    save_content_at_pos( widget, false );
 }
 
 
@@ -99,7 +103,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
     {
         case EventType_MOUSE_MOVED:
         {
-            if ( widget->active )
+            if ( widget->peg.id != PegId_EMPTY )
             {
                 update_tracking( widget, event->mouseMoved.pos );
             }
@@ -108,11 +112,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
 
         case EventType_PEG_SELECTED:
         {
-            if ( widget->active )
-            {
-                disable_tracking( widget );
-            }
-            enable_tracking( widget, event->peg.piece );
+            enable_tracking( widget, event->peg.peg );
             break;
         }
         case EventType_PEG_UNSELECTED:
@@ -129,17 +129,21 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
 static void enable_callback( struct Widget *base )
 {
     struct WidgetPegTracking *const widget = (struct WidgetPegTracking *)base;
-    widget->active = false;
+    widget->peg.id = PegId_EMPTY;
+
+    event_subscribe( (struct Widget *)widget, EventType_MaskAll );
 }
 
 
 static void disable_callback( struct Widget *base )
 {
     struct WidgetPegTracking *const widget = (struct WidgetPegTracking *)base;
-    if ( widget->active )
+    if ( widget->peg.id != PegId_EMPTY )
     {
         disable_tracking( widget );
     }
+
+    event_unsubscribe( (struct Widget *)widget, EventType_MaskAll );
 }
 
 
@@ -154,7 +158,6 @@ struct Widget *widget_peg_tracking_create( void )
     widget->base.disableCb = disable_callback;
 
     event_register( (struct Widget *)widget, on_event_callback );
-    event_subscribe( (struct Widget *)widget, EventType_MaskAll );
 
     return (struct Widget *)widget;
 }

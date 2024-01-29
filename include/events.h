@@ -55,13 +55,11 @@ struct EventGameNew
 {
     usize nbTurns;
     usize nbPegsPerTurn;
-    gamepiece defaultPeg;
-    gamepiece defaultPin;
 };
 
 struct EventSolution
 {
-    gamepiece *pieces;
+    struct Peg *pegs;
     usize nbPieces;
 };
 
@@ -69,14 +67,14 @@ struct EventPeg
 {
     usize turn;
     usize index;
-    gamepiece piece;
+    struct Peg peg;
 };
 
 struct EventPin
 {
     usize turn;
     usize index;
-    gamepiece piece;
+    struct Pin pin;
 };
 
 struct EventNewTurn
@@ -120,24 +118,24 @@ struct EventData {};
         }                                          \
     } )
 
-#define EVENT_PEG( _event, _turn, _index, _piece ) \
-    ( (struct Event) {                             \
-        .type = _event,                            \
-        .peg = (struct EventPeg) {                 \
-            .turn = _turn,                         \
-            .index = _index,                       \
-            .piece = _piece                        \
-        }                                          \
+#define EVENT_PEG( _event, _turn, _index, _peg ) \
+    ( (struct Event) {                           \
+        .type = _event,                          \
+        .peg = (struct EventPeg) {               \
+            .turn = _turn,                       \
+            .index = _index,                     \
+            .peg = _peg                          \
+        }                                        \
     } )
 
-#define EVENT_PIN( _event, _turn, _index, _piece ) \
-    ( (struct Event) {                             \
-        .type = _event,                            \
-        .pin = (struct EventPin) {                 \
-            .turn = _turn,                         \
-            .index = _index,                       \
-            .piece = _piece                        \
-        }                                          \
+#define EVENT_PIN( _event, _turn, _index, _pin ) \
+    ( (struct Event) {                           \
+        .type = _event,                          \
+        .pin = (struct EventPin) {               \
+            .turn = _turn,                       \
+            .index = _index,                     \
+            .pin = _pin                          \
+        }                                        \
     } )
 
 typedef enum EventPropagation ( *EventTriggeredCb )( void *subscriber, struct Event const *event );

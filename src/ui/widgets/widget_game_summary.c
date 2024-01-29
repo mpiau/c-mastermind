@@ -37,62 +37,41 @@ static void init_widget_data( struct WidgetGameSummary *widget )
 }
 
 
-static void draw_peg_at( struct WidgetGameSummary const *widget, usize const turn, usize const index, gamepiece const piece )
+static void draw_peg_at( struct WidgetGameSummary const *widget, usize const turn, usize const index, struct Peg const peg )
 {   
 	screenpos const ul = (screenpos) {
         .x = widget->firstPegsRowUL.x + ( 2 * index ),
         .y = widget->firstPegsRowUL.y + ( turn - 1 )
     };
-    piece_write_1x1( ul, piece );
+    peg_write_1x1( ul, peg );
 }
 
 
-/*static void draw_current_turn_nb_at( struct WidgetGameSummary *widget, usize const turn )
-{
-    if ( widget->currTurn > turn )
-    {
-    	style_update( STYLE( FGColor_WHITE ) );
-    }
-    else if ( widget->currTurn == turn )
-    {
-    	style_update( STYLE( FGColor_YELLOW ) );
-    }
-    else
-    {
-		style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-    }
-
-	screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + ( turn - 1 ) );
-	cursor_update_pos( ul );
-	term_write( L"%02u", turn );
-}*/
-
-
-static void draw_pin_at( struct WidgetGameSummary *widget, usize const turn, usize const index, gamepiece const piece )
+static void draw_pin_at( struct WidgetGameSummary *widget, usize const turn, usize const index, struct Pin const pin )
 {
 	screenpos ul = SCREENPOS( widget->firstPinsRowUL.x, widget->firstPinsRowUL.y + ( turn - 1 ) );
     ul.x += ( index * 1 );
 
-	piece_write_1x1( ul, piece );
+	pin_write_1x1( ul, pin );
 }
 
 
-static void draw_solution_at( struct WidgetGameSummary *widget, usize const index, gamepiece const piece )
+static void draw_solution_at( struct WidgetGameSummary *widget, usize const index, struct Peg const peg )
 {
 	screenpos solutionPos = widget->solutionRowUL;
     solutionPos.x += ( index * 2 );
 
-    piece_write_1x1( solutionPos, piece );
+    peg_write_1x1( solutionPos, peg );
 }
 
 
-static void draw_solution( struct WidgetGameSummary *widget, gamepiece const *solution )
+static void draw_solution( struct WidgetGameSummary *widget, struct Peg const *solution )
 {
 	screenpos solutionPos = widget->solutionRowUL;
 
     for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
     {
-		piece_write_1x1( solutionPos, solution[x] );
+		peg_write_1x1( solutionPos, solution[x] );
 		solutionPos.x += 2;
     }
 }
@@ -143,11 +122,11 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             struct EventPeg const *evPeg = &event->peg;
             if ( evPeg->turn == Mastermind_SOLUTION_TURN )
             {
-                draw_solution_at( widget, evPeg->index, evPeg->piece );
+                draw_solution_at( widget, evPeg->index, evPeg->peg );
             }
             else
             {
-                draw_peg_at( widget, evPeg->turn, evPeg->index, evPeg->piece );
+                draw_peg_at( widget, evPeg->turn, evPeg->index, evPeg->peg );
             }
             break;
         }
@@ -156,7 +135,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         case EventType_PIN_REMOVED:
         {
             struct EventPin const *evPin = &event->pin;
-            draw_pin_at( widget, evPin->turn, evPin->index, evPin->piece );
+            draw_pin_at( widget, evPin->turn, evPin->index, evPin->pin );
             break;
         }
 

@@ -132,34 +132,34 @@ static void init_widget_data( struct WidgetGameBoard *widget )
 }
 
 
-static void draw_peg_at( struct WidgetGameBoard const *widget, usize const turn, usize const index, gamepiece const piece )
+static void draw_peg_at( struct WidgetGameBoard const *widget, usize const turn, usize const index, struct Peg const peg )
 {
     if ( turn == Mastermind_SOLUTION_TURN )
     {
         screenpos const ul = rect_get_ul_corner( &widget->solution[index] );
-        piece_write_6x3( ul, piece, false );
+        peg_write_6x3( ul, peg, false );
         return;
     }
 
     usize const turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));
     screenpos const ul = rect_get_ul_corner( &widget->rows[turnIdx].pegs[index] );
-    piece_write_6x3( ul, piece, false );
+    peg_write_6x3( ul, peg, false );
 }
 
 
-static void draw_pin_at( struct WidgetGameBoard const *widget, usize const turn, usize const index, gamepiece const piece )
+static void draw_pin_at( struct WidgetGameBoard const *widget, usize const turn, usize const index, struct Pin const pin )
 {
     usize const turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));
 	screenpos const ul = rect_get_ul_corner( &widget->rows[turnIdx].pins[index] );
 
-	piece_write_4x2( ul, piece );
+	pin_write_4x2( ul, pin );
 }
 
 
-static void draw_solution_at( struct WidgetGameBoard *widget, usize const index, gamepiece const piece )
+static void draw_solution_at( struct WidgetGameBoard *widget, usize const index, struct Peg const peg )
 {
     screenpos const solutionPos = rect_get_ul_corner( &widget->solution[index] );
-    piece_write_6x3( solutionPos, piece, false );
+    peg_write_6x3( solutionPos, peg, false );
 }
 
 
@@ -250,7 +250,7 @@ static void display_moved( struct WidgetGameBoard *widget, bool const historyUp 
     if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
     {
         clear_row( widget, 3 );
-        gamepiece const *solution = mastermind_get_solution();
+        struct Peg const *solution = mastermind_get_solution();
         for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
 		{
             draw_peg_at( widget, widget->lastDispTurn, x, solution[x] );
@@ -401,14 +401,14 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             {
                 if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
                 {
-                    draw_solution_at( widget, evPeg->index, evPeg->piece );
+                    draw_solution_at( widget, evPeg->index, evPeg->peg );
                 }
             }
             else
             {
                 if ( evPeg->turn <= widget->lastDispTurn && evPeg->turn >= widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ) )
                 {
-                    draw_peg_at( widget, evPeg->turn, evPeg->index, evPeg->piece );
+                    draw_peg_at( widget, evPeg->turn, evPeg->index, evPeg->peg );
                 }
             }
             break;
@@ -420,7 +420,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             struct EventPin const *evPin = &event->pin;
             if ( evPin->turn <= widget->lastDispTurn && evPin->turn >= widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ) )
             {
-                draw_pin_at( widget, evPin->turn, evPin->index, evPin->piece );
+                draw_pin_at( widget, evPin->turn, evPin->index, evPin->pin );
             }
             break;
         }

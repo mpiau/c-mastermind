@@ -34,7 +34,7 @@ enum RequestStatus
 
 struct RequestPeg
 {
-    gamepiece piece;
+    enum PegId id;
 };
 
 struct Request

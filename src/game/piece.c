@@ -15,192 +15,147 @@ static utf16 const S_PEG_NUM_UTF16[PegId_Count] =
     [PegId_BLUE]    = L'6',
     [PegId_WHITE]   = L'7',
 };
+*/
 
-
-static termcolor peg_color( enum PegId const id )
+static inline bool is_peg( struct Piece const piece )
 {
-	switch ( id )
-	{
-		case PegId_BLACK:   return FGColor_BRIGHT_BLACK;
-		case PegId_RED:     return FGColor_RED;
-		case PegId_GREEN:   return FGColor_GREEN;
-		case PegId_YELLOW:  return FGColor_YELLOW;
-		case PegId_CYAN:    return FGColor_CYAN;
-		case PegId_MAGENTA: return FGColor_MAGENTA;
-		case PegId_BLUE:    return FGColor_BLUE;
-		case PegId_WHITE:   return FGColor_WHITE;
-		case PegId_Empty:   return FGColor_BRIGHT_BLACK;
-		default: assert( false );
-	}
+    return piece.type == PieceType_PEG;
 }
 
-static utf16 get_character_from_id( enum PegId const id )
+static inline bool is_pin( struct Piece const piece )
 {
-    if ( settings_is_color_blind_mode_enabled( ) )
-    {
-        return ( id == PegId_Empty ) ? UTF16C_SmallDottedCircle : S_PEG_NUM_UTF16[id];
-    }
-    return ( id == PegId_Empty ) ? UTF16C_SmallDottedCircle : UTF16C_BigFilledCircle;
+    return piece.type == PieceType_PIN;
 }
 
 
-void peg_draw( struct Peg const *peg, usize const ulX, usize const ulY )
+static struct Style peg_style( struct Peg const peg )
 {
-    style_update( STYLE( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ) ) );
-    cursor_update_yx( ulY, ulX );
+    if ( peg.hidden ) return STYLE( FGColor_BRIGHT_BLACK );
 
-    if ( peg->id == PegId_Empty )
+    switch( peg.id )
     {
-		term_write( L",:'':." );
-		cursor_update_yx(ulY + 1, ulX );
-		term_write( L":    :" );
-		cursor_update_yx( ulY + 2, ulX );
-		term_write( L"`:,,:'" );
-        return;
+        case PegId_BLACK:   return STYLE( FGColor_BRIGHT_BLACK );
+        case PegId_RED:     return STYLE( FGColor_RED );
+        case PegId_GREEN:   return STYLE( FGColor_GREEN );
+        case PegId_YELLOW:  return STYLE( FGColor_YELLOW );
+        case PegId_BLUE:    return STYLE( FGColor_BLUE );
+        case PegId_MAGENTA: return STYLE( FGColor_MAGENTA );
+        case PegId_CYAN:    return STYLE( FGColor_CYAN );
+        case PegId_WHITE:   return STYLE( FGColor_WHITE );
+        case PegId_EMPTY:   return STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
+        default:            assert( false );
     }
-
-	term_write( L",d||b." );
-
-    cursor_update_yx( ulY + 1, ulX );
-    if ( peg->hidden )
-    {
-    	term_write( L"??????" );
-    }
-    else
-    {
-        utf16 const middleCharacter = peg->hidden ? UTF16C_QuestionMark : S_PEG_NUM_UTF16[peg->id];
-        for ( usize x = 0; x < PegSize_WIDTH; ++x )
-        {
-            term_write( L"%lc", middleCharacter );
-        }
-    }
-
-    cursor_update_yx( ulY + 2, ulX );
-    term_write( L"`Y||P'" );
 }
 
 
-void peg_draw_single_character( struct Peg const *peg, usize const posX, usize const posY, bool isFutureTurn )
+static struct Style pin_style( struct Pin const pin )
 {
-    if ( isFutureTurn )
+    switch( pin.id )
     {
-        style_update( STYLE_WITH_ATTR( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ), Attr_FAINT ) );
+        case PinId_CORRECT:   return STYLE( FGColor_RED );
+        case PinId_PARTIAL:   return STYLE( FGColor_WHITE );
+        case PinId_INCORRECT: return STYLE( FGColor_BLACK );
+    }
+}
+
+
+static struct Style get_piece_style( struct Piece const piece )
+{
+    if ( is_peg( piece ) )
+    {
+        return peg_style( piece.peg );
     }
     else
     {
-        style_update( STYLE( peg->hidden ? FGColor_BRIGHT_BLACK : peg_color( peg->id ) ) );
+        return pin_style( piece.pin );
     }
-    cursor_update_yx( posY, posX );
-
-    term_write( L"%lc", peg->hidden ? UTF16C_QuestionMark : get_character_from_id( peg->id ) );
 }
 
 
-
-
-struct Style pin_get_style( enum PinId const id )
+void pin_write_1x1( screenpos const pos, struct Pin const pin )
 {
-	switch ( id )
-	{
-		case PinId_CORRECT:			  return STYLE( FGColor_RED );
-		case PinId_PARTIALLY_CORRECT: return STYLE( FGColor_WHITE );
-		case PinId_INCORRECT:         return STYLE( FGColor_BRIGHT_BLACK );
-		default: assert( false );
-	}
-}*/
-
-
-static inline bool is_empty( gamepiece const piece )
-{
-    return ( piece & PieceFlag_EMPTY );
-}
-
-static inline bool is_peg( gamepiece const piece )
-{
-    return ( piece & Piece_MaskType ) == Piece_TypePeg;
-}
-
-static inline bool is_pin( gamepiece const piece )
-{
-    return ( piece & Piece_MaskType ) == Piece_TypePin;
-}
-
-
-static termcolor get_piece_color( gamepiece const piece )
-{
-    termcolor color = ( piece & Piece_MaskColor ) << 4;
-
-    if ( is_empty( piece ) || color == FGColor_BLACK )
-    {
-        color |= FGColor_MaskBright;
-    }
-
-    return color;
-}
-
-
-static struct Style generate_style( gamepiece const piece, bool const hovered )
-{
-    termcolor color = get_piece_color( piece );
-    enum Attr const attr = /*is_future_turn( piece ) ||*/ ( piece & PieceFlag_EMPTY ) ? Attr_FAINT : Attr_NONE;
-
-    if ( piece & PieceFlag_SECRET || piece & PieceFlag_EMPTY )
-    {
-        color = FGColor_BRIGHT_BLACK;
-    }
-    if ( hovered )
-    {
-        color |= FGColor_MaskBright;
-    }
-
-    return STYLE_WITH_ATTR( color, attr );
-}
-
-
-void piece_write_1x1( screenpos const pos, gamepiece const piece )
-{
-    style_update( generate_style( piece, false ) );
+    style_update( pin_style( pin ) );
     cursor_update_yx( pos.y, pos.x );
 
-    if ( is_pin( piece ) && ( ( piece & Piece_MaskAll ) == Piece_PIN_INCORRECT ) )
+    if ( pin.id == PinId_INCORRECT )
     {
         term_write( L" " );
         return;
     }
+    term_write( L"%lc", UTF16C_SmallFilledCircle );
+}
 
-    if ( is_peg( piece ) && ( piece & PieceFlag_SECRET ) )
+
+void pin_write_4x2( screenpos const pos, struct Pin const pin )
+{
+    style_update( pin_style( pin ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( pin.id == PinId_INCORRECT )
+    {
+        term_write( L"    " );
+        cursor_update_yx( pos.y + 1, pos.x );
+        term_write( L"    " );
+        return;
+    }
+
+	term_write( L",db." );
+	cursor_update_yx( pos.y + 1, pos.x );
+	term_write( L"`YP'" );    
+}
+
+
+void pin_write_6x3( screenpos const pos, struct Pin const pin, bool const hovered )
+{
+    style_update( pin_style( pin ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( pin.id == PinId_INCORRECT )
+    {
+        term_write( L"      " );
+        cursor_update_yx( pos.y + 1, pos.x );
+        term_write( L"      " );
+        cursor_update_yx( pos.y + 2, pos.x );
+        term_write( L"      " );
+        return;
+    }
+
+	term_write( L",d||b." );
+	cursor_update_yx( pos.y + 1, pos.x );
+	term_write( L"OOOOOO" );
+	cursor_update_yx( pos.y + 2, pos.x );
+	term_write( L"`Y||P'" );
+}
+
+
+void peg_write_1x1( screenpos const pos, struct Peg const peg )
+{
+    style_update( peg_style( peg ) );
+    cursor_update_yx( pos.y, pos.x );
+
+    if ( peg.hidden )
     {
         term_write( L"?" );
         return;
     }
-
-    if ( is_empty( piece ) )
+    else if ( peg.id == PegId_EMPTY )
     {
         term_write( L"%lc", UTF16C_SmallDottedCircle );
         return;
     }
 
-    utf16 const character = is_peg( piece ) ? UTF16C_BigFilledCircle : UTF16C_SmallFilledCircle;
-    term_write( L"%lc", character );
+    term_write( L"%lc", UTF16C_BigFilledCircle );
 }
 
 
-void piece_write_4x2( screenpos const pos, gamepiece const piece )
+void peg_write_4x2( screenpos const pos, struct Peg const peg )
 {
-    style_update( generate_style( piece, false ) );
+    style_update( peg_style( peg ) );
     cursor_update_yx( pos.y, pos.x );
 
-    if ( is_pin( piece ) && ( ( piece & Piece_MaskAll ) == Piece_PIN_INCORRECT ) )
+    if ( peg.id == PegId_EMPTY )
     {
-        term_write( L"    " );
-	    cursor_update_yx( pos.y + 1, pos.x );
-        term_write( L"    " );
-        return;
-    }
-
-    if ( is_empty( piece ) )
-    {
-    	term_write( L".''." );
+        term_write( L".''." );
 	    cursor_update_yx( pos.y + 1, pos.x );
 	    term_write( L"`,,'" );
         return;
@@ -208,16 +163,16 @@ void piece_write_4x2( screenpos const pos, gamepiece const piece )
 
 	term_write( L",db." );
 	cursor_update_yx( pos.y + 1, pos.x );
-	term_write( L"`YP'" );
+	term_write( L"`YP'" );   
 }
 
 
-void piece_write_6x3( screenpos const pos, gamepiece const piece, bool hovered )
+void peg_write_6x3( screenpos const pos, struct Peg const peg, bool const hovered )
 {
-    style_update( generate_style( piece, hovered ) );
+    style_update( peg_style( peg ) );
     cursor_update_yx( pos.y, pos.x );
 
-    if ( is_empty( piece ) )
+    if ( peg.id == PegId_EMPTY )
     {
         term_write( L",:'':." );
         cursor_update_yx( pos.y + 1, pos.x );
@@ -232,4 +187,43 @@ void piece_write_6x3( screenpos const pos, gamepiece const piece, bool hovered )
 	term_write( L"OOOOOO" );
 	cursor_update_yx( pos.y + 2, pos.x );
 	term_write( L"`Y||P'" );
+}
+
+
+void piece_write_1x1( screenpos const pos, struct Piece const piece )
+{
+    if ( is_peg( piece ) )
+    {
+        peg_write_1x1( pos, piece.peg );
+    }
+    else
+    {
+        pin_write_1x1( pos, piece.pin );
+    }
+}
+
+
+void piece_write_4x2( screenpos const pos, struct Piece const piece )
+{
+    if ( is_peg( piece ) )
+    {
+        peg_write_4x2( pos, piece.peg );
+    }
+    else
+    {
+        pin_write_4x2( pos, piece.pin );
+    }
+}
+
+
+void piece_write_6x3( screenpos const pos, struct Piece const piece, bool const hovered )
+{
+    if ( is_peg( piece ) )
+    {
+        peg_write_6x3( pos, piece.peg, hovered );
+    }
+    else
+    {
+        pin_write_6x3( pos, piece.pin, hovered );
+    }
 }
