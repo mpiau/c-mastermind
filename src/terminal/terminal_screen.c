@@ -95,14 +95,19 @@ int term_write( utf16 const *format, ... )
         // So stop prematurely here.
         if ( cursorPos.x > maxWidth ) break;
 
-        struct Character *const character = get_character_at_pos( cursorPos );
+        cursor_move_right_by( 1 );
 
-        *character = (struct Character) {
+        struct Character *const oldC = get_character_at_pos( cursorPos );
+        struct Character newC = (struct Character) {
             .unicode = buffer[idx],
             .style = style_current()
         };
-        character_mark_as_refresh_needed( character );
-        cursor_move_right_by( 1 );
+
+        // Don't refresh something that didn't change. It's just wasted time.
+        if ( character_equals( *oldC, newC ) ) continue;
+
+        *oldC = newC;
+        character_mark_as_refresh_needed( oldC );
     }
 
     return bufferSize;

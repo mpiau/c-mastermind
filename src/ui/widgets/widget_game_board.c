@@ -122,12 +122,11 @@ static void init_widget_data( struct WidgetGameBoard *widget )
 	{
         usize const pegSize = ( widget->nbPegsPerTurn * 8 ) - 2;
         usize const spacesNeeded = ( TOTAL_BOARD_WIDTH - pegSize ) / 2;
-        struct Rect *rect = &widget->solution[x];
 	    screenpos const pos = {
 		    .x = ul.x + spacesNeeded + ( 8 * x ),
 			.y = ul.y + 20
 		};
-		*rect = rect_make( pos, VEC2U16( 6, 3 ) );
+		widget->solution[x] = rect_make( pos, VEC2U16( 6, 3 ) );
     }
 }
 
@@ -141,7 +140,19 @@ static void draw_peg_at( struct WidgetGameBoard const *widget, usize const turn,
         return;
     }
 
-    usize const turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));
+    usize turnIdx;
+    if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
+    {
+        turnIdx = turn - ( widget->nbTurns - 2 );
+    }
+    else
+    {
+        turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));   
+    }
+//    usize const turns = widget->lastDispTurn == Mastermind_SOLUTION_TURN ? widget->nbTurns : widget->lastDispTurn;
+
+//    usize const turnIdx = turn - ( turns - ( ROWS_DISPLAYED - 1 ));
+    assert( turnIdx < 4 );
     screenpos const ul = rect_get_ul_corner( &widget->rows[turnIdx].pegs[index] );
     peg_write_6x3( ul, peg, false );
 }
@@ -149,7 +160,17 @@ static void draw_peg_at( struct WidgetGameBoard const *widget, usize const turn,
 
 static void draw_pin_at( struct WidgetGameBoard const *widget, usize const turn, usize const index, struct Pin const pin )
 {
-    usize const turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));
+    usize turnIdx;
+    if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
+    {
+        turnIdx = turn - ( widget->nbTurns - 2 );
+    }
+    else
+    {
+        turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));   
+    }
+//    usize const turnIdx = turn - ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ));
+    assert( turnIdx < 4 );
 	screenpos const ul = rect_get_ul_corner( &widget->rows[turnIdx].pins[index] );
 
 	pin_write_4x2( ul, pin );
@@ -188,7 +209,7 @@ static void draw_turn_at( struct WidgetGameBoard *widget, usize const rowIdx, us
 
 static void draw_turns( struct WidgetGameBoard *widget )
 {
-    usize const firstTurn = ( widget->lastDispTurn - ROWS_DISPLAYED ) + 1;
+    usize const firstTurn = ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ) );
     for ( int y = 0; y < ROWS_DISPLAYED; ++y )
     {
         draw_turn_at( widget, y, firstTurn + y );
@@ -210,41 +231,17 @@ static void clear_row( struct WidgetGameBoard *widget, usize const rowIdx )
  	for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
 	{
         rect_clear( &widget->rows[rowIdx].pegs[x] );
+        rect_clear( &widget->rows[rowIdx].pins[x] );
     }
     rect_clear( &widget->rows[rowIdx].turn );
-
-	for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
-	{
-        rect_clear( &widget->rows[rowIdx].pins[x] );
-    }   
 }
 
 
 static void display_moved( struct WidgetGameBoard *widget, bool const historyUp )
 {
-    usize const nbRowsToDisplay = widget->lastDispTurn == Mastermind_SOLUTION_TURN ? 3 : 4;
-    usize const firstTurn = widget->lastDispTurn == Mastermind_SOLUTION_TURN ? widget->nbTurns - 2 : ( widget->lastDispTurn - ROWS_DISPLAYED ) + 1;
-
     if ( historyUp && widget->lastDispTurn == widget->nbTurns )
     {
         clear_row( widget, Mastermind_SOLUTION_TURN );
-    }
-
-    for ( usize y = 0; y < nbRowsToDisplay; ++y )
-	{
-        usize const dispTurn = firstTurn + y;
-        struct BoardRow *row = &widget->rows[y];
-		for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
-		{
-            draw_peg_at( widget, dispTurn, x, mastermind_get_peg( dispTurn, x ) );
-        }
-
-        draw_turn_at( widget, y, dispTurn );
-
-		for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
-		{
-            draw_pin_at( widget, dispTurn, x, mastermind_get_pin( dispTurn, x ) );
-        }
     }
 
     if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
@@ -253,8 +250,22 @@ static void display_moved( struct WidgetGameBoard *widget, bool const historyUp 
         struct Peg const *solution = mastermind_get_solution();
         for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
 		{
-            draw_peg_at( widget, widget->lastDispTurn, x, solution[x] );
+            draw_solution_at( widget, x, solution[x] );
         }
+    }
+
+    usize const nbRowsToDisplay = widget->lastDispTurn == Mastermind_SOLUTION_TURN ? 3 : 4;
+    usize const firstTurn = widget->lastDispTurn == Mastermind_SOLUTION_TURN ? widget->nbTurns - 2 : ( widget->lastDispTurn - ( ROWS_DISPLAYED - 1 ) );
+
+    for ( usize y = 0; y < nbRowsToDisplay; ++y )
+	{
+        usize const dispTurn = firstTurn + y;
+		for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
+		{
+            draw_peg_at( widget, dispTurn, x, mastermind_get_peg( dispTurn, x ) );
+            draw_pin_at( widget, dispTurn, x, mastermind_get_pin( dispTurn, x ) );
+        }
+        draw_turn_at( widget, y, dispTurn );
     }
 }
 
@@ -350,10 +361,13 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             }
             else if ( event->userInput.input == keybinding_get_binded_key( KeyBinding_HISTORY_DOWN ) )
             {
-                if ( widget->lastDispTurn != Mastermind_SOLUTION_TURN )
+                if ( widget->lastDispTurn != Mastermind_SOLUTION_TURN && widget->lastDispTurn <= widget->nbTurns )
                 {
                     widget->lastDispTurn += 1;
-                    if ( widget->lastDispTurn > widget->nbTurns ) widget->lastDispTurn = Mastermind_SOLUTION_TURN;
+                    if ( widget->lastDispTurn > widget->nbTurns )
+                    {
+                        widget->lastDispTurn = Mastermind_SOLUTION_TURN;
+                    }
                     display_moved( widget, false );
                 }
             }
@@ -381,9 +395,15 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
                 draw_internal_board_lines( widget );
                 widget->nbPegsPerTurn = event->newGame.nbPegsPerTurn;
                 widget->nbTurns = event->newGame.nbTurns;
+                init_widget_data( widget );
             }
-            init_widget_data( widget );
+            else if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
+            {
+                clear_row( widget, widget->lastDispTurn );
+            }
+            widget->lastDispTurn = 4;
             draw_turns( widget );
+
             for ( usize idx = 0; idx < ButtonIdx_Count; ++idx )
             {
                 uibutton_show( widget->buttons[idx] );
