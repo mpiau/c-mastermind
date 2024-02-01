@@ -119,7 +119,7 @@ void rect_draw_borders( struct Rect const *rect, utf16 const *optTitle )
     term_write( L"┐" );
 
 	// Vertical middle lines
-    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    for ( usize y = 1; y < rect->size.h - 1u; ++y )
     {
         cursor_update_yx( ul.y + y, ul.x );
         term_write( L"│" );
@@ -149,10 +149,10 @@ void rect_clear( struct Rect const *rect )
 void rect_clear_content( struct Rect const *rect )
 {
 	screenpos const ul = rect_get_ul_corner( rect );
-    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    for ( usize y = 1; y < rect->size.h - 1u; ++y )
     {
-        cursor_update_yx( ul.y + y, ul.x + 1 );
-		term_write( L"%*lc", rect->size.w - 2, L' ' );
+        cursor_update_yx( ul.y + y, ul.x + 1u );
+		term_write( L"%*lc", rect->size.w - 2u, L' ' );
     }
 }
 
@@ -164,11 +164,11 @@ void rect_clear_borders( struct Rect const *rect )
 	cursor_update_yx( ul.y, ul.x );
 	term_write( L"%*lc", rect->size.w, L' ' );
 
-    for ( usize y = 1; y < rect->size.h - 1; ++y )
+    for ( usize y = 1; y < rect->size.h - 1u; ++y )
     {
         cursor_update_yx( ul.y + y, ul.x );
 		term_write( L" " );
-		cursor_move_right_by( rect->size.w - 2 );
+		cursor_move_right_by( rect->size.w - 2u );
 		term_write( L" " );
     }	
 

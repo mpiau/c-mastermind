@@ -18,9 +18,12 @@ static void enable_callback( struct Widget *base )
 {
     struct WidgetBuildVersion *widget = (struct WidgetBuildVersion *)base;
 
-    cursor_update_pos( rect_get_ul_corner( &widget->rect ) );
+    screenpos ul = rect_get_ul_corner( &widget->rect );
+    cursor_update_pos( ul );
     style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT | Attr_ITALIC ) );
-    term_write( L"Development Build" );
+    term_write( L"Build v0.1.0-alpha" );
+    cursor_update_yx( ul.y + 1, ul.x );
+    term_write( L"Made by Melvyn Piau" );
 }
 
 
@@ -44,7 +47,7 @@ struct Widget *widget_buildversion_create( void )
 
     // Widget specific
 
-    widget->rect = rect_make( SCREENPOS( 1, 30 ), VEC2U16( 20, 1 ) );
+    widget->rect = rect_make( SCREENPOS( 1, 29 ), VEC2U16( 20, 2 ) );
 
     return (struct Widget *)widget;
 }

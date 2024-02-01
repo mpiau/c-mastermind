@@ -484,6 +484,8 @@ enum RequestStatus mastermind_on_request( struct Request const *req )
             }
             break;
         }
+
+        default: break;
     }
 
     return RequestStatus_SKIPPED;

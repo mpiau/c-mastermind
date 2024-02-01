@@ -7,5 +7,6 @@
 bool random_init( void )
 {
     srand( time( NULL ) );
+    return true;
 }
 

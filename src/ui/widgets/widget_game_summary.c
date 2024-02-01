@@ -65,18 +65,6 @@ static void draw_solution_at( struct WidgetGameSummary *widget, usize const inde
 }
 
 
-static void draw_solution( struct WidgetGameSummary *widget, struct Peg const *solution )
-{
-	screenpos solutionPos = widget->solutionRowUL;
-
-    for ( usize x = 0; x < widget->nbPegsPerTurn; ++x )
-    {
-		peg_write_1x1( solutionPos, solution[x] );
-		solutionPos.x += 2;
-    }
-}
-
-
 static void draw_turn_at( struct WidgetGameSummary *widget, usize const turn )
 {
     screenpos const ul = SCREENPOS( widget->firstTurnRowUL.x, widget->firstTurnRowUL.y + turn - 1 );
@@ -88,7 +76,7 @@ static void draw_turn_at( struct WidgetGameSummary *widget, usize const turn )
 static void draw_turns( struct WidgetGameSummary *widget )
 {
     style_update( STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT ) );
-    for ( int y = 0; y < widget->nbTurns; ++y )
+    for ( usize y = 0; y < widget->nbTurns; ++y )
     {
         draw_turn_at( widget, y + 1 );
     }
@@ -151,6 +139,8 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             draw_turn_at( widget, newTurn );
             break;
         }
+
+        default: break;
 
     // turn next / reset
     };

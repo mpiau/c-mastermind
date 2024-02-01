@@ -55,7 +55,7 @@ static screensize get_screen_size( void const *handle )
 }
 
 
-static struct Character *const get_character_at_pos( screenpos const pos )
+static struct Character *get_character_at_pos( screenpos const pos )
 {
     // While our indexes begin at 0:0, a screenpos starts at 1:1
     return &s_screenInfo.screen.content[pos.y - 1][pos.x - 1];
@@ -87,7 +87,7 @@ int term_write( utf16 const *format, ... )
 
     u16 const maxWidth = s_screenInfo.supportedGameSize.w;
 
-    for ( usize idx = 0; idx < bufferSize; ++idx )
+    for ( usize idx = 0; idx < (usize)bufferSize; ++idx )
     {
         screenpos const cursorPos = cursor_pos();
   

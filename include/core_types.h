@@ -58,7 +58,7 @@ typedef u16  utf16;
 typedef u32  utf32;
 
 
-#pragma region TESTS SECTION
+// #pragma region TESTS SECTION
 
 
 #define VALIDATE_BYTES_SIZE( _type, _operator, _expected_bsize )								\
@@ -109,7 +109,7 @@ VALIDATE_BYTES_SIZE( utf32, ==, 4 /* bytes */ );
 #undef VALIDATE_BYTES_SIZE
 // End of the file. Making sure that there is a \n after my #undef in this gist.
 
-#pragma endregion TESTS SECTION
+// #pragma endregion TESTS SECTION
 
 // Temp
 #define ARR_COUNT( x ) ( sizeof( x ) / sizeof( x[0] ) )

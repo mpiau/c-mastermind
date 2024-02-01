@@ -107,11 +107,11 @@ static void init_widget_data( struct WidgetGameBoard *widget )
 
 			// first row
 			u8 const firstRowLimit = ( widget->nbPegsPerTurn + 1 ) / 2;
-			for ( int x = 0; x < firstRowLimit; ++x )
+			for ( usize x = 0; x < firstRowLimit; ++x )
 			{
 				row->pins[x] = rect_make( SCREENPOS( pinUL.x + 5 * x, pinUL.y ), VEC2U16( 4, 2 ) );
 			}
-			for ( int x = firstRowLimit; x < widget->nbPegsPerTurn; ++x )
+			for ( usize x = firstRowLimit; x < widget->nbPegsPerTurn; ++x )
 			{
 				row->pins[x] = rect_make( SCREENPOS( pinUL.x + 5 * ( x - firstRowLimit ), pinUL.y + 3 ), VEC2U16( 4, 2 ) );
 			}
@@ -387,6 +387,19 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             }            
             break;
         }
+        case EventType_NEW_TURN:
+        {
+            if ( event->newTurn.turn > widget->lastDispTurn && widget->lastDispTurn != Mastermind_SOLUTION_TURN )
+            {
+                widget->lastDispTurn += 1;
+                if ( widget->lastDispTurn > widget->nbTurns )
+                {
+                    widget->lastDispTurn = Mastermind_SOLUTION_TURN;
+                }
+                display_moved( widget, false );
+            }
+            break;
+        }
         case EventType_GAME_NEW:
         {
             if ( widget->nbPegsPerTurn != event->newGame.nbPegsPerTurn || widget->nbTurns != event->newGame.nbTurns )
@@ -417,6 +430,20 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
         case EventType_PEG_REVEALED:
         {
             struct EventPeg const *evPeg = &event->peg;
+            if ( evPeg->turn != widget->lastDispTurn )
+            {
+                if ( !( evPeg->turn <= 4 && widget->lastDispTurn == 4 ) )
+                {
+                    if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
+                    {
+                        clear_row( widget, Mastermind_SOLUTION_TURN );
+                    }
+                    bool const historyUp = widget->lastDispTurn > evPeg->turn;
+                    widget->lastDispTurn = evPeg->turn <= 4 ? 4 : evPeg->turn;
+                    display_moved( widget, historyUp );
+                }
+            }
+
             if ( evPeg->turn == Mastermind_SOLUTION_TURN )
             {
                 if ( widget->lastDispTurn == Mastermind_SOLUTION_TURN )
@@ -444,6 +471,8 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             }
             break;
         }
+
+        default: break;
     }
     return EventPropagation_CONTINUE;
 }

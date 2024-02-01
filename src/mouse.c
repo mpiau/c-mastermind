@@ -9,7 +9,7 @@
 static screenpos s_currPosition = {};
 
 
-screenpos mouse_pos()
+screenpos mouse_pos( void )
 {
     return s_currPosition;
 }

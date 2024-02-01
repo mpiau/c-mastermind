@@ -110,6 +110,8 @@ u64 fpscounter_frame( struct FPSCounter *fpsCounter )
     // Prepare the next frame
     SetWaitableTimerEx( fpsCounter->waitableTimer, &fpsCounter->minWaitTimePerFrame100ns, 0, NULL, NULL, NULL, 0 );
 	fpsCounter->frameBegin = fpsCounter->frameEnd;
+
+    return delta;
 }
 
 

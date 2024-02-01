@@ -42,8 +42,9 @@ static struct Style peg_style( struct Peg const peg )
         case PegId_MAGENTA: return STYLE( FGColor_MAGENTA );
         case PegId_CYAN:    return STYLE( FGColor_CYAN );
         case PegId_WHITE:   return STYLE( FGColor_WHITE );
-        case PegId_EMPTY:   return STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
-        default:            assert( false );
+
+        case PegId_EMPTY:   
+        default:            return STYLE_WITH_ATTR( FGColor_BRIGHT_BLACK, Attr_FAINT );
     }
 }
 
@@ -54,20 +55,9 @@ static struct Style pin_style( struct Pin const pin )
     {
         case PinId_CORRECT:   return STYLE( FGColor_RED );
         case PinId_PARTIAL:   return STYLE( FGColor_WHITE );
-        case PinId_INCORRECT: return STYLE( FGColor_BLACK );
-    }
-}
 
-
-static struct Style get_piece_style( struct Piece const piece )
-{
-    if ( is_peg( piece ) )
-    {
-        return peg_style( piece.peg );
-    }
-    else
-    {
-        return pin_style( piece.pin );
+        case PinId_INCORRECT:
+        default:              return STYLE( FGColor_BLACK );
     }
 }
 

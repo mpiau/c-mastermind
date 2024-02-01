@@ -53,7 +53,7 @@ static void start_timer( struct WidgetTimer *widget )
 
 static void reset_timer( struct WidgetTimer *widget )
 {
-    if ( widget->status != TimerStatus_RUNNING || widget->status != TimerStatus_PAUSED )
+    if ( widget->status == TimerStatus_RUNNING || widget->status == TimerStatus_PAUSED )
     {
         widget->totalDuration = 0;
         widget->status = TimerStatus_NOT_STARTED;
@@ -72,15 +72,15 @@ static void pause_timer( struct WidgetTimer *widget )
     }
 }
 
-
-static void resume_timer( struct WidgetTimer *widget )
+// Not used (yet).
+/*static void resume_timer( struct WidgetTimer *widget )
 {
     if ( widget->status == TimerStatus_PAUSED )
     {
         widget->lastUpdateTimestamp = time_get_timestamp_nsec();
         widget->status = TimerStatus_RUNNING;
     }
-}
+}*/
 
 
 static enum EventPropagation on_event_callback( void *subscriber, struct Event const *event )

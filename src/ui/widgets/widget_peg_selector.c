@@ -173,6 +173,8 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             }
             break;
         }
+
+        default: break;
     }
 
     return EventPropagation_CONTINUE;

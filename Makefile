@@ -34,6 +34,11 @@ SRC += src/ui/widgets/widget_screensize.c
 SRC += src/ui/widgets/widget_timer.c
 
 CFLAGS += -Iinclude
+CFLAGS += -Wall -Wextra \
+          -Wformat=2 -Wno-unused-parameter -Wshadow \
+          -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
+          -Wredundant-decls -Wnested-externs -Wmissing-include-dirs \
+    	  -Wjump-misses-init -Wlogical-op
 
 CC := gcc
 

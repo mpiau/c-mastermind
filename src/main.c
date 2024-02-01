@@ -94,7 +94,7 @@ static bool consume_user_inputs( void )
 	DWORD nbEvents = 0;
 	if ( !GetNumberOfConsoleInputEvents( term_input_handle(), &nbEvents ) )
 	{
-		fprintf( stderr, "[ERROR]: GetNumberOfConsoleInputEvents failure. (Code %u)\n", GetLastError() );
+		fprintf( stderr, "[ERROR]: GetNumberOfConsoleInputEvents failure. (Code %lu)\n", GetLastError() );
 		return false;
 	}
 	if ( nbEvents == 0 ) return true; // Nothing to do.
@@ -107,7 +107,7 @@ static bool consume_user_inputs( void )
 	INPUT_RECORD inputsBuffer[nbEvents];
 	if ( !ReadConsoleInput( term_input_handle(), &inputsBuffer[0], nbEvents, &nbInputsRead ) )
 	{
-		fprintf( stderr, "[ERROR]: ReadConsoleInput failure. (Code %u)\n", GetLastError() );
+		fprintf( stderr, "[ERROR]: ReadConsoleInput failure. (Code %lu)\n", GetLastError() );
 		return false;
 	}
 

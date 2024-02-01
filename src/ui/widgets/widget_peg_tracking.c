@@ -120,6 +120,7 @@ static enum EventPropagation on_event_callback( void *subscriber, struct Event c
             disable_tracking( widget );
             break;
         }
+        default: break;
     }
 
     return EventPropagation_CONTINUE;
